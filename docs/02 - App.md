@@ -14,14 +14,14 @@ status: defined
 ┌─────────────────────────────────────┐
 │            Frontend (Web)           │
 │  Next.js / React + wagmi + viem    │
-│  Valora / MetaMask wallet connect  │
+│  MetaMask / WalletConnect          │
 │  Reads from subgraph + contracts   │
 └──────────────┬──────────────────────┘
                │
        ┌───────┴───────┐
        │               │
 ┌──────▼──────┐  ┌─────▼──────────┐
-│  Subgraph   │  │  CELO L2       │
+│  Subgraph   │  │  L2 Chain      │
 │  (indexer)  │  │  Smart contracts│
 │  Read-only  │  │  All state      │
 └─────────────┘  └────────────────┘
@@ -45,16 +45,16 @@ status: defined
 
 ### Tech Stack
 - **Framework**: Next.js (App Router)
-- **Wallet**: wagmi v2 + viem for CELO L2 interaction
-- **Wallet support**: Valora (CELO native), MetaMask, WalletConnect
+- **Wallet**: wagmi v2 + viem
+- **Wallet support**: MetaMask, WalletConnect, chain-specific wallets
 - **Styling**: Tailwind CSS
 - **Data**: Subgraph (The Graph) for indexed data + direct contract reads for real-time state
 - **Notifications**: Push Protocol or email for harvest announcements
 - **File storage**: IPFS (Pinata) for campaign media + dMRV reports
 
 ### Key UX Considerations
-- Mobile-first design (CELO's user base is mobile-heavy)
-- cUSD contribution option (users don't need to hold CELO)
+- Mobile-first design
+- Stablecoin contribution option (users don't need to hold native token)
 - Campaign fill progress with live dynamic yield rate
 - Staking dashboard: live $YIELD counter, penalty preview slider
 - Unstake queue: position in queue, estimated fill time
@@ -238,8 +238,8 @@ Not part of the platform — handled by the producer off-chain.
 
 ## Infrastructure
 - **Hosting**: Vercel (frontend, static + SSR)
-- **Subgraph**: The Graph (hosted or decentralized network on CELO)
-- **RPC**: CELO public RPC or Ankr/QuickNode (for direct contract reads + tx submission)
+- **Subgraph**: The Graph (hosted or decentralized network)
+- **RPC**: Public RPC or Ankr/QuickNode for target L2 (direct contract reads + tx submission)
 - **IPFS**: Pinata (campaign media, dMRV reports, Merkle proofs)
 - **CI/CD**: GitHub Actions
 

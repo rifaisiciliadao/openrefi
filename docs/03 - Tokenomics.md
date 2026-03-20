@@ -123,7 +123,7 @@ Recommended payback range: **3-5 years** (20-33% annual ROI)
 1. CAMPAIGN LAUNCHES
    Producer sets: token price, max supply, season duration (≥ 1 year),
                   minimum product claim amount
-   → Users buy $CAMPAIGN with CELO/cUSD
+   → Users buy $CAMPAIGN with native token or stablecoins
 
 2. STAKING
    → Users stake $CAMPAIGN → earn $YIELD over time

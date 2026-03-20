@@ -24,14 +24,14 @@ Registry and deployer for new campaigns.
 Handles token sales and routes funds.
 
 **State:**
-- `pricePerToken` — fixed price in cUSD
+- `pricePerToken` — fixed price in stablecoin (USDC/USDT)
 - `maxSupply` — max tokens mintable
 - `currentSupply` — tokens minted so far
 - `seasonDuration` — season length (≥ 365 days)
 - `state` — enum: Active, Ended
 
 **Functions:**
-- `buy(amount)` — accept CELO/cUSD, mint $CAMPAIGN, routes funds to unstake queue first
+- `buy(amount)` — accept native token or stablecoins, mint $CAMPAIGN, routes funds to unstake queue first
 - `emergencyPause()` — pause all operations
 
 **Note:** $CAMPAIGN is only minted during initial sales. No new minting after that. Supply is strictly deflationary.
@@ -173,21 +173,20 @@ Season N:
   Supply continuously deflating
 ```
 
-## Technical Considerations for CELO
+## Technical Considerations
 
-- **Gas token**: CELO, support cUSD contributions via fee abstraction
-- **Block time**: 1 second — yield accrual uses seconds
-- **CELO token duality**: native + ERC20, handle both transfer types
-- **Key derivation**: `m/44'/52752'/0'/0` (different from Ethereum)
-- **Oracles**: Chainlink, RedStone, Pyth available if needed
-- **DEX listing**: Uniswap V4, Velodrome on CELO for $CAMPAIGN trading
+- **Chain**: any EVM-compatible L2 (low gas required for micro-transactions)
+- **Yield accrual**: uses seconds (block.timestamp), chain-agnostic
+- **Stablecoin support**: USDC, USDT, or chain-native stablecoins for contributions and USDC redemption
+- **Oracles**: Chainlink, RedStone, Pyth available on most L2s if needed
+- **DEX listing**: Uniswap, Velodrome, or any AMM for $CAMPAIGN trading
 
 ## Development Stack
 - **Language**: Solidity 0.8.x
 - **Framework**: Foundry (forge, cast, anvil)
 - **Libraries**: OpenZeppelin Contracts v5 (ERC20, ERC20Votes, MerkleProof, AccessControl, ReentrancyGuard)
-- **Testing**: Forge tests + fork testing against CELO L2
-- **Deployment**: Foundry scripts, verified on Celoscan
+- **Testing**: Forge tests + fork testing against target L2
+- **Deployment**: Foundry scripts, verified on block explorer
 - **Auditing**: Slither, Aderyn static analysis → external audit before mainnet
 
 ## Security Considerations
