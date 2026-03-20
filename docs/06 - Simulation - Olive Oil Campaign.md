@@ -22,7 +22,7 @@ status: defined
 | **Token supply** | **100,000 $OLV** |
 | Token price | $0.144 |
 | Season duration | 1 year |
-| Min product claim | 20 liters |
+| Min product claim | 5 liters |
 
 ## Revenue Split
 
@@ -38,13 +38,14 @@ PHYSICAL HARVEST: 300 liters ($6,000)
 
 ## Millisimali Access
 
-| Investment | Tokens | Trees | Can claim product? |
-|---|---|---|---|
-| $0.14 | 1 | 0.001 | No → USDC only |
-| $14.40 | 100 | 0.1 | No → USDC only |
-| $144 | 1,000 | 1 | No → USDC only |
-| $1,440 | 10,000 | 10 | Yes ✓ (≥20 liters) |
-| $14,400 | 100,000 | 100 | Yes ✓ |
+| Investment | Tokens | Trees | Yearly product | Can claim product? |
+|---|---|---|---|---|
+| $0.14 | 1 | 0.001 | 0.002L | No → USDC only |
+| $14.40 | 100 | 0.1 | 0.2L | No → USDC only |
+| $144 | 1,000 | 1 | 2.1L | No → USDC only |
+| $360 | 2,500 | 2.5 | 5.1L | Yes ✓ (≥5 liters) |
+| $1,440 | 10,000 | 10 | 20.6L | Yes ✓ |
+| $14,400 | 100,000 | 100 | 205.8L | Yes ✓ |
 
 ---
 

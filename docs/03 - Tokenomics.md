@@ -75,7 +75,7 @@ GROSS HARVEST (physical, off-chain)
 - **Token price** — fixed price per token
 - **Max supply** — total tokens (1,000 per asset)
 - **Season duration** — minimum 1 year (365 days)
-- **Minimum product claim** — e.g., 20 liters for olive oil
+- **Minimum product claim** — e.g., 5 liters for olive oil
 
 ### Protocol Constants (Fixed for All Campaigns)
 - **Yield rate**: dynamic, decays linearly from 5→1 as campaign fills
@@ -164,22 +164,22 @@ Set per campaign by the producer (makes no sense to ship 0.5 liters of olive oil
 
 ```
 Example — Olive Oil Campaign:
-  Minimum claim: 20 liters
+  Minimum claim: 5 liters
   Per token/year: 0.002058 liters
-  Tokens needed for min claim: ~9,718 tokens (~10 trees)
+  Tokens needed for min claim: ~2,430 tokens (~2.5 trees, ~$350)
 
 Below minimum → USDC only
 Above minimum → choose product or USDC
 ```
 
-| Holder size | Tokens | Yearly product | Can claim product? |
-|---|---|---|---|
-| Micro | 100 | 0.2 liters | No → USDC only |
-| Small | 1,000 | 2.1 liters | No → USDC only |
-| Medium | 5,000 | 10.3 liters | No → USDC only |
-| 10 trees | 10,000 | 20.6 liters | Yes ✓ |
-| 50 trees | 50,000 | 102.9 liters | Yes ✓ |
-| All | 100,000 | 205.8 liters | Yes ✓ |
+| Investment | Tokens | Trees | Yearly product | Can claim product? |
+|---|---|---|---|---|
+| $0.14 | 1 | 0.001 | 0.002L | No → USDC only |
+| $14.40 | 100 | 0.1 | 0.2L | No → USDC only |
+| $144 | 1,000 | 1 | 2.1L | No → USDC only |
+| $360 | 2,500 | 2.5 | 5.1L | Yes ✓ |
+| $1,440 | 10,000 | 10 | 20.6L | Yes ✓ |
+| $14,400 | 100,000 | 100 | 205.8L | Yes ✓ |
 
 Users below minimum can:
 1. **Redeem USDC** (always available, no minimum)

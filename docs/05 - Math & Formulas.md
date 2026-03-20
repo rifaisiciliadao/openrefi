@@ -288,7 +288,7 @@ sustainableYears = initialCapital / max(0, annualCosts - annualRevenue)
 | `pricePerToken` | 3-5yr payback recommended | $0.144 |
 | `maxSupply` | any | 100,000 |
 | `seasonDuration` | ≥ 365 days | 365 days |
-| `minProductClaim` | any (in product units) | 20 liters |
+| `minProductClaim` | any (in product units) | 5 liters |
 
 ### Protocol Constants (Fixed)
 
