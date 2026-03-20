@@ -76,7 +76,9 @@ type Campaign @entity {
   campaignToken: Bytes!
   yieldToken: Bytes!
   pricePerToken: BigDecimal!
-  maxSupply: BigInt!
+  minCap: BigInt!
+  maxCap: BigInt!
+  fundingDeadline: BigInt!
   currentSupply: BigInt!
   totalStaked: BigInt!
   seasonDuration: BigInt!
@@ -160,7 +162,10 @@ type User @entity {
 
 | Contract Event | Subgraph Action |
 |---|---|
-| `CampaignCreated` | Create Campaign entity |
+| `CampaignCreated` | Create Campaign entity (state: Funding) |
+| `CampaignActivated` | Update Campaign.state to Active |
+| `BuybackTriggered` | Update Campaign.state to Buyback |
+| `BuybackClaimed` | Track refund per user, update Campaign.currentSupply |
 | `AcceptedTokenAdded` | Create AcceptedToken entity |
 | `AcceptedTokenRemoved` | Remove AcceptedToken entity |
 | `TokensPurchased` | Update Campaign.currentSupply (includes paymentToken + amount) |

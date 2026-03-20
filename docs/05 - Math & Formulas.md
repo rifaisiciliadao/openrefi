@@ -308,7 +308,9 @@ sustainableYears = initialCapital / max(0, annualCosts - annualRevenue)
 | Parameter | Constraint | Example |
 |---|---|---|
 | `pricePerToken` | 3-5yr payback recommended | $0.144 |
-| `maxSupply` | any | 100,000 |
+| `minCap` | any (in tokens) | 50,000 |
+| `maxCap` | any (in tokens) | 100,000 |
+| `fundingDeadline` | any | 90 days from launch |
 | `seasonDuration` | ≥ 365 days | 365 days |
 | `minProductClaim` | any (in product units) | 5 liters |
 

@@ -72,8 +72,10 @@ GROSS HARVEST (physical, off-chain)
 ## Campaign Parameters
 
 ### Producer Sets
-- **Token price** — fixed price per token
-- **Max supply** — total tokens (1,000 per asset)
+- **Token price** — fixed price per token (USD denominated)
+- **Min cap** — minimum tokens to sell for campaign to proceed
+- **Max cap** — maximum tokens (1,000 per asset)
+- **Funding deadline** — deadline to reach min cap
 - **Season duration** — minimum 1 year (365 days)
 - **Minimum product claim** — e.g., 5 liters for olive oil
 
@@ -120,19 +122,34 @@ Recommended payback range: **3-5 years** (20-33% annual ROI)
 ## Flow
 
 ```
-1. CAMPAIGN LAUNCHES
-   Producer sets: token price, max supply, season duration (≥ 1 year),
-                  minimum product claim amount
+0. CAMPAIGN CREATED
+   Producer sets: token price, min cap, max cap, funding deadline,
+                  season duration (≥ 1 year), minimum product claim amount
+   → Campaign enters FUNDING state
+
+1. FUNDING PHASE
    → Users buy $CAMPAIGN with any accepted ERC20 (USDC, WETH, etc.)
    → Price set per token: fixed rate or via Chainlink oracle
+   → Funds held in escrow (contract), producer cannot access them
+   → No staking during funding — just fundraising
 
-2. STAKING
+2. MIN CAP REACHED → ACTIVE
+   → Funds released to producer
+   → Staking activates, yield accrual begins
+   → Purchases continue until max cap
+
+   OR: FUNDING DEADLINE PASSED, MIN CAP NOT REACHED → BUYBACK
+   → Users call buyback() → full refund at original purchase price
+   → Refund in the same token they paid with
+   → $CAMPAIGN burned on refund
+
+3. STAKING (only in ACTIVE state)
    → Users stake $CAMPAIGN → earn $YIELD over time
    → Yield rate is high early (5x) and decreases as campaign fills
-   → Users can stake and unstake multiple times
+   → Users can open multiple positions, manage each separately
    → Non-stakers hold or trade but earn nothing
 
-3. EARLY UNSTAKE
+4. EARLY UNSTAKE
    → Linear penalty on $CAMPAIGN principal (burned)
    → ALL accumulated $YIELD forfeited
    → If no liquidity → unstaking queue (FIFO, funded by new buyers)

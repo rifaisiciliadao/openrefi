@@ -21,16 +21,19 @@ Registry and deployer for new campaigns.
 - Enforces protocol constants: dynamic yield rate (5→1 linear decay), linear penalty, 90-day USDC deposit window, 30% producer share (off-chain), 2% protocol fee (on-chain), 1,000 tokens per asset
 
 #### 2. `Campaign`
-Handles token sales with multi-token support and routes funds.
+Handles token sales with multi-token support, escrow, and cap management.
 
 **State:**
 - `pricePerToken` — base price denominated in USD (e.g., $0.144)
-- `maxSupply` — max tokens mintable
+- `minCap` — minimum tokens that must be sold for campaign to proceed
+- `maxCap` — maximum tokens mintable (= maxSupply)
 - `currentSupply` — tokens minted so far
+- `fundingDeadline` — deadline to reach minCap
 - `seasonDuration` — season length (≥ 365 days)
-- `state` — enum: Active, Ended
+- `state` — enum: Funding, Active, Buyback, Ended
 - `acceptedTokens[]` — list of accepted ERC20 tokens for payment
 - `tokenConfig[address]` — per-token config: pricing mode (fixed or oracle), fixed rate, oracle feed address
+- `purchases[user][token]` — tracks each user's payment amounts per token (for buyback refunds)
 
 **Multi-Token Payment:**
 ```
@@ -51,10 +54,34 @@ DAI:   FIXED mode, 1:1 with base price → 0.144 DAI = 1 $CAMPAIGN
 Custom: FIXED mode, producer sets rate manually
 ```
 
+**Campaign Lifecycle:**
+```
+1. FUNDING state
+   → Users buy tokens → funds held in escrow (contract)
+   → No staking, no yield — just fundraising
+   → Producer cannot access funds
+
+2. Min cap reached → transitions to ACTIVE
+   → Funds released to producer
+   → Staking activates, yield accrual begins
+   → Purchases continue until max cap
+
+3. Max cap reached → no more purchases
+
+4. Funding deadline passed, min cap NOT reached → transitions to BUYBACK
+   → Staking never activated
+   → Users call buyback() to refund at original purchase price
+   → Each user gets back exactly what they paid, in the same token they paid with
+   → $CAMPAIGN tokens burned on refund
+```
+
 **Functions:**
 - `addAcceptedToken(tokenAddress, pricingMode, fixedRate, oracleFeed)` — producer adds a payment token
 - `removeAcceptedToken(tokenAddress)` — producer removes a payment token
-- `buy(tokenAddress, amount)` — pay with any accepted ERC20, mint $CAMPAIGN based on pricing mode, routes funds to unstake queue first
+- `buy(tokenAddress, amount)` — pay with any accepted ERC20, mint $CAMPAIGN. Funds held in escrow until min cap reached, then routes to unstake queue + producer
+- `buyback()` — refund user at original purchase price if campaign is in Buyback state. Burns $CAMPAIGN, returns payment tokens
+- `activateCampaign()` — called when min cap reached (can be automatic or manual). Releases funds, enables staking
+- `triggerBuyback()` — callable by anyone after funding deadline if min cap not reached. Transitions to Buyback state
 - `getPrice(tokenAddress, campaignAmount)` — view: returns cost in the specified token for X $CAMPAIGN
 - `emergencyPause()` — pause all operations
 
@@ -67,6 +94,16 @@ If ORACLE mode:
   usdPrice = oracle.latestAnswer()  (e.g., WETH/USD)
   paymentValueUSD = paymentAmount × usdPrice
   tokensOut = paymentValueUSD / pricePerToken
+```
+
+**Buyback Refund:**
+```
+User paid 0.05 WETH for 1,000 $CAMPAIGN
+Campaign fails to reach min cap
+User calls buyback() → burns 1,000 $CAMPAIGN, receives 0.05 WETH back
+
+Refund is in the SAME token the user originally paid with,
+at the SAME amount (not recalculated via oracle).
 ```
 
 **Note:** $CAMPAIGN is only minted during initial sales. No new minting after that. Supply is strictly deflationary.
@@ -242,7 +279,9 @@ event CampaignCreated(
     address stakingVault,
     address harvestManager,
     uint256 pricePerToken,
-    uint256 maxSupply,
+    uint256 minCap,
+    uint256 maxCap,
+    uint256 fundingDeadline,
     uint256 seasonDuration,
     uint256 minProductClaim,
     uint256 createdAt
@@ -280,6 +319,27 @@ event AcceptedTokenRemoved(
 event CampaignStateChanged(
     uint8 oldState,
     uint8 newState
+);
+
+// Emitted when campaign transitions to Active (min cap reached)
+event CampaignActivated(
+    uint256 totalRaised,
+    uint256 tokensSold
+);
+
+// Emitted when campaign transitions to Buyback (min cap not reached by deadline)
+event BuybackTriggered(
+    uint256 totalRaised,
+    uint256 tokensSold,
+    uint256 minCap
+);
+
+// Emitted when a user claims a buyback refund
+event BuybackClaimed(
+    address indexed user,
+    address indexed paymentToken,
+    uint256 campaignTokensBurned,
+    uint256 refundAmount
 );
 
 // Emitted on emergency pause/unpause
