@@ -8,7 +8,7 @@ chain: CELO
 # OpenReFi — Platform Overview
 
 ## Vision
-A regenerative finance platform on **CELO** that enables crowdfunding campaigns for real-world agricultural products. Using a "millisimali" model (1,000 tokens per tree/asset), investors buy fractional positions in agricultural production. Tokens are staked to earn seasonal $YIELD, which is burned to claim physical product or USDC. Tree health is verified via **Silvi.earth** dMRV reports.
+A regenerative finance platform on **CELO** that enables crowdfunding campaigns for real-world agricultural products. Using a fractionalization model (1,000 tokens per tree/asset), investors buy fractional positions in agricultural production. Tokens are staked to earn seasonal $YIELD, which is burned to claim physical product or USDC. Tree health is verified via **Silvi.earth** dMRV reports.
 
 ## Why CELO?
 - **OP Stack L2** — sub-cent gas fees, 1-second block times
@@ -26,7 +26,7 @@ $CAMPAIGN = the tree (permanent, productive, deflationary)
 $YIELD    = the fruit (seasonal, consumable, burned on redemption)
 ```
 
-## Millisimali Fractionalization
+## Fractionalization
 
 Each tree/asset is divided into **1,000 tokens**, making micro-investment accessible:
 
@@ -45,7 +45,7 @@ Gross Harvest → 30% producer (off-chain) → 70% reported → 2% protocol → 
 ## High-Level Flow
 
 ```
-1. BUY           → Users buy $CAMPAIGN tokens (millisimali fractions)
+1. BUY           → Users buy $CAMPAIGN tokens (fractionalized tokens)
 2. STAKE         → Stake $CAMPAIGN → earn $YIELD over the season
 3. HARVEST       → Producer reports harvest value (after keeping 30%)
 4. VERIFY        → Silvi.earth dMRV reports confirm tree health
@@ -56,7 +56,7 @@ Gross Harvest → 30% producer (off-chain) → 70% reported → 2% protocol → 
 
 ## Key Design Decisions (Finalized)
 - **Two tokens**: $CAMPAIGN (seat) + $YIELD (harvest claim)
-- **Millisimali**: 1,000 tokens per tree/asset
+- **Fractionalization**: 1,000 tokens per tree/asset
 - **$CAMPAIGN**: strictly deflationary, only minted during initial sale
 - **$YIELD**: burned on every redemption (product or USDC)
 - **Revenue split**: 30% producer (off-chain), 2% protocol fee, 68.6% to holders

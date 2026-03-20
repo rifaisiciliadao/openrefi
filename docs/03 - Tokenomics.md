@@ -39,7 +39,7 @@ $YIELD    = the fruit (seasonal, consumable)
 You don't cut down the tree to eat the fruit.
 ```
 
-## Millisimali Fractionalization
+## Fractionalization
 
 Each tree/asset is divided into **1,000 tokens**:
 

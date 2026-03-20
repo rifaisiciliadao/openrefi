@@ -36,7 +36,7 @@ PHYSICAL HARVEST: 300 liters ($6,000)
    └─ 98% TO HOLDERS: 205.8 liters ($4,116)
 ```
 
-## Millisimali Access
+## Fractionalized Access
 
 | Investment | Tokens | Trees | Yearly product | Can claim product? |
 |---|---|---|---|---|
