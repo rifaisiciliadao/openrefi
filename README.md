@@ -1,6 +1,6 @@
-# OpenReFi
+# GrowFi
 
-OpenReFi is a regenerative finance protocol for crowdfunding real-world agricultural production. Investors buy fractionalized tokens representing productive assets (e.g., olive trees), stake them to earn seasonal yield, and redeem harvest as physical product or USDC.
+GrowFi is a regenerative finance protocol for crowdfunding real-world agricultural production. Investors buy fractionalized tokens representing productive assets (e.g., olive trees), stake them to earn seasonal yield, and redeem harvest as physical product or USDC.
 
 ## About this repository
 

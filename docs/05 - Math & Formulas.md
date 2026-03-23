@@ -80,11 +80,11 @@ paymentValueUSD = 0.05 × $2,880 = $144
 tokensOut = $144 / $0.144 = 1,000 $CAMPAIGN (1 tree)
 ```
 
-### Purchase routing priority
+### Purchase fund routing
 
 ```
-1. incomingFunds → drain unstaking queue (FIFO)
-2. remainingFunds → contract / producer
+During FUNDING state: funds held in escrow
+During ACTIVE state:  funds released to producer
 ```
 
 ---
@@ -235,31 +235,15 @@ usdcFromSales == usdcNeeded  (self-balancing)
 elapsedRatio   = (timeNow - stakeStartTime) / seasonDuration
 penaltyRate    = 1 - elapsedRatio
 penaltyAmount  = stakedBalance(user) × penaltyRate   → BURNED
-returnedAmount = stakedBalance(user) - penaltyAmount  → returned or queued
-ALL $YIELD FORFEITED
+returnedAmount = stakedBalance(user) - penaltyAmount  → returned to user instantly
+ALL un-withdrawn $YIELD for this position is FORFEITED (not minted)
 ```
+
+Unstaking is always instant — the vault holds all staked tokens and can always return them. No queue needed. To exit for cash, sell $CAMPAIGN on DEX.
 
 ---
 
-## 10. Unstaking Queue (FIFO)
-
-```
-Queue = [(user₁, owedAmount₁), (user₂, owedAmount₂), ...]
-
-On new purchase (incomingFunds):
-  while incomingFunds > 0 AND queue not empty:
-    head = queue[0]
-    fillAmount = min(incomingFunds, head.owedAmount)
-    transfer(fillAmount, head.user)
-    head.owedAmount -= fillAmount
-    incomingFunds -= fillAmount
-    if head.owedAmount == 0:
-      queue.removeFirst()
-```
-
----
-
-## 11. Deflationary Pressure
+## 10. Deflationary Pressure
 
 $CAMPAIGN is strictly deflationary:
 
@@ -275,7 +259,7 @@ valuePerToken(season N) = holderPool / activeStakers(season N)
 
 ---
 
-## 12. Compounding Model
+## 11. Compounding Model
 
 ```
 activeStakers(N) = activeStakers(N-1) × (1 - exitRate) - penaltyBurns(N)
@@ -288,7 +272,7 @@ breakeven when: cumulativeReturn(N) ≥ tokenPrice
 
 ---
 
-## 13. Producer Sustainability
+## 12. Producer Sustainability
 
 ```
 initialCapital    = tokenPrice × totalSupply
@@ -301,7 +285,7 @@ sustainableYears = initialCapital / max(0, annualCosts - annualRevenue)
 
 ---
 
-## 14. Parameters Summary
+## 13. Parameters Summary
 
 ### Producer Sets
 

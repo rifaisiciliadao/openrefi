@@ -4,7 +4,7 @@ tags:
   - overview
 status: defined
 ---
-# OpenReFi — Platform Overview
+# GrowFi — Platform Overview
 
 ## Vision
 A regenerative finance platform that enables crowdfunding campaigns for real-world agricultural products. Using a fractionalization model (1,000 tokens per tree/asset), investors buy fractional positions in agricultural production. Tokens are staked to earn seasonal $YIELD, which is burned to claim physical product or USDC. Tree health is verified via **Silvi.earth** dMRV reports.
