@@ -239,11 +239,51 @@ returnedAmount = stakedBalance(user) - penaltyAmount  → returned to user insta
 ALL un-withdrawn $YIELD for this position is FORFEITED (not minted)
 ```
 
-Unstaking is always instant — the vault holds all staked tokens and can always return them. No queue needed. To exit for cash, sell $CAMPAIGN on DEX.
+Unstaking is always instant — the vault holds all staked tokens and can always return them.
+
+To exit for cash, two options:
+1. Sell $CAMPAIGN on DEX
+2. Use the Campaign sell-back queue (see section 10)
 
 ---
 
-## 10. Deflationary Pressure
+## 10. Sell-Back Queue (FIFO)
+
+Users who want to convert $CAMPAIGN back to payment tokens after unstaking.
+
+```
+Queue = [(user₁, amount₁), (user₂, amount₂), ...]
+
+On new purchase by buyer (buy(tokenAddress, paymentAmount)):
+  while paymentAmount > 0 AND queue is not empty:
+    head = queue[0]
+    // Calculate how much $CAMPAIGN the payment buys
+    tokensFromPayment = paymentAmount / priceInToken
+    fillAmount = min(tokensFromPayment, head.amount)
+
+    // Pay the seller
+    paymentToSeller = fillAmount × priceInToken
+    transfer(paymentToken, paymentToSeller, head.user)
+
+    // Burn seller's $CAMPAIGN, mint fresh to buyer
+    burn(head.amount of $CAMPAIGN)
+    mint(fillAmount of $CAMPAIGN to buyer)
+
+    head.amount -= fillAmount
+    paymentAmount -= paymentToSeller
+    if head.amount == 0:
+      queue.removeFirst()
+
+  // Remaining payment mints new tokens (if under maxCap)
+  if paymentAmount > 0:
+    mint new $CAMPAIGN to buyer
+```
+
+Net supply effect: zero (seller's tokens burned, buyer gets fresh mint).
+
+---
+
+## 11. Deflationary Pressure
 
 $CAMPAIGN is strictly deflationary:
 
@@ -259,7 +299,7 @@ valuePerToken(season N) = holderPool / activeStakers(season N)
 
 ---
 
-## 11. Compounding Model
+## 12. Compounding Model
 
 ```
 activeStakers(N) = activeStakers(N-1) × (1 - exitRate) - penaltyBurns(N)
@@ -272,7 +312,7 @@ breakeven when: cumulativeReturn(N) ≥ tokenPrice
 
 ---
 
-## 12. Producer Sustainability
+## 13. Producer Sustainability
 
 ```
 initialCapital    = tokenPrice × totalSupply
@@ -285,7 +325,7 @@ sustainableYears = initialCapital / max(0, annualCosts - annualRevenue)
 
 ---
 
-## 13. Parameters Summary
+## 14. Parameters Summary
 
 ### Producer Sets
 

@@ -75,14 +75,36 @@ Custom: FIXED mode, producer sets rate manually
    → $CAMPAIGN tokens burned on refund
 ```
 
+**Sell-Back Queue:**
+After activation, the producer has withdrawn the funds. Users who want to exit for cash can sell their $CAMPAIGN back via a FIFO queue funded by new buyers.
+
+```
+1. User unstakes from StakingVault → gets $CAMPAIGN back (minus penalty)
+2. User calls Campaign.sellBack(amount) → $CAMPAIGN deposited into sell-back queue
+3. New buyer calls buy() → payment goes to queued seller FIRST
+4. Seller's $CAMPAIGN is burned, new $CAMPAIGN minted to buyer (net zero supply change)
+5. If no new buyers → seller waits in queue
+6. Seller can cancel sell-back and get $CAMPAIGN back if not yet filled
+```
+
+**Queue rules:**
+- FIFO — first to request, first to be paid
+- Partial fills allowed
+- New purchases fill the queue before minting fresh tokens
+- Seller receives payment in whatever token the new buyer paid with
+- Cancel = get $CAMPAIGN back (if not yet filled)
+
 **Functions:**
 - `addAcceptedToken(tokenAddress, pricingMode, fixedRate, oracleFeed)` — producer adds a payment token
 - `removeAcceptedToken(tokenAddress)` — producer removes a payment token
-- `buy(tokenAddress, amount)` — pay with any accepted ERC20, mint $CAMPAIGN. Funds held in escrow until min cap reached, then routes to unstake queue + producer
-- `buyback()` — refund user at original purchase price if campaign is in Buyback state. Burns $CAMPAIGN, returns payment tokens
-- `activateCampaign()` — called when min cap reached (can be automatic or manual). Releases funds, enables staking
+- `buy(tokenAddress, amount)` — pay with any accepted ERC20. During Funding: held in escrow. During Active: fills sell-back queue first, then mints new tokens (up to maxCap)
+- `sellBack(amount)` — deposit $CAMPAIGN into sell-back queue. Receives payment tokens when a new buyer fills the order
+- `cancelSellBack()` — cancel pending sell-back, get $CAMPAIGN back (unfilled portion)
+- `buyback()` — refund at original purchase price if campaign is in Buyback state (failed funding). Burns $CAMPAIGN, returns payment tokens
+- `activateCampaign()` — called when min cap reached (can be automatic or manual). Releases funds to producer, enables staking
 - `triggerBuyback()` — callable by anyone after funding deadline if min cap not reached. Transitions to Buyback state
 - `getPrice(tokenAddress, campaignAmount)` — view: returns cost in the specified token for X $CAMPAIGN
+- `getSellBackQueue()` — view: returns queue depth and positions
 - `emergencyPause()` — pause all operations
 
 **Price Calculation:**
@@ -343,6 +365,29 @@ event BuybackClaimed(
 );
 
 // Emitted on emergency pause/unpause
+// Emitted when a user enters the sell-back queue
+event SellBackRequested(
+    address indexed user,
+    uint256 amount,
+    uint256 queuePosition
+);
+
+// Emitted when a sell-back order is (partially) filled by a new buyer
+event SellBackFilled(
+    address indexed seller,
+    address indexed buyer,
+    address paymentToken,
+    uint256 campaignTokenAmount,
+    uint256 paymentAmount,
+    uint256 remainingInQueue
+);
+
+// Emitted when a user cancels their sell-back request
+event SellBackCancelled(
+    address indexed user,
+    uint256 amountReturned
+);
+
 event CampaignPaused(bool paused);
 ```
 

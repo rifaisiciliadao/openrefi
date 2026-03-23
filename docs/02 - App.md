@@ -141,10 +141,21 @@ type Claim @entity {
   claimedAt: BigInt!
 }
 
+type SellBackOrder @entity {
+  id: ID!
+  campaign: Campaign!
+  user: Bytes!
+  amount: BigInt!
+  filledAmount: BigInt!
+  status: String!  # "pending", "filled", "cancelled"
+  requestedAt: BigInt!
+}
+
 type User @entity {
   id: ID!
   positions: [Position!]! @derivedFrom(field: "user")
   claims: [Claim!]! @derivedFrom(field: "user")
+  sellBackOrders: [SellBackOrder!]! @derivedFrom(field: "user")
 }
 ```
 
@@ -159,6 +170,9 @@ type User @entity {
 | `AcceptedTokenAdded` | Create AcceptedToken entity |
 | `AcceptedTokenRemoved` | Remove AcceptedToken entity |
 | `TokensPurchased` | Update Campaign.currentSupply (includes paymentToken + amount) |
+| `SellBackRequested` | Create SellBackOrder entity |
+| `SellBackFilled` | Update SellBackOrder (partial/full fill) |
+| `SellBackCancelled` | Update SellBackOrder status to cancelled |
 | `Staked` | Create Position entity, update Campaign.totalStaked + currentYieldRate |
 | `Unstaked` | Update Position (deactivate), update Campaign.totalStaked + currentYieldRate |
 | `YieldWithdrawn` | Update Position.yieldEarned |

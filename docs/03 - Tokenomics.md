@@ -149,18 +149,24 @@ Recommended payback range: **3-5 years** (20-33% annual ROI)
    → Users can open multiple positions, manage each separately
    → Non-stakers hold or trade but earn nothing
 
-4. EARLY UNSTAKE
-   → Linear penalty on $CAMPAIGN principal (burned)
-   → ALL accumulated $YIELD forfeited
-   → If no liquidity → unstaking queue (FIFO, funded by new buyers)
+4. EARLY UNSTAKE (two steps)
+   Step 1: unstake(positionId) on StakingVault
+     → Linear penalty on $CAMPAIGN principal (burned)
+     → ALL un-withdrawn $YIELD forfeited
+     → Remaining $CAMPAIGN returned to user instantly
+   Step 2 (optional): sellBack(amount) on Campaign
+     → $CAMPAIGN deposited into sell-back queue
+     → Filled when new buyer comes (FIFO)
+     → Or cancel and keep $CAMPAIGN
+     → Or sell on DEX instead
 
-4. SEASON ENDS / HARVEST
+5. SEASON ENDS / HARVEST
    → Producer takes 30% at origin (off-chain)
    → Reports remaining 70% value to platform
    → 2% protocol fee deducted
    → $YIELD floor price = reportedValue × 0.98 / totalYieldSupply
 
-5. REDEMPTION (Two-Step)
+6. REDEMPTION (Two-Step, within claim window)
    Step 1: User declares product or USDC → $YIELD burned
    Step 2a (product): Merkle claim + shipping (paid by user)
      → Only if claimable amount ≥ minimum product claim
@@ -168,11 +174,11 @@ Recommended payback range: **3-5 years** (20-33% annual ROI)
    Step 2b (USDC): Producer deposits within 90 days → user claims
      → No minimum for USDC redemption
 
-6. RESTAKE FOR NEXT SEASON
+7. RESTAKE FOR NEXT SEASON
    → $CAMPAIGN stays staked → earns fresh $YIELD
    → Compound effect: as others exit, your share grows
 
-7. PERMANENT EXIT
+8. PERMANENT EXIT
    → Unstake $CAMPAIGN + sell on DEX or let it be burned
 ```
 
