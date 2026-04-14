@@ -81,7 +81,7 @@ All contracts are Solidity 0.8.24, built against OpenZeppelin v5, compiled with 
 - **No admin withdrawal** on campaign escrows. No upgrade proxy. No rescue function.
 - **2 % protocol fee** is taken on activation and on harvest report; never on post-activation secondary-market buys.
 
-### Test suite (78 tests, all green)
+### Test suite (95 tests, all green)
 
 | Suite | Tests | Purpose |
 |---|---|---|
@@ -92,6 +92,8 @@ All contracts are Solidity 0.8.24, built against OpenZeppelin v5, compiled with 
 | `IntegrationTest` | 5 | Happy-path multi-contract flows. |
 | `E2ETest` | 1 | Ten-phase full-lifecycle simulation with multi-investor, multi-token, multi-season, real Merkle tree, pro-rata USDC deposits. |
 | `RedTeamTest` | 39 | Adversarial attack attempts across every surface: forged Merkle proofs, oracle manipulation, unauthorized mint/burn, double-redemption, season replay, factory setter re-hijack, pause bypass, escrow drain, max-cap bypass, MEV-style sell-back gaming, USDC deadline bypass, griefing with max positions, dust-redemption, etc. Each passing test is a blocked exploit. |
+| `FuzzTest` | 8 | Property-based tests (256 runs each, ~2k random inputs): buyback refund exactness, maxCap bound, sell-back supply preservation, unstake penalty monotonicity, yield linearity in stake amount, USDC pro-rata with partial deposits, escrow sums, purchased-tokens accounting. |
+| `InvariantsTest` | 9 | Stateful fuzzing via Handler pattern (64 runs × 50 depth = ~28k random calls per run). Global invariants checked after every action: vault balance == totalStaked, sum(active positions) == totalStaked, currentSupply ≥ totalSupply with burn accounting, sum(pendingSellBack) == queue depth, escrow == sum(purchases) in Funding, campaign holds ≥ queued sell-back, currentSupply ≤ maxCap, state monotonic. |
 
 Run `forge test --summary` to see the full matrix.
 
@@ -125,9 +127,10 @@ Deployment script lives at `script/Deploy.s.sol`.
 
 ## Status
 
-- Smart contracts implemented and tested: **78/78 passing**.
+- Smart contracts implemented and tested: **95/95 passing** (unit + integration + E2E + adversarial + fuzz + stateful invariants).
 - Internal security review: complete (fixes merged).
 - External audit: **pending**. Do not deploy to mainnet until audit is finalized.
+- Fork tests against mainnet USDC + Chainlink feeds: not yet implemented.
 - Subgraph / indexer: out of scope of this repo (see event specs in `Campaign.sol`, `StakingVault.sol`, `HarvestManager.sol`).
 
 ---
