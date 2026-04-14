@@ -44,6 +44,13 @@ contract Campaign is ReentrancyGuard, Pausable {
         uint256 amount; // $CAMPAIGN tokens remaining in this order
     }
 
+    // --- Constants ---
+
+    /// @notice Hard cap on the number of payment tokens ever added to a campaign.
+    ///         Bounds the gas cost of the _activate loop so a malicious or
+    ///         careless producer cannot brick activation by adding too many tokens.
+    uint256 public constant MAX_ACCEPTED_TOKENS = 10;
+
     // --- State ---
 
     CampaignToken public campaignToken;
@@ -130,6 +137,7 @@ contract Campaign is ReentrancyGuard, Pausable {
     error NoSellBackPending();
     error StaleOraclePrice();
     error NegativeOraclePrice();
+    error TooManyAcceptedTokens();
 
     // --- Modifiers ---
 
@@ -213,6 +221,7 @@ contract Campaign is ReentrancyGuard, Pausable {
     {
         require(tokenAddress != address(0), "Zero token address");
         require(!tokenConfigs[tokenAddress].active, "Already accepted");
+        if (acceptedTokenList.length >= MAX_ACCEPTED_TOKENS) revert TooManyAcceptedTokens();
         if (pricingMode == PricingMode.Fixed) {
             require(fixedRate > 0, "Zero fixedRate");
         } else {
