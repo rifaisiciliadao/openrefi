@@ -65,7 +65,9 @@ contract StakingVault is ReentrancyGuard, Pausable {
 
     // --- Events ---
 
-    event Staked(address indexed user, uint256 indexed positionId, uint256 amount, uint256 newTotalStaked, uint256 newYieldRate);
+    event Staked(
+        address indexed user, uint256 indexed positionId, uint256 amount, uint256 newTotalStaked, uint256 newYieldRate
+    );
     event Unstaked(
         address indexed user,
         uint256 indexed positionId,
@@ -206,7 +208,9 @@ contract StakingVault is ReentrancyGuard, Pausable {
         }
 
         uint256 newRate = currentYieldRate();
-        emit Unstaked(msg.sender, positionId, stakedAmount, penaltyAmount, returnedAmount, yieldForfeited, totalStaked, newRate);
+        emit Unstaked(
+            msg.sender, positionId, stakedAmount, penaltyAmount, returnedAmount, yieldForfeited, totalStaked, newRate
+        );
         emit YieldRateUpdated(newRate, totalStaked, maxSupply);
     }
 

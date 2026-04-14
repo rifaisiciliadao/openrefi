@@ -100,7 +100,9 @@ contract Campaign is ReentrancyGuard, Pausable {
     event CampaignStateChanged(uint8 oldState, uint8 newState);
     event CampaignActivated(uint256 totalRaised, uint256 tokensSold);
     event BuybackTriggered(uint256 totalRaised, uint256 tokensSold, uint256 minCap_);
-    event BuybackClaimed(address indexed user, address indexed paymentToken, uint256 campaignTokensBurned, uint256 refundAmount);
+    event BuybackClaimed(
+        address indexed user, address indexed paymentToken, uint256 campaignTokensBurned, uint256 refundAmount
+    );
 
     event SellBackRequested(address indexed user, uint256 amount, uint256 queuePosition);
     event SellBackFilled(
@@ -205,12 +207,10 @@ contract Campaign is ReentrancyGuard, Pausable {
 
     // --- Payment Token Management ---
 
-    function addAcceptedToken(
-        address tokenAddress,
-        PricingMode pricingMode,
-        uint256 fixedRate,
-        address oracleFeed
-    ) external onlyProducer {
+    function addAcceptedToken(address tokenAddress, PricingMode pricingMode, uint256 fixedRate, address oracleFeed)
+        external
+        onlyProducer
+    {
         require(tokenAddress != address(0), "Zero token address");
         require(!tokenConfigs[tokenAddress].active, "Already accepted");
         if (pricingMode == PricingMode.Fixed) {
@@ -219,10 +219,7 @@ contract Campaign is ReentrancyGuard, Pausable {
             require(oracleFeed != address(0), "Zero oracle address");
         }
         tokenConfigs[tokenAddress] = TokenConfig({
-            pricingMode: pricingMode,
-            fixedRate: fixedRate,
-            oracleFeed: AggregatorV3Interface(oracleFeed),
-            active: true
+            pricingMode: pricingMode, fixedRate: fixedRate, oracleFeed: AggregatorV3Interface(oracleFeed), active: true
         });
         acceptedTokenList.push(tokenAddress);
         emit AcceptedTokenAdded(tokenAddress, "", uint8(pricingMode), fixedRate, oracleFeed);

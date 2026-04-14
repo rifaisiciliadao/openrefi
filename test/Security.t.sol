@@ -72,7 +72,7 @@ contract SecurityTest is Test {
         vm.prank(producer);
         campaign.startSeason(1);
 
-        (,,,,bool active,) = stakingVault.seasons(1);
+        (,,,, bool active,) = stakingVault.seasons(1);
         assertTrue(active);
     }
 
@@ -86,7 +86,7 @@ contract SecurityTest is Test {
         vm.prank(producer);
         campaign.endSeason();
 
-        (,,,,bool active,) = stakingVault.seasons(1);
+        (,,,, bool active,) = stakingVault.seasons(1);
         assertFalse(active);
     }
 
@@ -101,7 +101,9 @@ contract SecurityTest is Test {
 
     function test_cannotStartSeasonInFunding() public {
         vm.prank(producer);
-        vm.expectRevert(abi.encodeWithSelector(Campaign.InvalidState.selector, Campaign.State.Active, Campaign.State.Funding));
+        vm.expectRevert(
+            abi.encodeWithSelector(Campaign.InvalidState.selector, Campaign.State.Active, Campaign.State.Funding)
+        );
         campaign.startSeason(1);
     }
 
