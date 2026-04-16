@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GrowFi - Regenerative Finance for a Living Planet</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "on-primary-fixed": "#002109",
+                            "inverse-primary": "#62df7d",
+                            "on-secondary-fixed-variant": "#004395",
+                            "surface-bright": "#f7f9fb",
+                            "on-secondary-container": "#fefcff",
+                            "tertiary": "#825100",
+                            "surface-tint": "#006e2d",
+                            "inverse-surface": "#2d3133",
+                            "error-container": "#ffdad6",
+                            "on-primary-container": "#f7fff2",
+                            "outline": "#6e7b6c",
+                            "surface-container-low": "#f2f4f6",
+                            "on-surface-variant": "#3e4a3d",
+                            "on-tertiary-container": "#fffbff",
+                            "error": "#ba1a1a",
+                            "on-primary": "#ffffff",
+                            "on-secondary-fixed": "#001a42",
+                            "surface-container-lowest": "#ffffff",
+                            "on-tertiary-fixed": "#2a1700",
+                            "primary-fixed-dim": "#62df7d",
+                            "surface-dim": "#d8dadc",
+                            "background": "#f7f9fb",
+                            "primary-fixed": "#7ffc97",
+                            "secondary-fixed": "#d8e2ff",
+                            "on-tertiary-fixed-variant": "#653e00",
+                            "secondary-container": "#2170e4",
+                            "primary-container": "#00873a",
+                            "on-error-container": "#93000a",
+                            "secondary": "#0058be",
+                            "primary": "#006b2c",
+                            "surface": "#f7f9fb",
+                            "on-surface": "#191c1e",
+                            "on-primary-fixed-variant": "#005320",
+                            "secondary-fixed-dim": "#adc6ff",
+                            "inverse-on-surface": "#eff1f3",
+                            "on-secondary": "#ffffff",
+                            "surface-container-high": "#e6e8ea",
+                            "surface-container": "#eceef0",
+                            "on-background": "#191c1e",
+                            "surface-container-highest": "#e0e3e5",
+                            "tertiary-fixed-dim": "#ffb95f",
+                            "tertiary-fixed": "#ffddb8",
+                            "on-error": "#ffffff",
+                            "surface-variant": "#e0e3e5",
+                            "on-tertiary": "#ffffff",
+                            "tertiary-container": "#a36700",
+                            "outline-variant": "#bdcaba"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "1rem",
+                            "lg": "2rem",
+                            "xl": "3rem",
+                            "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                            "headline": [
+                                    "Inter"
+                            ],
+                            "body": [
+                                    "Inter"
+                            ],
+                            "label": [
+                                    "Inter"
+                            ]
+                    }
+            },
+                },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .regen-gradient { background: linear-gradient(135deg, #006b2c 0%, #00873a 100%); }
+        .regen-text-gradient { background: linear-gradient(135deg, #006b2c 0%, #00873a 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col antialiased">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md">
+<div class="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-green-700 dark:text-green-500" style="font-variation-settings: 'FILL' 1;">psychiatry</span>
+<span class="text-2xl font-black tracking-tighter text-green-700 dark:text-green-500 font-headline">GrowFi</span>
+</div>
+<div class="hidden md:flex space-x-8">
+<a class="text-green-700 dark:text-green-400 font-bold border-b-2 border-green-600 pb-1 text-sm tracking-wide font-label" href="#">Projects</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-green-600 transition-colors text-sm tracking-wide font-label hover:opacity-80 transition-all" href="#">Ecosystem</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-green-600 transition-colors text-sm tracking-wide font-label hover:opacity-80 transition-all" href="#">Impact</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-green-600 transition-colors text-sm tracking-wide font-label hover:opacity-80 transition-all" href="#">Learn</a>
+</div>
+<button class="regen-gradient text-on-primary px-[28px] py-[12px] rounded-full font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase hover:opacity-90 transition-opacity">
+                Connect Wallet
+            </button>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow pt-32 pb-24">
+<!-- Hero Section -->
+<section class="max-w-7xl mx-auto px-8 mb-32 flex flex-col items-center text-center">
+<div class="inline-flex items-center space-x-2 bg-primary-fixed text-on-primary-fixed-variant px-4 py-1.5 rounded-full text-[0.75rem] font-semibold tracking-[0.05em] uppercase mb-8">
+<span class="material-symbols-outlined text-[1rem]">eco</span>
+<span>Regenerative Finance</span>
+</div>
+<h1 class="font-headline text-[3.5rem] font-extrabold tracking-[-0.02em] leading-tight mb-6 max-w-4xl text-on-surface">
+                Investi nella terra, raccogli i <span class="regen-text-gradient">frutti</span>
+</h1>
+<p class="font-body text-[1rem] text-on-surface-variant font-normal leading-[1.6] max-w-2xl mb-12">
+                Crowdfunding agricolo su blockchain. Acquista frazioni di alberi, guadagna rendimenti stagionali, riscatta prodotti reali.
+            </p>
+<div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+<button class="regen-gradient text-on-primary px-[28px] py-[12px] rounded-full font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
+                    Esplora Campagne
+                </button>
+<button class="bg-transparent border border-outline-variant text-primary px-[28px] py-[12px] rounded-full font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase hover:bg-surface-container-low transition-colors">
+                    Crea Campagna
+                </button>
+</div>
+</section>
+<!-- Stats Bar -->
+<section class="max-w-5xl mx-auto px-8 mb-32">
+<div class="bg-surface-container-lowest rounded-DEFAULT border border-outline-variant/15 p-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative overflow-hidden">
+<div class="absolute inset-0 bg-primary-fixed/5 pointer-events-none"></div>
+<div class="flex flex-col relative z-10">
+<span class="font-headline text-[1.75rem] font-bold text-on-surface mb-1">12</span>
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Campagne Attive</span>
+</div>
+<div class="flex flex-col relative z-10">
+<span class="font-headline text-[1.75rem] font-bold text-on-surface mb-1">€284,500</span>
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Raccolti</span>
+</div>
+<div class="flex flex-col relative z-10">
+<span class="font-headline text-[1.75rem] font-bold text-on-surface mb-1">1,847</span>
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Investitori</span>
+</div>
+<div class="flex flex-col relative z-10">
+<span class="font-headline text-[1.75rem] font-bold text-primary mb-1">4.2x</span>
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Yield Medio</span>
+</div>
+</div>
+</section>
+<!-- Campaigns Section -->
+<section class="max-w-7xl mx-auto px-8">
+<div class="flex flex-col md:flex-row justify-between items-end mb-12">
+<div>
+<h2 class="font-headline text-[1.75rem] font-bold tracking-[-0.01em] text-on-surface mb-2">Progetti Selezionati</h2>
+<p class="font-body text-[1rem] text-on-surface-variant">Partecipa a campagne rigenerative attive.</p>
+</div>
+<!-- Filter Tabs -->
+<div class="flex space-x-2 mt-6 md:mt-0 bg-surface-container-low p-1 rounded-full">
+<button class="bg-surface-container-lowest text-on-surface px-4 py-2 rounded-full font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase shadow-sm">Tutte</button>
+<button class="text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-full font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase transition-colors">In Raccolta</button>
+<button class="text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-full font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase transition-colors">Attive</button>
+<button class="text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-full font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase transition-colors">Concluse</button>
+</div>
+</div>
+<!-- Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT overflow-hidden group hover:-translate-y-1 transition-transform duration-300 relative border border-outline-variant/15">
+<div class="h-48 bg-surface-container-low relative overflow-hidden">
+<img alt="Olive grove" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="aerial view of lush olive grove in late afternoon sun with long shadows and neat rows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOlsV6ieIsgHXpK1gbhinOyXJft1rLGuIrQP__gI04yhHc29kV9zSmQiwFOnKNCBcCe-PZJPtC0N6soG14H-8DOOOqX0mKWgVAjsG2BQY-fbGzwimBia0F9IA3pbtKg_2VBk2fkZSc6EuX6VJyu3SVcye2uyk9vub0RlVVbeEPabOplxeyxRid-q2r65ThPID-dEFbbJudYpAUvi4jPmBDlIBWBJKBOhn5EejAUqN9rTSZk-cq6cxXNfcfA0gwY6nPZTiJaYYcQoh2"/>
+<div class="absolute top-4 left-4 bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full text-[0.75rem] font-semibold tracking-[0.05em] uppercase shadow-sm backdrop-blur-md">
+                            In Raccolta
+                        </div>
+</div>
+<div class="p-6">
+<h3 class="font-headline text-[1rem] font-semibold text-on-surface mb-4">Uliveto Ferrara</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between font-label text-[0.75rem] font-semibold tracking-[0.05em] text-on-surface-variant mb-2">
+<span>Progresso</span>
+<span>67%</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[67%] rounded-full"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/15">
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Yield Previsto</span>
+<span class="font-headline text-[1rem] font-bold text-primary">3.8x</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT overflow-hidden group hover:-translate-y-1 transition-transform duration-300 relative border border-outline-variant/15">
+<div class="h-48 bg-surface-container-low relative overflow-hidden">
+<img alt="Citrus orchard" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="close up of ripe oranges on a tree with vibrant green leaves against a clear blue sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvMnlG-NRJiXVuYu5rVk1oN7i4uI2IyQLE8r0AzKReKytdwkAhL3O7vNyJEp1EVrNrcL4_6F-Mh-e2mvOCag7paWq59R5oZ8laTipdIdeht5K87dSVqbYimC3N1EdA2gFti1GVkHtNAZpzXx0N0dcB39TufXQom47Vio8Q-Epwa8U0RF4fE3Ff69TvcN5vFwAUCCdgtaKQVQYdIg1IhanzNBF8Fk_0JsoKe4RKyKsjDsU8wU3_dB44DRwvStpeY338izNKCUo6P75e"/>
+<div class="absolute top-4 left-4 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[0.75rem] font-semibold tracking-[0.05em] uppercase shadow-sm backdrop-blur-md">
+                            Attiva
+                        </div>
+</div>
+<div class="p-6">
+<h3 class="font-headline text-[1rem] font-semibold text-on-surface mb-4">Agrumeto Catania</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between font-label text-[0.75rem] font-semibold tracking-[0.05em] text-on-surface-variant mb-2">
+<span>Progresso</span>
+<span>100%</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-full rounded-full"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/15">
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Yield Previsto</span>
+<span class="font-headline text-[1rem] font-bold text-secondary">2.4x</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT overflow-hidden group hover:-translate-y-1 transition-transform duration-300 relative border border-outline-variant/15">
+<div class="h-48 bg-surface-container-low relative overflow-hidden">
+<img alt="Vineyard" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="sweeping landscape of a lush green vineyard on rolling hills at sunrise with mist in the valleys" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKiLrN03sBUCyGvXRmwR5QBva62VfNOVEz5fGvttEywNlWeDlWnTaZkdAzgxsUesO_gESQy0ggE7h6WOmIwVUp_-dpZBMZ_aDo_FVETiXgnS1bMWYd5k0bdXI-7hf4D8W3JKo5po5hGFm4rpdFxedMgHKrlcvzV45qrKIiviWlXzhtsGZaO-fygCnRV3aQj3-GUgxT39jZTev2TWxBiVFLtYYFIss2h6xGxo35Ezi_9yBePb_q_ymtGn84-xFxJAxpCWI9P7MdZPHs"/>
+<div class="absolute top-4 left-4 bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full text-[0.75rem] font-semibold tracking-[0.05em] uppercase shadow-sm backdrop-blur-md">
+                            In Raccolta
+                        </div>
+</div>
+<div class="p-6">
+<h3 class="font-headline text-[1rem] font-semibold text-on-surface mb-4">Vigneto Etna</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between font-label text-[0.75rem] font-semibold tracking-[0.05em] text-on-surface-variant mb-2">
+<span>Progresso</span>
+<span>34%</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[34%] rounded-full"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/15">
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Yield Previsto</span>
+<span class="font-headline text-[1rem] font-bold text-primary">4.6x</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT overflow-hidden group hover:-translate-y-1 transition-transform duration-300 relative border border-outline-variant/15">
+<div class="h-48 bg-surface-container-low relative overflow-hidden">
+<img alt="Almond grove" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="blooming almond trees in a sunny orchard with soft pink blossoms and clear sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYdxunjwDjflTelI_28LISFS9e951Q3vpIJgvlgTtZjQvgqUKjHFLCG8Gb-WpOL33w5zkHyjsWCmKpG0O-iznbF3Z1KBkZaDBwDnJfODOu9u0Cn-3agHKvnpBUNrdhdvF_6DUCDpN0fUQXYpfzceVFjcpzYiebdd1ttbJ3Yjfvgznc1fMFV82w_rjqdHZ9370lmoAvDO4sRweHsSHSB7xRcRrbDDEYkmAe401l9ZiLTLc5zHVmSrwEZG6VP5fh-yQ_r3ucwhN4KgYr"/>
+<div class="absolute top-4 left-4 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[0.75rem] font-semibold tracking-[0.05em] uppercase shadow-sm backdrop-blur-md">
+                            Attiva
+                        </div>
+</div>
+<div class="p-6">
+<h3 class="font-headline text-[1rem] font-semibold text-on-surface mb-4">Mandorleto Agrigento</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between font-label text-[0.75rem] font-semibold tracking-[0.05em] text-on-surface-variant mb-2">
+<span>Progresso</span>
+<span>100%</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-full rounded-full"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/15">
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Yield Previsto</span>
+<span class="font-headline text-[1rem] font-bold text-secondary">1.8x</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT overflow-hidden group hover:-translate-y-1 transition-transform duration-300 relative border border-outline-variant/15">
+<div class="h-48 bg-surface-container-low relative overflow-hidden">
+<img alt="Hazelnut grove" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="close up of fresh green hazelnuts growing on a leafy bush in natural sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr9HflXSO8pG75SmGGqFD3GVc_gpvUlPIiM5iVBhehfEnmIzST3gilD8kXvT6SXXojlGriT_MgVnhDggelvGXciAbxEmql7U7rYz0IHSMhwqKyoGtwAARzoCC9izZBG_LtY7VKbjLFcsaYSrvca0JVIGjvEJP59dw7LHVQS1H4nTN3z2OJ2WjPC4l2rPcWNA13L3qc3E_N1VaEYf7CUYTilKGxojwTRqqY-QKlrH-m7VddEZwIWYMdIuB0BxakB2ACr9CUCrnGCbfr"/>
+<div class="absolute top-4 left-4 bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full text-[0.75rem] font-semibold tracking-[0.05em] uppercase shadow-sm backdrop-blur-md">
+                            In Raccolta
+                        </div>
+</div>
+<div class="p-6">
+<h3 class="font-headline text-[1rem] font-semibold text-on-surface mb-4">Noccioleto Bronte</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between font-label text-[0.75rem] font-semibold tracking-[0.05em] text-on-surface-variant mb-2">
+<span>Progresso</span>
+<span>82%</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[82%] rounded-full"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/15">
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Yield Previsto</span>
+<span class="font-headline text-[1rem] font-bold text-primary">2.9x</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="bg-surface-container-lowest rounded-DEFAULT overflow-hidden group hover:-translate-y-1 transition-transform duration-300 relative border border-outline-variant/15">
+<div class="h-48 bg-surface-container-low relative overflow-hidden">
+<div class="absolute inset-0 bg-surface-variant/40 z-10 mix-blend-multiply"></div>
+<img alt="Chestnut forest" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 grayscale" data-alt="dense autumnal forest path covered in fallen brown leaves with tall trees fading into soft mist" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCg9os1OFb6IXNNPKu5OP_4vz4nN8z3MJPH7JYew2QGyZ_ggwpGF3FViSDnGLKCoQ_p9NkOJAYb9LjnETTheu6XEQC216hqWpQF-rlw5KgGKJ60cPlcvu1hk3vLczKQIBOkMpK6VL048788qgy2QiqvQPe8-L5S8yB4zlcVFczRIA0uhY4z6Ihf0uYB0wdXp2rFtPmtiNkVRrLk-HuTFWdPNtFnmWkZGhnjTUNn86VbsN7n_QjnuMWrNNkYIVARjF_Zh385tsY_4EuZ"/>
+<div class="absolute top-4 left-4 bg-surface-variant text-on-surface-variant px-3 py-1 rounded-full text-[0.75rem] font-semibold tracking-[0.05em] uppercase shadow-sm backdrop-blur-md z-20">
+                            Conclusa
+                        </div>
+</div>
+<div class="p-6">
+<h3 class="font-headline text-[1rem] font-semibold text-on-surface-variant mb-4">Castagneto Nebrodi</h3>
+<div class="space-y-4 opacity-70">
+<div>
+<div class="flex justify-between font-label text-[0.75rem] font-semibold tracking-[0.05em] text-on-surface-variant mb-2">
+<span>Progresso</span>
+<span>100%</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-outline w-full rounded-full"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/15">
+<span class="font-label text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-on-surface-variant">Stato</span>
+<span class="font-headline text-[1rem] font-bold text-on-surface-variant">Completato</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-slate-950 dark:bg-black w-full mt-20 tonal-shift flat">
+<div class="flex flex-col md:flex-row justify-between items-center px-12 py-16 w-full max-w-7xl mx-auto">
+<div class="mb-8 md:mb-0">
+<span class="text-xl font-bold text-white font-headline tracking-tight">GrowFi</span>
+<p class="text-sm font-inter tracking-wide mt-2 text-slate-400">© 2024 GrowFi. Regenerative Finance for a Living Planet.</p>
+</div>
+<div class="flex flex-wrap justify-center md:justify-end gap-x-8 gap-y-4">
+<a class="text-sm font-inter tracking-wide text-slate-400 hover:text-green-400 transition-colors" href="#">Whitepaper</a>
+<a class="text-sm font-inter tracking-wide text-slate-400 hover:text-green-400 transition-colors" href="#">Governance</a>
+<a class="text-sm font-inter tracking-wide text-slate-400 hover:text-green-400 transition-colors" href="#">Github</a>
+<a class="text-sm font-inter tracking-wide text-slate-400 hover:text-green-400 transition-colors" href="#">Discord</a>
+<a class="text-sm font-inter tracking-wide text-slate-400 hover:text-green-400 transition-colors" href="#">Terms</a>
+<a class="text-sm font-inter tracking-wide text-slate-400 hover:text-green-400 transition-colors" href="#">Privacy</a>
+</div>
+</div>
+</footer>
+</body></html>

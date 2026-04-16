@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: #006b2c;
+  --color-primary-container: #00873a;
+  --color-primary-fixed: #7ffc97;
+  --color-primary-fixed-dim: #62df7d;
+  --color-on-primary: #ffffff;
+  --color-on-primary-fixed-variant: #005320;
+
+  --color-secondary: #0058be;
+  --color-secondary-container: #2170e4;
+
+  --color-surface: #f7f9fb;
+  --color-surface-bright: #f7f9fb;
+  --color-surface-dim: #d8dadc;
+  --color-surface-container: #eceef0;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container-high: #e6e8ea;
+  --color-surface-container-highest: #e0e3e5;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-variant: #e0e3e5;
+
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #3e4a3d;
+  --color-outline: #6e7b6c;
+  --color-outline-variant: #bdcaba;
+
+  --color-inverse-surface: #2d3133;
+  --color-inverse-on-surface: #eff1f3;
+
+  --color-error: #ba1a1a;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+.regen-gradient {
+  background: linear-gradient(135deg, #006b2c 0%, #00873a 100%);
+}

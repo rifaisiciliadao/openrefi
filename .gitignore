@@ -12,3 +12,18 @@ docs/
 
 # Dotenv file
 .env
+
+# Local tools / editors
+.claude/
+.obsidian/
+
+# Local planning docs (not for upstream)
+PLAN.md
+
+# Platform subgraph build outputs
+platform/subgraph/build/
+platform/subgraph/generated/
+platform/subgraph/node_modules/
+
+# Platform frontend/backend node_modules (also covered by per-dir gitignores)
+platform/*/node_modules/

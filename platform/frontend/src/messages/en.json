@@ -1,0 +1,258 @@
+{
+  "nav": {
+    "explore": "Explore",
+    "create": "Create Campaign",
+    "portfolio": "My Portfolio",
+    "connectWallet": "Connect Wallet"
+  },
+  "home": {
+    "badge": "Regenerative Finance",
+    "titleLine1": "Invest in the land,",
+    "titleLine2": "harvest the",
+    "titleHighlight": "fruits",
+    "subtitle": "Agricultural crowdfunding on the blockchain. Buy fractions of trees, earn seasonal yield, redeem real products.",
+    "ctaExplore": "Explore Campaigns",
+    "ctaCreate": "Create Campaign",
+    "demoNotice": "Demo mode — factory not yet deployed",
+    "stats": {
+      "campaigns": "Campaigns",
+      "raised": "Raised",
+      "investors": "Investors",
+      "avgYield": "Avg Yield"
+    },
+    "featured": {
+      "title": "Featured Projects",
+      "subtitle": "Participate in active regenerative campaigns."
+    },
+    "filters": {
+      "all": "All",
+      "funding": "Funding",
+      "active": "Active",
+      "ended": "Ended"
+    },
+    "empty": "No campaigns in this category.",
+    "card": {
+      "progress": "Progress",
+      "expectedYield": "Expected Yield",
+      "status": "Status",
+      "completed": "Completed",
+      "deadline": "Deadline: {days}",
+      "season": "Season 1 · {count} stakers"
+    },
+    "state": {
+      "funding": "Funding",
+      "active": "Active",
+      "ended": "Ended"
+    }
+  },
+  "create": {
+    "steps": {
+      "info": "Info",
+      "params": "Parameters",
+      "payments": "Payments",
+      "confirm": "Confirm"
+    },
+    "step1": {
+      "title": "Campaign Info",
+      "subtitle": "Describe your agricultural project to attract investors.",
+      "name": "Campaign Name",
+      "namePlaceholder": "e.g. Ferrara Olive Grove",
+      "symbol": "Token Symbol",
+      "symbolHint": "Max 8 characters, e.g. OLIVE",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe your campaign, the territory, the production...",
+      "image": "Cover Image",
+      "imageDrop": "Drag image here or click to upload",
+      "imageHint": "PNG, JPG up to 5MB. Recommended ratio 16:9.",
+      "imageReplace": "Replace image",
+      "location": "Location",
+      "locationPlaceholder": "e.g. Ragusa, Sicily",
+      "productType": "Product Type",
+      "selectProduct": "Select product type",
+      "products": {
+        "olive-oil": "Olive Oil",
+        "citrus": "Citrus",
+        "wine": "Wine",
+        "honey": "Honey",
+        "nuts": "Nuts",
+        "other": "Other"
+      }
+    },
+    "step2": {
+      "title": "Tokenomics Parameters",
+      "subtitle": "Define price, caps, deadlines and season duration.",
+      "price": "Price per Token (USD)",
+      "priceHint": "Base price for 1 $CAMPAIGN",
+      "seasonDuration": "Season Duration (days)",
+      "seasonDurationHint": "Minimum 365 days",
+      "minCap": "Min Cap (trees)",
+      "minCapHint": "If not reached → buyback",
+      "maxCap": "Max Cap (trees)",
+      "maxCapHint": "= {total} tokens (1 tree = 1,000 tokens)",
+      "deadline": "Funding Deadline",
+      "minProduct": "Min Product Claim",
+      "minProductHint": "Minimum units for physical pickup (e.g. liters)"
+    },
+    "step3": {
+      "title": "Accepted Tokens",
+      "subtitle": "These tokens will be configurable by the producer after deploy via addAcceptedToken.",
+      "fixed": "Fixed rate",
+      "oracle": "Oracle price (Chainlink)",
+      "remove": "Remove",
+      "mode": "Mode",
+      "fixedRate": "Rate (USD)",
+      "oracleFeed": "Oracle Feed",
+      "addToken": "+ Add Token"
+    },
+    "step4": {
+      "title": "Confirm and Deploy",
+      "subtitle": "Verify the parameters before deploying the campaign.",
+      "sections": {
+        "info": "Info",
+        "tokenomics": "Tokenomics",
+        "tokens": "Accepted Tokens"
+      },
+      "rows": {
+        "name": "Name",
+        "symbol": "Symbol",
+        "location": "Location",
+        "productType": "Product Type",
+        "price": "Token Price",
+        "minCap": "Min Cap",
+        "maxCap": "Max Cap",
+        "deadline": "Deadline",
+        "season": "Season Duration",
+        "minProduct": "Min Product Claim",
+        "trees": "{count} trees ({tokens} tokens)",
+        "days": "{count} days",
+        "units": "{count} units"
+      },
+      "notice": "Deploy requires the connected wallet to sign. 5 contracts will be deployed in 1 tx (Campaign, Token, StakingVault, YieldToken, HarvestManager)."
+    },
+    "actions": {
+      "back": "← Back",
+      "next": "Next",
+      "deploy": "Deploy Campaign",
+      "connect": "Connect Wallet",
+      "inProgress": "In progress…",
+      "draft": "Save Draft"
+    },
+    "status": {
+      "uploadingImage": "Uploading image to IPFS…",
+      "uploadingMetadata": "Uploading metadata to IPFS…",
+      "confirmTx": "Confirm transaction in wallet…",
+      "waitingTx": "Waiting for on-chain confirmation…",
+      "success": "Campaign deployed!",
+      "viewTx": "View transaction",
+      "errorWallet": "Connect wallet before proceeding",
+      "errorFactory": "CampaignFactory not yet deployed. Set NEXT_PUBLIC_FACTORY_ADDRESS.",
+      "errorImage": "Upload a cover image",
+      "errorDeadline": "Set the funding deadline"
+    },
+    "preview": {
+      "title": "Preview",
+      "empty": "Campaign name...",
+      "emptyDescription": "Your project description will appear here.",
+      "noImage": "Image",
+      "target": "Target",
+      "completed": "{pct}% completed",
+      "tokenPrice": "Token Price",
+      "maxSupply": "Max Supply",
+      "hint": "Preview updates in real time as you fill out the form."
+    }
+  },
+  "detail": {
+    "breadcrumb": "Campaigns",
+    "tabs": {
+      "invest": "Invest",
+      "stake": "Staking",
+      "harvest": "Harvest",
+      "info": "Info"
+    },
+    "funding": {
+      "title": "Funding Progress",
+      "raised": "raised",
+      "target": "Target: {amount}",
+      "completed": "{pct}% Completed",
+      "daysLeft": "{days} days left"
+    },
+    "buy": {
+      "title": "Buy Tokens",
+      "subtitle": "Select payment token and amount",
+      "fixed": "Fixed rate",
+      "oracle": "Oracle price",
+      "youPay": "You Pay",
+      "balance": "Balance: {amount} {token}",
+      "youReceive": "You Receive",
+      "priceInfo": "1 $CAMP = ${price}",
+      "cta": "Buy $CAMPAIGN",
+      "approve": "Approve {token}",
+      "approving": "Approving…",
+      "buying": "Confirming…",
+      "connectFirst": "Connect Wallet",
+      "noToken": "No token selected",
+      "noTokensConfigured": "No payment tokens configured yet.",
+      "notBuyable": "Campaign not buyable in this state",
+      "insufficientBalance": "Insufficient balance",
+      "purchaseConfirmed": "Purchase confirmed!",
+      "viewTx": "View transaction",
+      "escrow": "Funds held in escrow until campaign activation",
+      "demoNotice": "This is demo data. Deploy the factory and visit a real campaign address to buy on-chain."
+    },
+    "stake": {
+      "title": "Your Positions",
+      "subtitle": "Stake $CAMPAIGN to earn seasonal $YIELD.",
+      "position": "Position #{id}",
+      "yieldAccrued": "Yield Accrued",
+      "stakeDate": "Stake Date",
+      "unstakePenalty": "Unstake Penalty",
+      "claim": "Claim",
+      "restake": "Restake",
+      "unstake": "Unstake",
+      "newStake": "+ New Stake"
+    },
+    "harvest": {
+      "title": "Redeem Harvest",
+      "subtitle": "Choose how to receive your $YIELD.",
+      "product": "Physical Product",
+      "productDesc": "Receive olive oil from the production",
+      "usdc": "USDC",
+      "usdcDesc": "Receive the value in stablecoin",
+      "redemptionStatus": "Redemption Status",
+      "step": "Step {current} of {total}",
+      "declareIntent": "Declare redemption intent",
+      "confirmDelivery": "Confirm delivery (within 30 days)",
+      "confirm": "Confirm Redemption"
+    },
+    "info": {
+      "title": "Campaign Info",
+      "about": "This regenerative project aims to restore and maintain 200 centennial olive trees in Sicily, preserving biodiversity and producing premium extra virgin olive oil.",
+      "tokens": "Each $CAMPAIGN token represents 1/1000 of an olive tree. By holding tokens, you contribute to land regeneration and receive a share of the annual production.",
+      "contract": "Contract Address",
+      "block": "Deploy Block",
+      "dmrv": "See dMRV report on Silvi.earth →"
+    },
+    "sidebar": {
+      "stats": "Statistics",
+      "tokenPrice": "Token Price",
+      "maxSupply": "Max Supply",
+      "tokensSold": "Tokens Sold",
+      "investors": "Investors",
+      "yieldRate": "Yield Rate",
+      "yieldHint": "Dynamic rate: decreases as campaign fills",
+      "acceptedTokens": "Accepted Tokens",
+      "producer": "The Producer",
+      "verified": "Verified producer",
+      "viewReport": "See dMRV report →",
+      "live": "Live"
+    }
+  },
+  "footer": {
+    "tagline": "© {year} GrowFi. Regenerative Finance for a Living Planet.",
+    "docs": "Docs",
+    "github": "GitHub",
+    "discord": "Discord",
+    "terms": "Terms",
+    "privacy": "Privacy"
+  }
+}

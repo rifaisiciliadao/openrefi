@@ -1,0 +1,29 @@
+{
+  "name": "growfi-subgraph",
+  "version": "1.0.0",
+  "description": "GrowFi subgraph — indexes CampaignFactory + dynamic Campaign/StakingVault/HarvestManager templates",
+  "private": true,
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "clean": "rm -rf build generated",
+    "prepare": "npm run codegen && npm run build",
+    "deploy:goldsky": "goldsky subgraph deploy growfi/$npm_package_version --path build",
+    "deploy:goldsky:prod": "goldsky subgraph deploy growfi/$npm_package_version --path build --tag prod",
+    "deploy:goldsky:promote": "goldsky subgraph tag create growfi/$npm_package_version --tag prod",
+    "deploy:studio": "graph deploy --studio growfi",
+    "deploy:local": "graph deploy --node http://localhost:8020 --ipfs http://localhost:5001 growfi",
+    "create:local": "graph create --node http://localhost:8020 growfi",
+    "goldsky:login": "goldsky login",
+    "goldsky:list": "goldsky subgraph list",
+    "goldsky:logs": "goldsky subgraph log growfi/$npm_package_version",
+    "goldsky:delete": "goldsky subgraph delete growfi/$npm_package_version"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.90.0",
+    "@graphprotocol/graph-ts": "^0.35.0"
+  },
+  "devDependencies": {
+    "@goldskycom/cli": "^12.0.0"
+  }
+}

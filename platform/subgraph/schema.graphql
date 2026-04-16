@@ -1,0 +1,158 @@
+type Campaign @entity(immutable: false) {
+  id: Bytes!                              # campaign address
+  producer: Bytes!
+  campaignToken: Bytes!
+  yieldToken: Bytes!
+  stakingVault: Bytes!
+  harvestManager: Bytes!
+
+  pricePerToken: BigInt!
+  minCap: BigInt!
+  maxCap: BigInt!
+  fundingDeadline: BigInt!
+  seasonDuration: BigInt!
+  minProductClaim: BigInt!
+
+  currentSupply: BigInt!
+  totalStaked: BigInt!
+  totalRaised: BigInt!
+  currentYieldRate: BigInt!
+  state: String!                          # "Funding" | "Active" | "Buyback" | "Ended"
+  paused: Boolean!
+
+  createdAt: BigInt!
+  createdAtBlock: BigInt!
+  activatedAt: BigInt
+
+  acceptedTokens: [AcceptedToken!]! @derivedFrom(field: "campaign")
+  purchases: [Purchase!]! @derivedFrom(field: "campaign")
+  positions: [Position!]! @derivedFrom(field: "campaign")
+  seasons: [Season!]! @derivedFrom(field: "campaign")
+  sellBackOrders: [SellBackOrder!]! @derivedFrom(field: "campaign")
+}
+
+type AcceptedToken @entity(immutable: false) {
+  id: Bytes!                              # campaign + token address
+  campaign: Campaign!
+  tokenAddress: Bytes!
+  symbol: String!
+  pricingMode: String!                    # "Fixed" | "Oracle"
+  fixedRate: BigInt
+  oracleFeed: Bytes
+  active: Boolean!
+  addedAt: BigInt!
+}
+
+type Purchase @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  campaign: Campaign!
+  buyer: Bytes!
+  paymentToken: Bytes!
+  paymentAmount: BigInt!
+  campaignTokensOut: BigInt!
+  oraclePriceUsed: BigInt!
+  newCurrentSupply: BigInt!
+  timestamp: BigInt!
+  block: BigInt!
+  transactionHash: Bytes!
+}
+
+type SellBackOrder @entity(immutable: false) {
+  id: Bytes!                              # campaign-queuePosition
+  campaign: Campaign!
+  user: Bytes!
+  amount: BigInt!
+  filledAmount: BigInt!
+  status: String!                         # "pending" | "filled" | "cancelled"
+  queuePosition: BigInt!
+  requestedAt: BigInt!
+  filledAt: BigInt
+}
+
+type Season @entity(immutable: false) {
+  id: Bytes!                              # campaign + seasonId
+  campaign: Campaign!
+  seasonId: BigInt!
+  startTime: BigInt!
+  endTime: BigInt
+  active: Boolean!
+
+  totalHarvestValueUSD: BigInt
+  protocolFee: BigInt
+  holderPool: BigInt
+  totalYieldSupply: BigInt
+  totalProductUnits: BigInt
+  merkleRoot: Bytes
+  claimStart: BigInt
+  claimEnd: BigInt
+  usdcDeadline: BigInt
+  usdcDeposited: BigInt!
+  usdcOwed: BigInt!
+  reported: Boolean!
+  reportedAt: BigInt
+
+  claims: [Claim!]! @derivedFrom(field: "season")
+}
+
+type Position @entity(immutable: false) {
+  id: Bytes!                              # campaign + positionId
+  campaign: Campaign!
+  positionId: BigInt!
+  user: Bytes!
+  amount: BigInt!
+  startTime: BigInt!
+  seasonId: BigInt!
+  yieldClaimed: BigInt!
+  active: Boolean!
+  createdAt: BigInt!
+  unstakedAt: BigInt
+  penaltyBurned: BigInt
+}
+
+type Claim @entity(immutable: false) {
+  id: Bytes!                              # season + user
+  season: Season!
+  campaign: Campaign!
+  user: Bytes!
+  redemptionType: String!                 # "product" | "usdc"
+  yieldBurned: BigInt!
+  productAmount: BigInt!
+  usdcAmount: BigInt!
+  usdcClaimed: BigInt!
+  fulfilled: Boolean!
+  claimedAt: BigInt!
+}
+
+type YieldRateSnapshot @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  campaign: Campaign!
+  yieldRate: BigInt!
+  totalStaked: BigInt!
+  maxSupply: BigInt!
+  timestamp: BigInt!
+}
+
+type User @entity(immutable: false) {
+  id: Bytes!                              # user address
+  purchasesCount: Int!
+  positionsCount: Int!
+  totalInvested: BigInt!                  # in USD (18 dec)
+  firstSeenAt: BigInt!
+}
+
+type GlobalStats @entity(immutable: false) {
+  id: Bytes!                              # always "global"
+  campaignCount: Int!
+  userCount: Int!
+  totalRaised: BigInt!                    # sum of all Campaign.totalRaised
+  totalStakers: Int!
+}
+
+# Maps dynamic contract addresses (vault, harvestManager) → their parent Campaign.
+# Populated by factory.ts on CampaignCreated. Used by staking.ts and harvest.ts to
+# resolve the owning Campaign without expensive contract calls.
+type ContractIndex @entity(immutable: true) {
+  id: Bytes!                              # vault or harvestManager address
+  campaign: Campaign!
+  kind: String!                           # "vault" | "harvest"
+}
