@@ -14,6 +14,10 @@ All 5 per-campaign contracts are `Initializable` and deployed as `TransparentUpg
 | `YieldToken` | ERC20, mint by Vault, burn by Vault + HarvestManager |
 | `HarvestManager` | Producer reports harvest → Merkle proof redemption for product OR pro-rata USDC redemption with partial deposits |
 
+**Standalone, single-instance registries** (not per-campaign, not upgradeable, see `CONTRACTS.md` for live addresses):
+- `CampaignRegistry` — `(campaign => metadataURI)` + monotonic version. Producer-only write, gated by `factory.isCampaign`. Emits `MetadataSet`.
+- `ProducerRegistry` — `(producer => profileURI)` + monotonic version. Anyone writes their own row (keys on `msg.sender`). Emits `ProfileUpdated`.
+
 `CampaignFactory.createCampaign` deploys 5 `TransparentUpgradeableProxy`, each inline-initialized in dependency order (Campaign → CampaignToken → StakingVault → HarvestManager → YieldToken), then wires cross-references via `onlyFactory` setters guarded by `AlreadySet`. Because OZ 5.6+ mandates non-empty `initData` for proxies, initialize calldata is embedded in each proxy constructor.
 
 ## Trust model
@@ -126,6 +130,7 @@ platform/
   - `/create` — 4-step form. Three-stage deploy flow: (1) upload image + metadata JSON to DO Spaces via backend, (2) `factory.createCampaign` (producer = `msg.sender`), (3) parse the `CampaignCreated` log → call `registry.setMetadata(newCampaign, metadataUrl)` to link the JSON on-chain. Stage 3 is best-effort: if the registry tx fails, the deploy is still reported as successful (the subgraph simply won't have `metadataURI` for that campaign until the producer retries).
   - `/campaign/[address]` — Invest / Stake / Harvest / Info tabs. Hero (title, image, location, breadcrumb) resolves from `useSubgraphCampaign` + `useCampaignMetadata`; Info tab renders the JSON description. `BuyPanel` reads `getAcceptedTokens` + `tokenConfigs` + ERC20 symbol/decimals/balance/allowance, then orchestrates approve → buy. `StakingPanel` reads user positions via `getPositions` + batched `positions`/`earned` calls (10s refetch), shows live unstake penalty %, orchestrates approve → stake and per-position claim/unstake/restake tx flows. `HarvestPanel` lists seasons via `useCampaignSeasons` subgraph query, reads each user's `claims(seasonId, user)` on `HarvestManager`, and drives the two-step USDC flow (`redeemUSDC` → `claimUSDC`) with live pro-rata entitlement math (`owed × deposited / totalOwed − alreadyClaimed`). Product-redemption UI is stubbed with a "coming soon" marker because it needs a Merkle-proof backend endpoint.
   - `/portfolio` — wallet-gated aggregate of the user's on-chain activity across all campaigns. Single `useUserPortfolio` subgraph query returns purchases, active positions, and claims in one round-trip; per-position `earned` + ERC20 balance are then read live. Summary bar computes total invested, staked, $YIELD claimed, and USDC claimable (pro-rata against current deposits). Linked from the header nav.
+  - `/producer/[address]` — public producer profile page. Reads the `Producer` entity from the subgraph + fetches the profile JSON from `profileURI`. Shows cover + avatar + bio + location + website, plus a grid of every campaign `producer = address`. Owner-gated inline edit form: image uploads via backend, then `uploadProducerProfile` → `ProducerRegistry.setProfile` tx.
 - **Env** (`.env.local`): `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`, `NEXT_PUBLIC_BACKEND_URL`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_FACTORY_ADDRESS`, `NEXT_PUBLIC_USDC_ADDRESS`, `NEXT_PUBLIC_SUBGRAPH_URL`.
 - **Contract glue**: ABIs extracted from `forge build` via `jq` → `src/contracts/abis/*.json`. Hooks in `src/contracts/hooks.ts`. Minimal ERC20 ABI in `src/contracts/erc20.ts`.
 
@@ -145,6 +150,7 @@ Fastify on **port 4001** (4000 was taken locally). Uses `@aws-sdk/client-s3` aga
 | `GET /health` | liveness |
 | `POST /api/upload` | multipart image → returns `{ key, url, size, contentType, filename }` |
 | `POST /api/metadata` | JSON body `{ name, description, location, productType, imageUrl? }` → returns `{ key, url, metadata }` |
+| `POST /api/producer` | JSON body `{ name, bio, avatar?, cover?, website?, location? }` → returns `{ key, url, profile }` (used by `/producer/[address]` edit flow before `ProducerRegistry.setProfile`) |
 
 Env: `PORT`, `HOST`, `DO_SPACES_REGION`, `DO_SPACES_BUCKET`, `DO_SPACES_ENDPOINT`, `DO_SPACES_PUBLIC_BASE`, `DO_SPACES_KEY`, `DO_SPACES_SECRET`. Rotate keys with `doctl spaces keys create/delete`.
 
@@ -152,11 +158,12 @@ File constraints (5 MB, `image/{jpeg,png,webp,avif,gif}`) enforced in-route.
 
 ### Subgraph (`platform/subgraph/`)
 
-Live on Goldsky — **team: turinglabs · project: growfi · chain: base-sepolia**. Current version: `growfi/1.1.0`, tagged as `prod`.
+Live on Goldsky — **team: turinglabs · project: growfi · chain: base-sepolia**. Current version: `growfi/1.2.0`, tagged as `prod`.
 
 Indexed contracts (see `CONTRACTS.md` for authoritative deploy refs):
 - `CampaignFactory` @ `0x3fA41528a22645Bef478E9eBae83981C02e98f74` from block `40322865`
 - `CampaignRegistry` @ `0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e` from block `40331554`
+- `ProducerRegistry` @ `0x702915469f66415C70B4203B40aB9a97203d979B` from block `40338465`
 
 Endpoints:
 - **Prod tag**: `https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn`
@@ -165,7 +172,7 @@ Endpoints:
 Frontend client: `platform/frontend/src/lib/subgraph.ts` — minimal fetch+React Query wrapper exposing `useSubgraphCampaigns`, `useSubgraphCampaign(id)`, `useSubgraphMeta()`. Off-chain metadata JSON (pointed to by `Campaign.metadataURI`) is fetched by `platform/frontend/src/lib/metadata.ts::useCampaignMetadata(uri, version)` — queryKey includes `version` so an on-chain URI rotation invalidates cleanly.
 
 Schema + handlers:
-- `schema.graphql` — 11 entities: `Campaign`, `AcceptedToken`, `Purchase`, `SellBackOrder`, `Position`, `Season`, `Claim`, `YieldRateSnapshot`, `User`, `GlobalStats`, `ContractIndex`. The `Campaign` entity carries `metadataURI` + `metadataVersion` populated by the `CampaignRegistry` handler.
+- `schema.graphql` — 12 entities: `Campaign`, `AcceptedToken`, `Purchase`, `SellBackOrder`, `Position`, `Season`, `Claim`, `YieldRateSnapshot`, `User`, `GlobalStats`, `ContractIndex`, `Producer`. The `Campaign` entity carries `metadataURI` + `metadataVersion` populated by the `CampaignRegistry` handler. The `Producer` entity (id = producer address) carries `profileURI` + `version` populated by the `ProducerRegistry` handler; it has no derived `campaigns` relation — frontend queries campaigns separately with `where: { producer: $addr }`.
 - **`ContractIndex`** maps StakingVault / HarvestManager addresses → owning `Campaign`. Populated in `src/factory.ts` when `CampaignCreated` fires, then read in `staking.ts` and `harvest.ts` to avoid expensive contract calls.
 - 23 event handlers across `factory.ts`, `campaign.ts`, `staking.ts`, `harvest.ts`, `registry.ts`. No handler for `Initialized`/`Paused`/`Unpaused`/`OwnershipTransferred` (OZ stdlib events). No handler for `ProtocolFeeTargeted`/`ProtocolFeeTransferred` (replaced the old `ProtocolFeeCollected` — holder pool is derived from `HarvestReported` directly).
 - **Dynamic templates**: `Campaign`, `StakingVault`, `HarvestManager` are all spawned via `Template.create()` inside the factory handler — this is why `startBlock` in `subgraph.yaml` must be the factory deploy block. `CampaignRegistry` is a static data source (single global contract).
