@@ -1,38 +1,7 @@
 [
   {
     "type": "constructor",
-    "inputs": [
-      {
-        "name": "usdc_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "producer_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "factory_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "protocolFeeRecipient_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "protocolFeeBps_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minProductClaim_",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable"
   },
   {
@@ -171,6 +140,44 @@
   },
   {
     "type": "function",
+    "name": "initialize",
+    "inputs": [
+      {
+        "name": "usdc_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "producer_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "factory_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "protocolFeeRecipient_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "protocolFeeBps_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minProductClaim_",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "minProductClaim",
     "inputs": [],
     "outputs": [
@@ -277,6 +284,25 @@
   },
   {
     "type": "function",
+    "name": "remainingDepositGross",
+    "inputs": [
+      {
+        "name": "seasonId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "reportHarvest",
     "inputs": [
       {
@@ -365,12 +391,30 @@
         "internalType": "uint256"
       },
       {
+        "name": "protocolFeeTransferred",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
         "name": "reported",
         "type": "bool",
         "internalType": "bool"
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setStakingVault",
+    "inputs": [
+      {
+        "name": "stakingVault_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -384,6 +428,19 @@
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "stakingVault",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract StakingVault"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -474,6 +531,19 @@
   },
   {
     "type": "event",
+    "name": "Initialized",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Paused",
     "inputs": [
       {
@@ -524,7 +594,7 @@
   },
   {
     "type": "event",
-    "name": "ProtocolFeeCollected",
+    "name": "ProtocolFeeTargeted",
     "inputs": [
       {
         "name": "seasonId",
@@ -533,7 +603,32 @@
         "internalType": "uint256"
       },
       {
-        "name": "amount",
+        "name": "amountUSD18",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ProtocolFeeTransferred",
+    "inputs": [
+      {
+        "name": "seasonId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountUsdc6",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -665,6 +760,11 @@
   },
   {
     "type": "error",
+    "name": "AlreadySet",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "BelowMinProductClaim",
     "inputs": []
   },
@@ -676,6 +776,11 @@
   {
     "type": "error",
     "name": "ClaimWindowNotOpen",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DepositExceedsOwed",
     "inputs": []
   },
   {
@@ -695,12 +800,27 @@
   },
   {
     "type": "error",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidMerkleProof",
     "inputs": []
   },
   {
     "type": "error",
+    "name": "NotInitializing",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NotReported",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotUsdcRedemption",
     "inputs": []
   },
   {

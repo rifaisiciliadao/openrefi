@@ -5,7 +5,6 @@ import {
   USDCRedeemed as USDCRedeemedEvent,
   USDCDeposited as USDCDepositedEvent,
   USDCClaimed as USDCClaimedEvent,
-  ProtocolFeeCollected as ProtocolFeeCollectedEvent,
 } from "../generated/templates/HarvestManager/HarvestManager";
 import { Season, Claim, Campaign, ContractIndex } from "../generated/schema";
 
@@ -131,8 +130,3 @@ export function handleUSDCClaimed(event: USDCClaimedEvent): void {
   }
 }
 
-export function handleProtocolFeeCollected(
-  event: ProtocolFeeCollectedEvent,
-): void {
-  // Snapshot only; no entity mutation for MVP.
-}

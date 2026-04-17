@@ -1,23 +1,7 @@
 [
   {
     "type": "constructor",
-    "inputs": [
-      {
-        "name": "name_",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "symbol_",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "campaign_",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable"
   },
   {
@@ -383,6 +367,29 @@
   },
   {
     "type": "function",
+    "name": "initialize",
+    "inputs": [
+      {
+        "name": "name_",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "symbol_",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "campaign_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "mint",
     "inputs": [
       {
@@ -417,7 +424,7 @@
     "name": "nonces",
     "inputs": [
       {
-        "name": "owner",
+        "name": "owner_",
         "type": "address",
         "internalType": "address"
       }
@@ -681,6 +688,19 @@
   },
   {
     "type": "event",
+    "name": "Initialized",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Transfer",
     "inputs": [
       {
@@ -904,7 +924,12 @@
   },
   {
     "type": "error",
-    "name": "InvalidShortString",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
     "inputs": []
   },
   {
@@ -937,17 +962,6 @@
     "type": "error",
     "name": "StakingVaultAlreadySet",
     "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "StringTooLong",
-    "inputs": [
-      {
-        "name": "str",
-        "type": "string",
-        "internalType": "string"
-      }
-    ]
   },
   {
     "type": "error",

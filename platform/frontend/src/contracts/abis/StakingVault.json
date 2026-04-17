@@ -1,33 +1,7 @@
 [
   {
     "type": "constructor",
-    "inputs": [
-      {
-        "name": "campaignToken_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "campaign_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "factory_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "maxSupply_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "seasonDuration_",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable"
   },
   {
@@ -248,6 +222,39 @@
   },
   {
     "type": "function",
+    "name": "initialize",
+    "inputs": [
+      {
+        "name": "campaignToken_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "campaign_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "factory_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "maxSupply_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "seasonDuration_",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "lastUpdateTime",
     "inputs": [],
     "outputs": [
@@ -390,6 +397,25 @@
   },
   {
     "type": "function",
+    "name": "seasonTotalYieldOwed",
+    "inputs": [
+      {
+        "name": "seasonId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "seasons",
     "inputs": [
       {
@@ -416,6 +442,11 @@
       },
       {
         "name": "rewardPerTokenAtEnd",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalYieldOwed",
         "type": "uint256",
         "internalType": "uint256"
       },
@@ -539,6 +570,19 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "Initialized",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
   },
   {
     "type": "event",
@@ -801,7 +845,17 @@
   },
   {
     "type": "error",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NoActiveSeason",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
     "inputs": []
   },
   {

@@ -2,7 +2,7 @@
 
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { arbitrum, arbitrumSepolia } from "wagmi/chains";
+import { base, baseSepolia } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@rainbow-me/rainbowkit/styles.css";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
@@ -10,7 +10,7 @@ import { LocaleProvider } from "@/i18n/LocaleProvider";
 const config = getDefaultConfig({
   appName: "GrowFi",
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-  chains: [arbitrumSepolia, arbitrum],
+  chains: [baseSepolia, base],
   ssr: true,
 });
 

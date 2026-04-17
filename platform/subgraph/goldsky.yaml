@@ -3,20 +3,9 @@
 #
 # Team:     turinglabs
 # Project:  growfi
-# Network:  arbitrum-sepolia (testnet)
-#
-# This file is read by the Goldsky CLI when you run `goldsky subgraph deploy`.
-# The deploy name is derived from `name` and `version` → `growfi/1.0.0`.
+# Network:  base-sepolia (chain 84532)
+# Factory:  0x3fA41528a22645Bef478E9eBae83981C02e98f74 @ block 40322865
 
 name: growfi
 version: 1.0.0
-
-# Network name aligned with what Goldsky expects
-# See: https://docs.goldsky.com/chains/supported-networks
-chain: arbitrum-sepolia
-
-# Default subgraph tag — each deploy increments the semver in package.json
-# Examples:
-#   growfi/1.0.0   - initial deploy
-#   growfi/1.0.1   - bug fix in handlers
-#   growfi/2.0.0   - breaking schema change
+chain: base-sepolia

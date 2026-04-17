@@ -8,7 +8,6 @@ import {
   useReadContracts,
   useWriteContract,
   useWaitForTransactionReceipt,
-  useChainId,
 } from "wagmi";
 import { parseUnits, formatUnits, type Address } from "viem";
 import { abis, getAddresses } from "@/contracts";
@@ -39,7 +38,6 @@ const campaignAbi = abis.Campaign as never;
 
 export function BuyPanel({ campaignAddress, pricePerToken, currentState }: Props) {
   const t = useTranslations("detail.buy");
-  const chainId = useChainId();
   const { address: user, isConnected } = useAccount();
 
   // 1) Read accepted tokens list from the campaign
@@ -366,7 +364,7 @@ export function BuyPanel({ campaignAddress, pricePerToken, currentState }: Props
             <div className="mt-4 bg-primary-fixed/30 text-primary border border-primary/30 rounded-xl p-3 text-sm font-medium">
               {t("purchaseConfirmed")}{" "}
               <a
-                href={`https://sepolia.arbiscan.io/tx/${status.hash}`}
+                href={`https://sepolia.basescan.org/tx/${status.hash}`}
                 target="_blank"
                 rel="noreferrer"
                 className="underline"

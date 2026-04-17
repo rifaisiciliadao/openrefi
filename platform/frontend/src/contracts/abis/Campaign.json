@@ -1,58 +1,38 @@
 [
   {
     "type": "constructor",
-    "inputs": [
-      {
-        "name": "producer_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "factory_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "pricePerToken_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minCap_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "maxCap_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "fundingDeadline_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "seasonDuration_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "protocolFeeBps_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "protocolFeeRecipient_",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable"
   },
   {
     "type": "function",
     "name": "MAX_ACCEPTED_TOKENS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_OPEN_SELLBACK_ORDERS_PER_USER",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SEQUENCER_GRACE_PERIOD",
     "inputs": [],
     "outputs": [
       {
@@ -287,6 +267,64 @@
   },
   {
     "type": "function",
+    "name": "initialize",
+    "inputs": [
+      {
+        "name": "producer_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "factory_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "pricePerToken_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minCap_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxCap_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "fundingDeadline_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "seasonDuration_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "protocolFeeBps_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "protocolFeeRecipient_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "sequencerUptimeFeed_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "maxCap",
     "inputs": [],
     "outputs": [
@@ -302,6 +340,25 @@
     "type": "function",
     "name": "minCap",
     "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "openSellBackCount",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
     "outputs": [
       {
         "name": "",
@@ -337,6 +394,40 @@
     "outputs": [
       {
         "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewBuy",
+    "inputs": [
+      {
+        "name": "paymentToken",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "paymentAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "tokensOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "effectivePayment",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "oraclePrice",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -521,6 +612,19 @@
   },
   {
     "type": "function",
+    "name": "sequencerUptimeFeed",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract AggregatorV3Interface"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "setCampaignToken",
     "inputs": [
       {
@@ -622,6 +726,11 @@
         "name": "oracleFeed",
         "type": "address",
         "internalType": "contract AggregatorV3Interface"
+      },
+      {
+        "name": "paymentDecimals",
+        "type": "uint8",
+        "internalType": "uint8"
       },
       {
         "name": "active",
@@ -821,6 +930,19 @@
   },
   {
     "type": "event",
+    "name": "Initialized",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Paused",
     "inputs": [
       {
@@ -977,6 +1099,11 @@
   },
   {
     "type": "error",
+    "name": "AlreadySet",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "EnforcedPause",
     "inputs": []
   },
@@ -988,6 +1115,11 @@
   {
     "type": "error",
     "name": "FundingNotExpired",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidInitialization",
     "inputs": []
   },
   {
@@ -1018,12 +1150,22 @@
   },
   {
     "type": "error",
+    "name": "MinCapNotReached",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NegativeOraclePrice",
     "inputs": []
   },
   {
     "type": "error",
     "name": "NoSellBackPending",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
     "inputs": []
   },
   {
@@ -1039,6 +1181,11 @@
   {
     "type": "error",
     "name": "OnlyProducer",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "PaymentDecimalsTooHigh",
     "inputs": []
   },
   {
@@ -1059,6 +1206,16 @@
   },
   {
     "type": "error",
+    "name": "SequencerDown",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SequencerGracePeriod",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "StaleOraclePrice",
     "inputs": []
   },
@@ -1070,6 +1227,11 @@
   {
     "type": "error",
     "name": "TooManyAcceptedTokens",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TooManyOpenSellBackOrders",
     "inputs": []
   },
   {

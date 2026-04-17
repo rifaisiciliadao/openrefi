@@ -7,11 +7,11 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: CampaignFactory
-    network: arbitrum-sepolia
+    network: base-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"
+      address: "0x3fA41528a22645Bef478E9eBae83981C02e98f74"
       abi: CampaignFactory
-      startBlock: 0
+      startBlock: 40322865
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -34,7 +34,7 @@ dataSources:
 templates:
   - kind: ethereum/contract
     name: Campaign
-    network: arbitrum-sepolia
+    network: base-sepolia
     source:
       abi: Campaign
     mapping:
@@ -77,7 +77,7 @@ templates:
 
   - kind: ethereum/contract
     name: StakingVault
-    network: arbitrum-sepolia
+    network: base-sepolia
     source:
       abi: StakingVault
     mapping:
@@ -111,7 +111,7 @@ templates:
 
   - kind: ethereum/contract
     name: HarvestManager
-    network: arbitrum-sepolia
+    network: base-sepolia
     source:
       abi: HarvestManager
     mapping:
@@ -137,5 +137,3 @@ templates:
           handler: handleUSDCDeposited
         - event: USDCClaimed(indexed address,indexed uint256,uint256)
           handler: handleUSDCClaimed
-        - event: ProtocolFeeCollected(indexed uint256,uint256,address)
-          handler: handleProtocolFeeCollected

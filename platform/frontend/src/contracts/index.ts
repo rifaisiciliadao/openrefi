@@ -15,29 +15,27 @@ export const abis = {
   HarvestManager: HarvestManagerAbi,
 } as const;
 
-export const CHAIN_ID = Number(
-  process.env.NEXT_PUBLIC_CHAIN_ID || 421614,
-);
+export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 84532);
 
 export const addresses: Record<number, { factory: Address; usdc: Address }> = {
-  // Arbitrum Sepolia
-  421614: {
+  // Base Sepolia (live testnet deployment, see CONTRACTS.md)
+  84532: {
     factory:
       (process.env.NEXT_PUBLIC_FACTORY_ADDRESS as Address) ||
-      "0x0000000000000000000000000000000000000000",
+      "0x3fA41528a22645Bef478E9eBae83981C02e98f74",
     usdc:
       (process.env.NEXT_PUBLIC_USDC_ADDRESS as Address) ||
-      "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+      "0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E",
   },
-  // Arbitrum One
-  42161: {
+  // Base Mainnet (future)
+  8453: {
     factory:
       (process.env.NEXT_PUBLIC_FACTORY_ADDRESS as Address) ||
       "0x0000000000000000000000000000000000000000",
-    usdc: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   },
 };
 
 export function getAddresses(chainId: number = CHAIN_ID) {
-  return addresses[chainId] || addresses[421614];
+  return addresses[chainId] || addresses[84532];
 }

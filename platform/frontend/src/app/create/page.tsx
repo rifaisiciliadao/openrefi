@@ -603,7 +603,7 @@ export default function CreateCampaign() {
                 <StatusBox kind="success">
                   {t("status.success")}{" "}
                   <a
-                    href={`https://sepolia.arbiscan.io/tx/${status.txHash}`}
+                    href={`https://sepolia.basescan.org/tx/${status.txHash}`}
                     target="_blank"
                     rel="noreferrer"
                     className="underline font-semibold"

@@ -1,129 +1,81 @@
 # GrowFi Subgraph — Deploy su Goldsky
 
-**Team:** turinglabs
-**Progetto:** GrowFi
-**Network:** Arbitrum Sepolia
+**Team:** turinglabs · **Progetto:** growfi · **Network:** base-sepolia
+
+## Deployments indicizzati
+
+| Parametro | Valore |
+|-----------|--------|
+| Chain | Base Sepolia (id 84532) |
+| Factory | [`0x3fA41528a22645Bef478E9eBae83981C02e98f74`](https://sepolia.basescan.org/address/0x3fA41528a22645Bef478E9eBae83981C02e98f74) |
+| Start block | `40322865` |
+
+Già configurato in `subgraph.yaml`. Vedi `CONTRACTS.md` alla root del repo per tutto il resto.
 
 ---
 
-## 1. Pre-requisiti
+## 1. Install + login
 
 ```bash
-# Installa le dipendenze (include @goldskycom/cli)
+cd platform/subgraph
 npm install
+npm run goldsky:login     # incolla la tua API key
 ```
+
+API key reperibile da https://app.goldsky.com → Settings → API Keys.
 
 ---
 
-## 2. Imposta l'indirizzo della Factory
-
-Prima di fare il deploy, aggiorna `subgraph.yaml` con l'indirizzo reale di `CampaignFactory` su Arbitrum Sepolia, e il block di partenza (quello del deploy del factory, NON 0 — altrimenti scansiona tutta la chain):
-
-```yaml
-dataSources:
-  - kind: ethereum/contract
-    name: CampaignFactory
-    network: arbitrum-sepolia
-    source:
-      address: "0xYOUR_FACTORY_ADDRESS_HERE"   # ← sostituisci
-      abi: CampaignFactory
-      startBlock: 12345678                       # ← block di deploy
-```
-
----
-
-## 3. Goldsky login (una tantum)
+## 2. Build + deploy
 
 ```bash
-npm run goldsky:login
-# oppure direttamente:
-npx goldsky login
+npm run prepare            # codegen + build in build/
+npm run deploy:goldsky:prod
 ```
 
-Ti chiederà l'API key. Recuperabile da https://app.goldsky.com → Settings → API Keys.
+Questo pubblica `growfi/1.0.0` e lo tagga come `prod`.
 
-L'account deve appartenere al team **turinglabs**.
+Dopo il deploy Goldsky stampa un `PROJECT_ID`. Salvalo nel `.env.local` del frontend:
+
+```
+NEXT_PUBLIC_SUBGRAPH_URL=https://api.goldsky.com/api/public/<PROJECT_ID>/subgraphs/growfi/prod/gn
+```
 
 ---
 
-## 4. Build & Deploy
+## 3. Aggiornamento di una nuova versione
+
+1. Incrementa `version` in `package.json` (semver)
+2. `npm run prepare && npm run deploy:goldsky`
+3. (opz.) `npm run deploy:goldsky:promote` per spostare il tag `prod` a questa versione
+
+Goldsky mantiene più versioni in parallelo — utile per rollback.
+
+---
+
+## 4. Log e debug
 
 ```bash
-# Genera i tipi TypeScript dall'ABI + schema, poi compila in WASM
-npm run prepare
-
-# Deploy su Goldsky
-npm run deploy:goldsky
+npm run goldsky:logs       # live log indexer
+npm run goldsky:list       # lista subgraph del team
 ```
 
-Questo pubblica il subgraph con tag `growfi/1.0.0` (versione letta da `package.json`).
+---
+
+## Problemi noti
+
+| Sintomo | Cosa controllare |
+|---------|------------------|
+| `401 Unauthorized` | Re-esegui `goldsky login` |
+| `Subgraph name already taken` | Incrementa `version` in `package.json` |
+| Indexer fermo al block di start | Verifica che la factory emetta eventi (crea una campagna o chiama USDC.mint per debug) |
+| Handler vanno in overflow / crash | `npm run goldsky:logs` per stack trace, poi `npm run codegen` dopo modifiche agli ABI |
+| Schema change breaking | Bump **minor** in semver, i dati vecchi restano sulla versione precedente |
 
 ---
 
-## 5. Aggiornare il deploy
-
-Per ogni nuova versione:
-
-1. Incrementa `version` in `package.json` (semver: patch/minor/major)
-2. Esegui di nuovo `npm run prepare && npm run deploy:goldsky`
-
-Goldsky manterrà più tag contemporaneamente, utili per A/B testing tra versioni.
-
----
-
-## 6. Tag di produzione (opzionale)
-
-Dopo il deploy puoi promuovere una versione a "produzione" così che il frontend punti sempre all'ultima stabile senza dover cambiare URL:
+## Teardown
 
 ```bash
-npx goldsky subgraph tag create growfi/1.0.0 --tag prod
+npm run goldsky:delete    # ATTENZIONE: elimina gli indici della versione corrente
 ```
-
-Il frontend usa poi l'endpoint `https://api.goldsky.com/api/public/<project-id>/subgraphs/growfi/prod/gn` invece della versione specifica.
-
----
-
-## 7. Query dal frontend
-
-L'endpoint GraphQL ha questa forma:
-
-```
-https://api.goldsky.com/api/public/<PROJECT_ID>/subgraphs/growfi/1.0.0/gn
-```
-
-`PROJECT_ID` è dato da Goldsky dopo il primo deploy. Aggiungilo a `frontend/.env.local`:
-
-```
-NEXT_PUBLIC_SUBGRAPH_URL=https://api.goldsky.com/api/public/<PROJECT_ID>/subgraphs/growfi/1.0.0/gn
-```
-
----
-
-## 8. Log e debug
-
-```bash
-# Live log del subgraph
-npm run goldsky:logs
-
-# Lista di tutti i subgraph del team
-npm run goldsky:list
-```
-
----
-
-## 9. Teardown (attenzione, distrugge gli indici)
-
-```bash
-npx goldsky subgraph delete growfi/1.0.0
-```
-
----
-
-## Risoluzione problemi
-
-| Problema | Soluzione |
-|----------|-----------|
-| `401 Unauthorized` | Rifai `goldsky login` — l'API key potrebbe essere scaduta |
-| `Subgraph name already taken` | Incrementa la versione in `package.json` |
-| Handler inizia a indicizzare da block 0 | Imposta `startBlock` in `subgraph.yaml` sul block di deploy del factory |
-| Event signature mismatch | Rifai `npm run codegen` dopo modifiche all'ABI |
