@@ -34,9 +34,8 @@ library Deployer {
 
         CampaignFactory factoryImpl = new CampaignFactory();
         address[5] memory implsArr = impls;
-        bytes memory initData = abi.encodeCall(
-            CampaignFactory.initialize, (owner, feeRecipient, usdc, seqFeed, implsArr)
-        );
+        bytes memory initData =
+            abi.encodeCall(CampaignFactory.initialize, (owner, feeRecipient, usdc, seqFeed, implsArr));
         // Transparent proxy auto-deploys a ProxyAdmin owned by `owner`.
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(factoryImpl), owner, initData);
         factory = CampaignFactory(address(proxy));

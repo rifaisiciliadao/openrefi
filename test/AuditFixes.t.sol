@@ -124,10 +124,7 @@ contract AuditFixesTest is Test {
 
         // $3000 / $0.144 = 20833.33... $CAMPAIGN
         assertApproxEqAbs(
-            campaignToken.balanceOf(alice),
-            20_833_333_333_333_333_333_333,
-            1,
-            "H-01: WETH (18-dec) oracle regression"
+            campaignToken.balanceOf(alice), 20_833_333_333_333_333_333_333, 1, "H-01: WETH (18-dec) oracle regression"
         );
     }
 

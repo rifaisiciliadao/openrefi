@@ -328,8 +328,7 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
         // `remainingTokens` the queue fill DIDN'T consume — avoids round-trip
         // precision drift vs. re-deriving from paymentRemaining.
         if (state == State.Active) {
-            (paymentRemaining, tokensToMint) =
-                _fillSellBackQueue(paymentToken, paymentRemaining, tokensOut, msg.sender);
+            (paymentRemaining, tokensToMint) = _fillSellBackQueue(paymentToken, paymentRemaining, tokensOut, msg.sender);
         }
 
         // Mint remaining tokens to buyer

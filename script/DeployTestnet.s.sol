@@ -59,9 +59,8 @@ contract DeployTestnet is Script {
         console.log("HarvestManager impl   :", impls[4]);
 
         CampaignFactory factoryImpl = new CampaignFactory();
-        bytes memory initData = abi.encodeCall(
-            CampaignFactory.initialize, (owner, feeRecipient, address(usdc), address(0), impls)
-        );
+        bytes memory initData =
+            abi.encodeCall(CampaignFactory.initialize, (owner, feeRecipient, address(usdc), address(0), impls));
         TransparentUpgradeableProxy factoryProxy =
             new TransparentUpgradeableProxy(address(factoryImpl), owner, initData);
         console.log("CampaignFactory impl  :", address(factoryImpl));

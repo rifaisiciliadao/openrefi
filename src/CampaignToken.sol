@@ -68,12 +68,7 @@ contract CampaignToken is Initializable, ERC20Upgradeable, ERC20PermitUpgradeabl
         super._update(from, to, value);
     }
 
-    function nonces(address owner_)
-        public
-        view
-        override(ERC20PermitUpgradeable, NoncesUpgradeable)
-        returns (uint256)
-    {
+    function nonces(address owner_) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
         return super.nonces(owner_);
     }
 }

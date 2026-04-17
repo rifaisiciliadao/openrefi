@@ -185,7 +185,14 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
                 params.producer,
                 abi.encodeCall(
                     HarvestManager.initialize,
-                    (usdc, params.producer, address(this), protocolFeeRecipient, PROTOCOL_FEE_BPS, params.minProductClaim)
+                    (
+                        usdc,
+                        params.producer,
+                        address(this),
+                        protocolFeeRecipient,
+                        PROTOCOL_FEE_BPS,
+                        params.minProductClaim
+                    )
                 )
             )
         );
@@ -196,8 +203,7 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
                 yieldTokenImpl,
                 params.producer,
                 abi.encodeCall(
-                    YieldToken.initialize,
-                    (params.yieldName, params.yieldSymbol, stakingVaultAddr, harvestManagerAddr)
+                    YieldToken.initialize, (params.yieldName, params.yieldSymbol, stakingVaultAddr, harvestManagerAddr)
                 )
             )
         );
