@@ -128,7 +128,11 @@ File constraints (5 MB, `image/{jpeg,png,webp,avif,gif}`) enforced in-route.
 
 ### Subgraph (`platform/subgraph/`)
 
-Goldsky-ready — **team: turinglabs · project: growfi · chain: base-sepolia**. Factory wired in `subgraph.yaml` to `0x3fA41528a22645Bef478E9eBae83981C02e98f74` @ block `40322865`.
+Live on Goldsky — **team: turinglabs · project: growfi · chain: base-sepolia**. Factory wired in `subgraph.yaml` to `0x3fA41528a22645Bef478E9eBae83981C02e98f74` @ block `40322865`.
+
+- **Endpoint (prod tag)**: `https://api.goldsky.com/api/public/project_cmgzitcts001c5np28moc9lyy/subgraphs/growfi/prod/gn`
+- **Endpoint (pinned version)**: replace `prod` with `1.0.0` (or whatever `package.json` version is current)
+- Frontend client: `platform/frontend/src/lib/subgraph.ts` — minimal fetch+React Query wrapper exposing `useSubgraphCampaigns`, `useSubgraphCampaign(id)`, `useSubgraphMeta()`.
 
 - `schema.graphql` — 11 entities: `Campaign`, `AcceptedToken`, `Purchase`, `SellBackOrder`, `Position`, `Season`, `Claim`, `YieldRateSnapshot`, `User`, `GlobalStats`, `ContractIndex`.
 - **`ContractIndex`** maps StakingVault / HarvestManager addresses → owning `Campaign`. Populated in `src/factory.ts` when `CampaignCreated` fires, then read in `staking.ts` and `harvest.ts` to avoid expensive contract calls.
@@ -146,7 +150,7 @@ Full guide: `platform/subgraph/DEPLOY.md`.
 
 ### Platform gotchas
 
-- **Factory is live** on Base Sepolia at `0x3fA41528a22645Bef478E9eBae83981C02e98f74`. Discovery + detail pages still fall back to mock cards when `useCampaignsList` returns an empty array (e.g. no campaigns created yet), but all write paths go to the real factory.
+- **Factory is live** on Base Sepolia at `0x3fA41528a22645Bef478E9eBae83981C02e98f74`. Discovery reads from the Goldsky subgraph; falls back to mock cards only when the indexer returns 0 campaigns. All write paths go to the real factory.
 - **WalletConnect project ID** is live and committed to `.env.local` (not secret, just a rate-limit identifier). Don't commit `DO_SPACES_KEY` / `DO_SPACES_SECRET` — both `platform/backend/.gitignore` and root `.gitignore` exclude `.env`.
 - **Chain name ↔ id alignment**: frontend uses `NEXT_PUBLIC_CHAIN_ID=84532`, subgraph uses `network: base-sepolia`. Both point at the same chain — keep in sync if you ever target a different network.
 - **Subgraph `startBlock`** — already set to `40322865` (factory impl deploy block). Never set to 0 on mainnet/testnet; scanning from genesis wastes hours.
