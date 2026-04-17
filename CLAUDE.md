@@ -107,15 +107,24 @@ platform/
 
 ### Backend (`platform/backend/`)
 
-Fastify on **port 4001** (4000 was taken locally).
+Fastify on **port 4001** (4000 was taken locally). Uses `@aws-sdk/client-s3` against DigitalOcean Spaces (S3-compatible).
+
+**Storage target** — team `turinglabs`, project `Rifai`, bucket `growfi-media` in region `fra1`:
+- Endpoint: `https://fra1.digitaloceanspaces.com`
+- Public URL base: `https://growfi-media.fra1.digitaloceanspaces.com/`
+- CORS: `GET`/`HEAD` from any origin
+- Objects uploaded with `ACL=public-read` + `CacheControl: public, max-age=31536000, immutable` for images, `max-age=60` for JSON metadata
+- Keys: `campaigns/<nanoid12>.<ext>` for images, `metadata/<nanoid12>.json` for metadata
 
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /health` | liveness |
-| `POST /api/upload` | multipart image → Pinata IPFS, returns `{ cid, url }` |
-| `POST /api/metadata` | JSON metadata → Pinata IPFS |
+| `POST /api/upload` | multipart image → returns `{ key, url, size, contentType, filename }` |
+| `POST /api/metadata` | JSON body `{ name, description, location, productType, imageUrl? }` → returns `{ key, url, metadata }` |
 
-Env: `PORT`, `PINATA_JWT`, `PINATA_GATEWAY`. All file constraints (5 MB, image-only) enforced in-route.
+Env: `PORT`, `HOST`, `DO_SPACES_REGION`, `DO_SPACES_BUCKET`, `DO_SPACES_ENDPOINT`, `DO_SPACES_PUBLIC_BASE`, `DO_SPACES_KEY`, `DO_SPACES_SECRET`. Rotate keys with `doctl spaces keys create/delete`.
+
+File constraints (5 MB, `image/{jpeg,png,webp,avif,gif}`) enforced in-route.
 
 ### Subgraph (`platform/subgraph/`)
 
@@ -138,7 +147,7 @@ Full guide: `platform/subgraph/DEPLOY.md`.
 ### Platform gotchas
 
 - **Factory is live** on Base Sepolia at `0x3fA41528a22645Bef478E9eBae83981C02e98f74`. Discovery + detail pages still fall back to mock cards when `useCampaignsList` returns an empty array (e.g. no campaigns created yet), but all write paths go to the real factory.
-- **WalletConnect project ID** is live and committed to `.env.local` (not secret, just a rate-limit identifier). Don't commit `PINATA_JWT`.
+- **WalletConnect project ID** is live and committed to `.env.local` (not secret, just a rate-limit identifier). Don't commit `DO_SPACES_KEY` / `DO_SPACES_SECRET` — both `platform/backend/.gitignore` and root `.gitignore` exclude `.env`.
 - **Chain name ↔ id alignment**: frontend uses `NEXT_PUBLIC_CHAIN_ID=84532`, subgraph uses `network: base-sepolia`. Both point at the same chain — keep in sync if you ever target a different network.
 - **Subgraph `startBlock`** — already set to `40322865` (factory impl deploy block). Never set to 0 on mainnet/testnet; scanning from genesis wastes hours.
 - **After re-deploying contracts**, re-extract ABIs with `jq '.abi' out/<Contract>.sol/<Contract>.json > platform/{subgraph,frontend}/...` and re-run `npm run prepare` in the subgraph. Stale ABIs cause `Event signature mismatch` at indexing time.
