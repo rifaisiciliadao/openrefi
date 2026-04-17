@@ -11,6 +11,7 @@ import {HarvestManager} from "../src/HarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {MockOracle} from "./helpers/MockOracle.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Deployer} from "./helpers/Deployer.sol";
 
 /// @title E2E — Full-Protocol End-to-End Lifecycle
 /// @notice Simulates the entire protocol flow:
@@ -55,7 +56,7 @@ contract E2ETest is Test {
         weth = new MockERC20("Wrapped ETH", "WETH", 18);
         wethOracle = new MockOracle(WETH_USD_PRICE, 8);
 
-        factory = new CampaignFactory(protocolOwner, feeRecipient, address(usdc), address(0));
+        factory = Deployer.deployProtocol(protocolOwner, feeRecipient, address(usdc), address(0));
 
         vm.prank(producer);
         factory.createCampaign(

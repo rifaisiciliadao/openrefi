@@ -3,8 +3,9 @@ pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {CampaignToken} from "./CampaignToken.sol";
 import {YieldToken} from "./YieldToken.sol";
 
@@ -12,7 +13,8 @@ import {YieldToken} from "./YieldToken.sol";
 /// @notice Users stake $CAMPAIGN to earn $YIELD. Dynamic yield rate: 5x at 0% fill, 1x at 100%.
 ///         Synthetix-style accumulator for O(1) gas yield calculations.
 ///         Each stake() creates an independent position with its own penalty timeline.
-contract StakingVault is ReentrancyGuard, Pausable {
+/// @dev    Initializable so it can be deployed as an EIP-1167 clone.
+contract StakingVault is Initializable, ReentrancyGuard, PausableUpgradeable {
     using SafeERC20 for IERC20;
 
     // --- Constants ---
@@ -51,12 +53,12 @@ contract StakingVault is ReentrancyGuard, Pausable {
 
     // --- State ---
 
-    CampaignToken public immutable campaignToken;
+    CampaignToken public campaignToken;
     YieldToken public yieldToken;
-    address public immutable campaign;
-    address public immutable factory;
-    uint256 public immutable maxSupply;
-    uint256 public immutable seasonDuration;
+    address public campaign;
+    address public factory;
+    uint256 public maxSupply;
+    uint256 public seasonDuration;
 
     uint256 public totalStaked;
     uint256 public rewardPerTokenStored;
@@ -123,13 +125,19 @@ contract StakingVault is ReentrancyGuard, Pausable {
 
     // --- Constructor ---
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         address campaignToken_,
         address campaign_,
         address factory_,
         uint256 maxSupply_,
         uint256 seasonDuration_
-    ) {
+    ) external initializer {
+        __Pausable_init();
         campaignToken = CampaignToken(campaignToken_);
         campaign = campaign_;
         factory = factory_;

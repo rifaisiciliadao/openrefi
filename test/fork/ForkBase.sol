@@ -9,6 +9,7 @@ import {CampaignToken} from "../../src/CampaignToken.sol";
 import {YieldToken} from "../../src/YieldToken.sol";
 import {StakingVault} from "../../src/StakingVault.sol";
 import {HarvestManager} from "../../src/HarvestManager.sol";
+import {Deployer} from "../helpers/Deployer.sol";
 
 /// @title ForkBase — shared fork-test logic
 /// @notice Concrete child contracts override _rpcUrl() / _usdc() / _ethUsdFeed() to pin a chain.
@@ -49,7 +50,7 @@ abstract contract ForkBase is Test {
             return;
         }
 
-        factory = new CampaignFactory(protocolOwner, feeRecipient, _usdc(), _sequencerUptimeFeed());
+        factory = Deployer.deployProtocol(protocolOwner, feeRecipient, _usdc(), _sequencerUptimeFeed());
 
         vm.prank(producer);
         factory.createCampaign(

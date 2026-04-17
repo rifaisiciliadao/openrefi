@@ -12,6 +12,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {MockOracle} from "./helpers/MockOracle.sol";
 import {MockSequencerFeed} from "./helpers/MockSequencerFeed.sol";
+import {Deployer} from "./helpers/Deployer.sol";
 
 /// @title Regression tests for the Apr-2026 security audit findings.
 /// @dev Every finding in the audit report gets at least one test here.
@@ -44,7 +45,7 @@ contract AuditFixesTest is Test {
         wethOracle = new MockOracle(3000e8, 8); // $3000
         wbtcOracle = new MockOracle(60_000e8, 8); // $60k
 
-        factory = new CampaignFactory(owner, feeRecipient, address(usdc), address(0));
+        factory = Deployer.deployProtocol(owner, feeRecipient, address(usdc), address(0));
         vm.prank(producer);
         factory.createCampaign(
             CampaignFactory.CreateCampaignParams({
@@ -334,7 +335,7 @@ contract AuditFixesTest is Test {
 
     /// @dev Helper to deploy a campaign wired to a given sequencer feed.
     function _deployCampaignWithSequencer(address sequencerFeed) internal returns (Campaign, MockERC20, MockOracle) {
-        CampaignFactory f = new CampaignFactory(owner, feeRecipient, address(usdc), sequencerFeed);
+        CampaignFactory f = Deployer.deployProtocol(owner, feeRecipient, address(usdc), sequencerFeed);
         address newProducer = makeAddr("producer2");
         vm.prank(newProducer);
         f.createCampaign(

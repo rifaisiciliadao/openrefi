@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 /// @title YieldToken — "The Fruit"
 /// @notice Per-campaign harvest claim token. Minted by StakingVault, burned on redemption.
 /// @dev Fresh $YIELD minted each season. No carry-over between seasons.
-contract YieldToken is ERC20 {
-    address public immutable stakingVault;
-    address public immutable harvestManager;
+///      Initializable so it can be deployed as an EIP-1167 clone.
+contract YieldToken is Initializable, ERC20Upgradeable {
+    address public stakingVault;
+    address public harvestManager;
 
     error OnlyStakingVault();
     error OnlyVaultOrHarvest();
@@ -23,9 +25,16 @@ contract YieldToken is ERC20 {
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, address stakingVault_, address harvestManager_)
-        ERC20(name_, symbol_)
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(string memory name_, string memory symbol_, address stakingVault_, address harvestManager_)
+        external
+        initializer
     {
+        __ERC20_init(name_, symbol_);
         stakingVault = stakingVault_;
         harvestManager = harvestManager_;
     }

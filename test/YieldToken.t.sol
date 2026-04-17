@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {YieldToken} from "../src/YieldToken.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract YieldTokenTest is Test {
     YieldToken token;
@@ -11,7 +12,9 @@ contract YieldTokenTest is Test {
     address user = address(0x3);
 
     function setUp() public {
-        token = new YieldToken("Olive Yield", "oYIELD", vault, harvest);
+        YieldToken impl = new YieldToken();
+        bytes memory initData = abi.encodeCall(YieldToken.initialize, ("Olive Yield", "oYIELD", vault, harvest));
+        token = YieldToken(address(new TransparentUpgradeableProxy(address(impl), address(this), initData)));
     }
 
     function test_mint_onlyVault() public {
