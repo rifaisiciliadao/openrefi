@@ -161,7 +161,7 @@ Endpoints:
 - **Prod tag**: `https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn`
 - **Pinned version**: replace `prod` with the semver (e.g. `1.1.0`). Useful during schema migrations — older frontends can stay on an older version while the new one is tested.
 
-Frontend client: `platform/frontend/src/lib/subgraph.ts` — minimal fetch+React Query wrapper exposing `useSubgraphCampaigns`, `useSubgraphCampaign(id)`, `useSubgraphMeta()`.
+Frontend client: `platform/frontend/src/lib/subgraph.ts` — minimal fetch+React Query wrapper exposing `useSubgraphCampaigns`, `useSubgraphCampaign(id)`, `useSubgraphMeta()`. Off-chain metadata JSON (pointed to by `Campaign.metadataURI`) is fetched by `platform/frontend/src/lib/metadata.ts::useCampaignMetadata(uri, version)` — queryKey includes `version` so an on-chain URI rotation invalidates cleanly.
 
 Schema + handlers:
 - `schema.graphql` — 11 entities: `Campaign`, `AcceptedToken`, `Purchase`, `SellBackOrder`, `Position`, `Season`, `Claim`, `YieldRateSnapshot`, `User`, `GlobalStats`, `ContractIndex`. The `Campaign` entity carries `metadataURI` + `metadataVersion` populated by the `CampaignRegistry` handler.
