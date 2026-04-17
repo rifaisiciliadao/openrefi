@@ -35,9 +35,9 @@ dataSources:
     name: CampaignRegistry
     network: base-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"    # TODO: set after DeployRegistry.s.sol
+      address: "0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e"
       abi: CampaignRegistry
-      startBlock: 40322865
+      startBlock: 40331554
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
