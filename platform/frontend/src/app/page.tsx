@@ -28,7 +28,7 @@ const MOCK_CAMPAIGNS: Array<{
     producer: "Ferrara Family Farm",
     location: "Sicily",
     image:
-      "https://images.unsplash.com/photo-1445264755075-ed80e91f9404?w=800&q=80",
+      "https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&q=80",
     state: "funding",
     progress: 67,
     yieldRate: 3.8,
@@ -129,12 +129,17 @@ export default function Home() {
       producer: c.producer,
       location: "—",
       image:
-        "https://images.unsplash.com/photo-1445264755075-ed80e91f9404?w=800&q=80",
+        "https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&q=80",
       state: toState(c.state),
       progress: pctFilled(c.currentSupply, c.maxCap),
-      yieldRate: Number(formatUnits(BigInt(c.currentYieldRate), 18)),
+      yieldRate:
+        Math.round(
+          Number(formatUnits(BigInt(c.currentYieldRate), 18)) * 10,
+        ) / 10,
       deadline: String(daysToDeadline(c.fundingDeadline)),
       pricePerToken: pricePerTokenUsd(c.pricePerToken),
+      metadataURI: c.metadataURI,
+      metadataVersion: c.metadataVersion,
     }));
   }, [hasOnChainData, onChainCampaigns]);
 

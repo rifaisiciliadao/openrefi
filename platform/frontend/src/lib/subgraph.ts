@@ -65,6 +65,8 @@ const CAMPAIGN_FIELDS = `
   createdAt
   createdAtBlock
   activatedAt
+  metadataURI
+  metadataVersion
 `;
 
 export function useSubgraphCampaigns() {

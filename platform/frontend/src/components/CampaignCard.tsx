@@ -2,20 +2,26 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useCampaignMetadata } from "@/lib/metadata";
 
 export type CampaignState = "funding" | "active" | "ended";
 
 export interface CampaignCardProps {
   address: string;
+  /** Fallback name if metadata isn't available (e.g. truncated address). */
   name: string;
   producer: string;
   location: string;
+  /** Fallback image if metadata isn't available. */
   image: string;
   state: CampaignState;
   progress: number;
   yieldRate: number;
   deadline?: string;
   stakers?: number;
+  /** Optional on-chain pointer to off-chain JSON (set via CampaignRegistry). */
+  metadataURI?: string | null;
+  metadataVersion?: string | number | null;
 }
 
 const stateConfig: Record<
@@ -51,10 +57,18 @@ export function CampaignCard({
   yieldRate,
   deadline,
   stakers,
+  metadataURI,
+  metadataVersion,
 }: CampaignCardProps) {
   const t = useTranslations("home");
   const cfg = stateConfig[state];
   const isEnded = state === "ended";
+
+  const { data: metadata } = useCampaignMetadata(metadataURI, metadataVersion);
+
+  const resolvedName = metadata?.name || name;
+  const resolvedImage = metadata?.image || image;
+  const resolvedLocation = metadata?.location;
 
   return (
     <Link href={`/campaign/${address}`} className="block group">
@@ -64,8 +78,8 @@ export function CampaignCard({
             <div className="absolute inset-0 bg-surface-variant/40 z-10 mix-blend-multiply" />
           )}
           <img
-            src={image}
-            alt={name}
+            src={resolvedImage}
+            alt={resolvedName}
             className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isEnded ? "grayscale" : ""}`}
           />
           <div
@@ -76,7 +90,13 @@ export function CampaignCard({
         </div>
 
         <div className="p-6">
-          <h3 className="font-semibold text-on-surface mb-4">{name}</h3>
+          <h3 className="font-semibold text-on-surface mb-1">{resolvedName}</h3>
+          {resolvedLocation && (
+            <p className="text-xs text-on-surface-variant mb-4">
+              {resolvedLocation}
+            </p>
+          )}
+          {!resolvedLocation && <div className="mb-4" />}
 
           <div className="space-y-4">
             <div>
