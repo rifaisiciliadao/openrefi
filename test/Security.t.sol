@@ -9,6 +9,7 @@ import {YieldToken} from "../src/YieldToken.sol";
 import {StakingVault} from "../src/StakingVault.sol";
 import {HarvestManager} from "../src/HarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
+import {Deployer} from "./helpers/Deployer.sol";
 
 contract SecurityTest is Test {
     CampaignFactory factory;
@@ -28,7 +29,7 @@ contract SecurityTest is Test {
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
         weth = new MockERC20("WETH", "WETH", 18);
-        factory = new CampaignFactory(owner, feeRecipient, address(usdc), address(0));
+        factory = Deployer.deployProtocol(owner, feeRecipient, address(usdc), address(0));
 
         vm.prank(producer);
         factory.createCampaign(

@@ -4,8 +4,9 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {AggregatorV3Interface} from "./interfaces/AggregatorV3Interface.sol";
 import {CampaignToken} from "./CampaignToken.sol";
 import {StakingVault} from "./StakingVault.sol";
@@ -14,7 +15,10 @@ import {StakingVault} from "./StakingVault.sol";
 /// @notice Handles $CAMPAIGN token sales with multi-token support.
 ///         Funds are escrowed during Funding, released to producer on activation.
 ///         Failed campaigns allow full buyback refunds.
-contract Campaign is ReentrancyGuard, Pausable {
+/// @dev    Initializable so it can be deployed as an EIP-1167 clone. Once a
+///         clone is initialized, its configuration (producer, caps, fee, oracle,
+///         etc.) is immutable for the life of the campaign.
+contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     using SafeERC20 for IERC20;
 
     // --- Enums ---
@@ -65,19 +69,19 @@ contract Campaign is ReentrancyGuard, Pausable {
 
     CampaignToken public campaignToken;
     StakingVault public stakingVault;
-    address public immutable producer;
-    address public immutable factory;
+    address public producer;
+    address public factory;
     bool private _campaignTokenSet;
     bool private _stakingVaultSet;
-    uint256 public immutable pricePerToken; // USD price per $CAMPAIGN, 18 decimals (e.g., 0.144e18)
-    uint256 public immutable minCap; // minimum tokens to sell
-    uint256 public immutable maxCap; // maximum tokens mintable
-    uint256 public immutable fundingDeadline;
-    uint256 public immutable seasonDuration;
-    uint256 public immutable protocolFeeBps; // basis points (e.g., 200 = 2%)
-    address public immutable protocolFeeRecipient;
+    uint256 public pricePerToken; // USD price per $CAMPAIGN, 18 decimals (e.g., 0.144e18)
+    uint256 public minCap; // minimum tokens to sell
+    uint256 public maxCap; // maximum tokens mintable
+    uint256 public fundingDeadline;
+    uint256 public seasonDuration;
+    uint256 public protocolFeeBps; // basis points (e.g., 200 = 2%)
+    address public protocolFeeRecipient;
     /// @notice Chainlink L2 sequencer-uptime feed address; `address(0)` on L1.
-    AggregatorV3Interface public immutable sequencerUptimeFeed;
+    AggregatorV3Interface public sequencerUptimeFeed;
 
     State public state;
     uint256 public currentSupply;
@@ -178,7 +182,12 @@ contract Campaign is ReentrancyGuard, Pausable {
 
     // --- Constructor ---
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         address producer_,
         address factory_,
         uint256 pricePerToken_,
@@ -189,7 +198,8 @@ contract Campaign is ReentrancyGuard, Pausable {
         uint256 protocolFeeBps_,
         address protocolFeeRecipient_,
         address sequencerUptimeFeed_
-    ) {
+    ) external initializer {
+        __Pausable_init();
         producer = producer_;
         factory = factory_;
         pricePerToken = pricePerToken_;

@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {CampaignToken} from "../src/CampaignToken.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract CampaignTokenTest is Test {
     CampaignToken token;
@@ -11,7 +12,9 @@ contract CampaignTokenTest is Test {
     address user = address(0x3);
 
     function setUp() public {
-        token = new CampaignToken("Olive Tree", "OLIVE", campaign);
+        CampaignToken impl = new CampaignToken();
+        bytes memory initData = abi.encodeCall(CampaignToken.initialize, ("Olive Tree", "OLIVE", campaign));
+        token = CampaignToken(address(new TransparentUpgradeableProxy(address(impl), address(this), initData)));
         vm.prank(campaign);
         token.setStakingVault(vault);
     }

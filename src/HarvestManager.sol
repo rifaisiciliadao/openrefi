@@ -4,15 +4,17 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {YieldToken} from "./YieldToken.sol";
 import {StakingVault} from "./StakingVault.sol";
 
 /// @title HarvestManager — Harvest Reporting & Two-Step Redemption
 /// @notice Producer reports harvest → holders burn $YIELD to redeem product (Merkle) or USDC.
 ///         2% protocol fee deducted on harvest report.
-contract HarvestManager is ReentrancyGuard, Pausable {
+/// @dev    Initializable so it can be deployed as an EIP-1167 clone.
+contract HarvestManager is Initializable, ReentrancyGuard, PausableUpgradeable {
     using SafeERC20 for IERC20;
 
     // --- Structs ---
@@ -50,12 +52,12 @@ contract HarvestManager is ReentrancyGuard, Pausable {
 
     YieldToken public yieldToken;
     StakingVault public stakingVault;
-    IERC20 public immutable usdc;
-    address public immutable producer;
-    address public immutable factory;
-    address public immutable protocolFeeRecipient;
-    uint256 public immutable protocolFeeBps; // 200 = 2%
-    uint256 public immutable minProductClaim; // minimum product units for product redemption (18 decimals)
+    IERC20 public usdc;
+    address public producer;
+    address public factory;
+    address public protocolFeeRecipient;
+    uint256 public protocolFeeBps; // 200 = 2%
+    uint256 public minProductClaim; // minimum product units for product redemption (18 decimals)
     bool private _yieldTokenSet;
     bool private _stakingVaultSet;
 
@@ -128,14 +130,20 @@ contract HarvestManager is ReentrancyGuard, Pausable {
 
     // --- Constructor ---
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         address usdc_,
         address producer_,
         address factory_,
         address protocolFeeRecipient_,
         uint256 protocolFeeBps_,
         uint256 minProductClaim_
-    ) {
+    ) external initializer {
+        __Pausable_init();
         usdc = IERC20(usdc_);
         producer = producer_;
         factory = factory_;

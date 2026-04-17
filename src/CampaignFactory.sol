@@ -1,18 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {CampaignToken} from "./CampaignToken.sol";
 import {YieldToken} from "./YieldToken.sol";
 import {Campaign} from "./Campaign.sol";
 import {StakingVault} from "./StakingVault.sol";
 import {HarvestManager} from "./HarvestManager.sol";
 
-/// @title CampaignFactory — Deployer & Registry
-/// @notice Deploys and wires all campaign contracts. Stores registry of all campaigns.
-///         Owner is the protocol multisig.
-contract CampaignFactory is Ownable2Step {
+/// @title CampaignFactory — deployer & registry for upgradeable campaigns
+/// @notice Each campaign is a bundle of 5 `TransparentUpgradeableProxy` contracts,
+///         one per core contract type (Campaign, CampaignToken, StakingVault,
+///         YieldToken, HarvestManager). The producer of the campaign is set as
+///         the `initialOwner` of each proxy's auto-deployed `ProxyAdmin`, so the
+///         producer has full upgrade authority over ONLY their campaign.
+/// @dev    The factory itself is Initializable + Ownable2StepUpgradeable and is
+///         intended to be deployed behind its own TransparentUpgradeableProxy.
+///         The factory owner can swap implementation addresses for FUTURE
+///         campaigns via `setXxxImpl`; existing campaigns are unaffected.
+contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
     // --- Constants ---
 
     uint256 public constant PROTOCOL_FEE_BPS = 200; // 2%
@@ -32,11 +40,16 @@ contract CampaignFactory is Ownable2Step {
     // --- State ---
 
     address public protocolFeeRecipient;
-    address public immutable usdc;
+    address public usdc;
     /// @notice Chainlink L2 sequencer-uptime feed; `address(0)` on L1.
-    ///         Propagated into every Campaign so oracle pricing refuses to mint
-    ///         while the sequencer is down or within its recovery grace window.
-    address public immutable sequencerUptimeFeed;
+    address public sequencerUptimeFeed;
+
+    // Implementation addresses — settable by owner to change behavior for FUTURE campaigns.
+    address public campaignImpl;
+    address public campaignTokenImpl;
+    address public stakingVaultImpl;
+    address public yieldTokenImpl;
+    address public harvestManagerImpl;
 
     CampaignContracts[] public campaigns;
     mapping(address => bool) public isCampaign;
@@ -60,18 +73,9 @@ contract CampaignFactory is Ownable2Step {
     );
 
     event ProtocolFeeRecipientUpdated(address oldRecipient, address newRecipient);
+    event ImplementationUpdated(bytes32 indexed kind, address oldImpl, address newImpl);
 
-    // --- Constructor ---
-
-    constructor(address owner_, address protocolFeeRecipient_, address usdc_, address sequencerUptimeFeed_)
-        Ownable(owner_)
-    {
-        protocolFeeRecipient = protocolFeeRecipient_;
-        usdc = usdc_;
-        sequencerUptimeFeed = sequencerUptimeFeed_;
-    }
-
-    // --- Campaign Creation ---
+    // --- Struct for createCampaign args (unchanged ABI) ---
 
     struct CreateCampaignParams {
         address producer;
@@ -87,8 +91,40 @@ contract CampaignFactory is Ownable2Step {
         uint256 minProductClaim;
     }
 
-    /// @notice Deploy a full campaign suite. Permissionless — anyone can create a campaign as producer.
-    /// @dev Deployment order resolves circular deps via setters.
+    // --- Init ---
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @param owner_              Factory admin — controls implementation pointers and emergency pause.
+    /// @param protocolFeeRecipient_ Immutable-per-campaign fee sink (snapshotted at campaign create).
+    /// @param usdc_               USDC on target chain.
+    /// @param sequencerUptimeFeed_ Chainlink sequencer feed on L2; address(0) on L1.
+    /// @param impls               [campaign, campaignToken, stakingVault, yieldToken, harvestManager]
+    function initialize(
+        address owner_,
+        address protocolFeeRecipient_,
+        address usdc_,
+        address sequencerUptimeFeed_,
+        address[5] calldata impls
+    ) external initializer {
+        __Ownable_init(owner_);
+        require(protocolFeeRecipient_ != address(0), "Zero feeRecipient");
+        require(usdc_ != address(0), "Zero usdc");
+        protocolFeeRecipient = protocolFeeRecipient_;
+        usdc = usdc_;
+        sequencerUptimeFeed = sequencerUptimeFeed_;
+        _setImpls(impls);
+    }
+
+    // --- Campaign Creation ---
+
+    /// @notice Deploy a full upgradeable campaign suite. Permissionless — caller is producer.
+    /// @dev    Each of the 5 deployed proxies gets `params.producer` as its ProxyAdmin owner.
+    ///         Proxies are initialized inline (OZ 5.6+ requires non-empty initData) in
+    ///         dependency order: Campaign → CampaignToken → StakingVault → HarvestManager → YieldToken.
     function createCampaign(CreateCampaignParams calldata params) external returns (address) {
         require(params.producer != address(0), "Zero producer");
         require(params.producer == msg.sender, "producer must be caller");
@@ -98,71 +134,102 @@ contract CampaignFactory is Ownable2Step {
         require(params.fundingDeadline > block.timestamp, "Deadline in past");
         require(params.seasonDuration >= 30 days, "Season too short");
 
-        // 1. Deploy Campaign (without CampaignToken — will be set via setter)
-        Campaign campaign = new Campaign(
-            params.producer,
-            address(this),
-            params.pricePerToken,
-            params.minCap,
-            params.maxCap,
-            params.fundingDeadline,
-            params.seasonDuration,
-            PROTOCOL_FEE_BPS,
-            protocolFeeRecipient,
-            sequencerUptimeFeed
+        // 1. Campaign (no cross-contract deps at init).
+        address campaignAddr = address(
+            new TransparentUpgradeableProxy(
+                campaignImpl,
+                params.producer,
+                abi.encodeCall(
+                    Campaign.initialize,
+                    (
+                        params.producer,
+                        address(this),
+                        params.pricePerToken,
+                        params.minCap,
+                        params.maxCap,
+                        params.fundingDeadline,
+                        params.seasonDuration,
+                        PROTOCOL_FEE_BPS,
+                        protocolFeeRecipient,
+                        sequencerUptimeFeed
+                    )
+                )
+            )
         );
 
-        // 2. Deploy CampaignToken pointing to Campaign
-        CampaignToken campaignToken = new CampaignToken(params.tokenName, params.tokenSymbol, address(campaign));
-
-        // 3. Wire Campaign ↔ CampaignToken
-        campaign.setCampaignToken(address(campaignToken));
-
-        // 4. Deploy StakingVault
-        StakingVault stakingVault = new StakingVault(
-            address(campaignToken), address(campaign), address(this), params.maxCap, params.seasonDuration
+        // 2. CampaignToken (needs campaign address).
+        address campaignTokenAddr = address(
+            new TransparentUpgradeableProxy(
+                campaignTokenImpl,
+                params.producer,
+                abi.encodeCall(CampaignToken.initialize, (params.tokenName, params.tokenSymbol, campaignAddr))
+            )
         );
 
-        // 5. Wire CampaignToken ↔ StakingVault (via Campaign, which is the authorized caller)
-        campaign.setStakingVault(address(stakingVault));
-
-        // 6. Deploy HarvestManager (without YieldToken — will be set via setter)
-        HarvestManager harvestManager = new HarvestManager(
-            usdc, params.producer, address(this), protocolFeeRecipient, PROTOCOL_FEE_BPS, params.minProductClaim
+        // 3. StakingVault (needs campaignToken + campaign).
+        address stakingVaultAddr = address(
+            new TransparentUpgradeableProxy(
+                stakingVaultImpl,
+                params.producer,
+                abi.encodeCall(
+                    StakingVault.initialize,
+                    (campaignTokenAddr, campaignAddr, address(this), params.maxCap, params.seasonDuration)
+                )
+            )
         );
 
-        // 7. Deploy YieldToken pointing to StakingVault + HarvestManager
-        YieldToken yieldToken =
-            new YieldToken(params.yieldName, params.yieldSymbol, address(stakingVault), address(harvestManager));
+        // 4. HarvestManager (no cross-contract deps at init).
+        address harvestManagerAddr = address(
+            new TransparentUpgradeableProxy(
+                harvestManagerImpl,
+                params.producer,
+                abi.encodeCall(
+                    HarvestManager.initialize,
+                    (usdc, params.producer, address(this), protocolFeeRecipient, PROTOCOL_FEE_BPS, params.minProductClaim)
+                )
+            )
+        );
 
-        // 8. Wire HarvestManager ↔ YieldToken + StakingVault (for per-season yield snapshot)
-        harvestManager.setYieldToken(address(yieldToken));
-        harvestManager.setStakingVault(address(stakingVault));
+        // 5. YieldToken (needs stakingVault + harvestManager).
+        address yieldTokenAddr = address(
+            new TransparentUpgradeableProxy(
+                yieldTokenImpl,
+                params.producer,
+                abi.encodeCall(
+                    YieldToken.initialize,
+                    (params.yieldName, params.yieldSymbol, stakingVaultAddr, harvestManagerAddr)
+                )
+            )
+        );
 
-        // 9. Wire StakingVault ↔ YieldToken (via Campaign, which is the authorized caller)
-        campaign.setYieldToken(address(yieldToken));
+        // 6. Wire cross-references via the existing onlyFactory setters.
+        Campaign(campaignAddr).setCampaignToken(campaignTokenAddr);
+        Campaign(campaignAddr).setStakingVault(stakingVaultAddr); // delegates to CampaignToken.setStakingVault
+        HarvestManager(harvestManagerAddr).setYieldToken(yieldTokenAddr);
+        HarvestManager(harvestManagerAddr).setStakingVault(stakingVaultAddr);
+        Campaign(campaignAddr).setYieldToken(yieldTokenAddr); // delegates to StakingVault.setYieldToken
 
-        // Register
+        // 4. Register
         campaigns.push(
             CampaignContracts({
-                campaign: address(campaign),
-                campaignToken: address(campaignToken),
-                yieldToken: address(yieldToken),
-                stakingVault: address(stakingVault),
-                harvestManager: address(harvestManager),
+                campaign: campaignAddr,
+                campaignToken: campaignTokenAddr,
+                yieldToken: yieldTokenAddr,
+                stakingVault: stakingVaultAddr,
+                harvestManager: harvestManagerAddr,
                 producer: params.producer,
                 createdAt: block.timestamp
             })
         );
-        isCampaign[address(campaign)] = true;
+        isCampaign[campaignAddr] = true;
 
         emit CampaignCreated(
-            address(campaign),
+            campaignAddr,
             params.producer,
-            address(campaignToken),
-            address(yieldToken),
-            address(stakingVault),
-            address(harvestManager),
+            campaignTokenAddr,
+            yieldTokenAddr,
+            stakingVaultAddr,
+            harvestManagerAddr,
             params.pricePerToken,
             params.minCap,
             params.maxCap,
@@ -172,7 +239,7 @@ contract CampaignFactory is Ownable2Step {
             block.timestamp
         );
 
-        return address(campaign);
+        return campaignAddr;
     }
 
     // --- Admin ---
@@ -183,6 +250,40 @@ contract CampaignFactory is Ownable2Step {
         protocolFeeRecipient = newRecipient;
     }
 
+    function setCampaignImpl(address impl) external onlyOwner {
+        require(impl != address(0), "Zero impl");
+        emit ImplementationUpdated("campaign", campaignImpl, impl);
+        campaignImpl = impl;
+    }
+
+    function setCampaignTokenImpl(address impl) external onlyOwner {
+        require(impl != address(0), "Zero impl");
+        emit ImplementationUpdated("campaignToken", campaignTokenImpl, impl);
+        campaignTokenImpl = impl;
+    }
+
+    function setStakingVaultImpl(address impl) external onlyOwner {
+        require(impl != address(0), "Zero impl");
+        emit ImplementationUpdated("stakingVault", stakingVaultImpl, impl);
+        stakingVaultImpl = impl;
+    }
+
+    function setYieldTokenImpl(address impl) external onlyOwner {
+        require(impl != address(0), "Zero impl");
+        emit ImplementationUpdated("yieldToken", yieldTokenImpl, impl);
+        yieldTokenImpl = impl;
+    }
+
+    function setHarvestManagerImpl(address impl) external onlyOwner {
+        require(impl != address(0), "Zero impl");
+        emit ImplementationUpdated("harvestManager", harvestManagerImpl, impl);
+        harvestManagerImpl = impl;
+    }
+
+    function setSequencerUptimeFeed(address feed) external onlyOwner {
+        sequencerUptimeFeed = feed;
+    }
+
     function getCampaignCount() external view returns (uint256) {
         return campaigns.length;
     }
@@ -190,6 +291,8 @@ contract CampaignFactory is Ownable2Step {
     // --- Emergency ---
 
     /// @notice Pause all contracts for a specific campaign.
+    /// @dev    This is the factory-level pause (code defect / protocol-wide incident).
+    ///         It is separate from any pauses the producer may implement via upgrades.
     function pauseCampaign(uint256 campaignIndex) external onlyOwner {
         CampaignContracts storage c = campaigns[campaignIndex];
         Campaign(c.campaign).emergencyPause();
@@ -203,5 +306,20 @@ contract CampaignFactory is Ownable2Step {
         Campaign(c.campaign).emergencyUnpause();
         StakingVault(c.stakingVault).emergencyUnpause();
         HarvestManager(c.harvestManager).emergencyUnpause();
+    }
+
+    // --- Internal ---
+
+    function _setImpls(address[5] calldata impls) internal {
+        require(
+            impls[0] != address(0) && impls[1] != address(0) && impls[2] != address(0) && impls[3] != address(0)
+                && impls[4] != address(0),
+            "Zero impl"
+        );
+        campaignImpl = impls[0];
+        campaignTokenImpl = impls[1];
+        stakingVaultImpl = impls[2];
+        yieldTokenImpl = impls[3];
+        harvestManagerImpl = impls[4];
     }
 }

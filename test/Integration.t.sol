@@ -10,6 +10,7 @@ import {StakingVault} from "../src/StakingVault.sol";
 import {HarvestManager} from "../src/HarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {MockOracle} from "./helpers/MockOracle.sol";
+import {Deployer} from "./helpers/Deployer.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract IntegrationTest is Test {
@@ -45,7 +46,7 @@ contract IntegrationTest is Test {
         wethOracle = new MockOracle(2880e8, 8); // WETH = $2880, 8 decimals (Chainlink standard)
 
         // Deploy factory
-        factory = new CampaignFactory(owner, feeRecipient, address(usdc), address(0));
+        factory = Deployer.deployProtocol(owner, feeRecipient, address(usdc), address(0));
 
         // Create campaign
         uint256 deadline = block.timestamp + 90 days;

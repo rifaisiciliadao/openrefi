@@ -10,6 +10,7 @@ import {StakingVault} from "../src/StakingVault.sol";
 import {HarvestManager} from "../src/HarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {MockOracle} from "./helpers/MockOracle.sol";
+import {Deployer} from "./helpers/Deployer.sol";
 
 /// @title Fuzz — property-based tests on precision, rounding, and monotonicity
 contract FuzzTest is Test {
@@ -35,7 +36,7 @@ contract FuzzTest is Test {
 
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
-        factory = new CampaignFactory(protocolOwner, feeRecipient, address(usdc), address(0));
+        factory = Deployer.deployProtocol(protocolOwner, feeRecipient, address(usdc), address(0));
         vm.prank(producer);
         factory.createCampaign(
             CampaignFactory.CreateCampaignParams({

@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {CampaignFactory} from "../src/CampaignFactory.sol";
 import {Campaign} from "../src/Campaign.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
+import {Deployer} from "./helpers/Deployer.sol";
 
 /// @title GasBounds — regression tests for unbounded-loop DoS vectors
 contract GasBoundsTest is Test {
@@ -17,7 +18,7 @@ contract GasBoundsTest is Test {
 
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
-        factory = new CampaignFactory(protocolOwner, feeRecipient, address(usdc), address(0));
+        factory = Deployer.deployProtocol(protocolOwner, feeRecipient, address(usdc), address(0));
         vm.prank(producer);
         factory.createCampaign(
             CampaignFactory.CreateCampaignParams({

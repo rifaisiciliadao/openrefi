@@ -11,6 +11,7 @@ import {HarvestManager} from "../src/HarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {MockOracle} from "./helpers/MockOracle.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Deployer} from "./helpers/Deployer.sol";
 
 /// @title RedTeam — Adversarial attack attempts against the GrowFi protocol
 /// @notice Each test simulates an attacker trying to exploit a specific surface.
@@ -45,7 +46,7 @@ contract RedTeamTest is Test {
         weth = new MockERC20("WETH", "WETH", 18);
         wethOracle = new MockOracle(2880e8, 8);
 
-        factory = new CampaignFactory(protocolOwner, feeRecipient, address(usdc), address(0));
+        factory = Deployer.deployProtocol(protocolOwner, feeRecipient, address(usdc), address(0));
 
         vm.prank(producer);
         factory.createCampaign(

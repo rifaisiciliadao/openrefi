@@ -11,6 +11,7 @@ import {StakingVault} from "../../src/StakingVault.sol";
 import {HarvestManager} from "../../src/HarvestManager.sol";
 import {MockERC20} from "../helpers/MockERC20.sol";
 import {Handler} from "./Handler.sol";
+import {Deployer} from "../helpers/Deployer.sol";
 
 /// @title Invariants — stateful fuzzing of protocol global properties
 /// @notice Foundry fires random sequences of Handler calls; invariants must
@@ -40,7 +41,7 @@ contract InvariantsTest is StdInvariant, Test {
 
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
-        factory = new CampaignFactory(protocolOwner, feeRecipient, address(usdc), address(0));
+        factory = Deployer.deployProtocol(protocolOwner, feeRecipient, address(usdc), address(0));
 
         vm.prank(producer);
         factory.createCampaign(
