@@ -112,7 +112,7 @@ Separate from the contracts, the `platform/` directory contains the user-facing 
 ```
 platform/
 ├── frontend/   Next.js 15 App Router — wallet + UI
-├── backend/    Fastify — IPFS upload (port 4001)
+├── backend/    Fastify — DO Spaces upload (port 4001)
 └── subgraph/   Goldsky-deployed indexer
 ```
 
@@ -123,7 +123,7 @@ platform/
 - **i18n**: EN / IT / ES / FR. Provider in `src/i18n/LocaleProvider.tsx` — browser auto-detect + `localStorage["growfi:locale"]` persistence. Messages in `src/messages/<locale>.json`.
 - **Pages**:
   - `/` — Discovery, falls back to mock data when factory address unset.
-  - `/create` — 4-step form → uploads image + metadata to IPFS via backend, then calls `CampaignFactory.createCampaign`. Producer must be `msg.sender`.
+  - `/create` — 4-step form. Three-stage deploy flow: (1) upload image + metadata JSON to DO Spaces via backend, (2) `factory.createCampaign` (producer = `msg.sender`), (3) parse the `CampaignCreated` log → call `registry.setMetadata(newCampaign, metadataUrl)` to link the JSON on-chain. Stage 3 is best-effort: if the registry tx fails, the deploy is still reported as successful (the subgraph simply won't have `metadataURI` for that campaign until the producer retries).
   - `/campaign/[address]` — Invest / Stake / Harvest / Info tabs. `BuyPanel` reads `getAcceptedTokens` + `tokenConfigs` + ERC20 symbol/decimals/balance/allowance, then orchestrates approve → buy.
 - **Env** (`.env.local`): `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`, `NEXT_PUBLIC_BACKEND_URL`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_FACTORY_ADDRESS`, `NEXT_PUBLIC_USDC_ADDRESS`, `NEXT_PUBLIC_SUBGRAPH_URL`.
 - **Contract glue**: ABIs extracted from `forge build` via `jq` → `src/contracts/abis/*.json`. Hooks in `src/contracts/hooks.ts`. Minimal ERC20 ABI in `src/contracts/erc20.ts`.
