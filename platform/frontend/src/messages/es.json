@@ -138,8 +138,8 @@
       "draft": "Guardar Borrador"
     },
     "status": {
-      "uploadingImage": "Subiendo imagen a IPFS…",
-      "uploadingMetadata": "Subiendo metadata a IPFS…",
+      "uploadingImage": "Subiendo imagen…",
+      "uploadingMetadata": "Subiendo metadata…",
       "confirmTx": "Confirma la transacción en la wallet…",
       "waitingTx": "Esperando confirmación on-chain…",
       "success": "¡Campaña desplegada!",

@@ -121,7 +121,7 @@ export default function CreateCampaign() {
         description: form.description,
         location: form.location,
         productType: form.productType,
-        imageCid: image.cid,
+        imageUrl: image.url,
       });
 
       setStatus({ kind: "tx", message: t("status.confirmTx") });

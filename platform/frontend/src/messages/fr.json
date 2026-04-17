@@ -138,8 +138,8 @@
       "draft": "Sauvegarder Brouillon"
     },
     "status": {
-      "uploadingImage": "Upload de l'image sur IPFS…",
-      "uploadingMetadata": "Upload des metadata sur IPFS…",
+      "uploadingImage": "Upload de l'image…",
+      "uploadingMetadata": "Upload des metadata…",
       "confirmTx": "Confirme la transaction dans le wallet…",
       "waitingTx": "En attente de confirmation on-chain…",
       "success": "Campagne déployée !",

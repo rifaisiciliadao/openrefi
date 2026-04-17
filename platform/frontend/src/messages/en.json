@@ -138,8 +138,8 @@
       "draft": "Save Draft"
     },
     "status": {
-      "uploadingImage": "Uploading image to IPFS…",
-      "uploadingMetadata": "Uploading metadata to IPFS…",
+      "uploadingImage": "Uploading image…",
+      "uploadingMetadata": "Uploading metadata…",
       "confirmTx": "Confirm transaction in wallet…",
       "waitingTx": "Waiting for on-chain confirmation…",
       "success": "Campaign deployed!",

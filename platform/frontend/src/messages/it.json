@@ -138,8 +138,8 @@
       "draft": "Salva Bozza"
     },
     "status": {
-      "uploadingImage": "Upload immagine su IPFS…",
-      "uploadingMetadata": "Upload metadata su IPFS…",
+      "uploadingImage": "Upload immagine…",
+      "uploadingMetadata": "Upload metadata…",
       "confirmTx": "Conferma transazione nel wallet…",
       "waitingTx": "In attesa di conferma on-chain…",
       "success": "Campagna deployata!",

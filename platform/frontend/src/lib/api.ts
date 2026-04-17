@@ -1,9 +1,15 @@
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4001";
 
-export async function uploadImage(
-  file: File,
-): Promise<{ cid: string; url: string }> {
+export interface UploadResult {
+  key: string;
+  url: string;
+  size: number;
+  contentType: string;
+  filename: string;
+}
+
+export async function uploadImage(file: File): Promise<UploadResult> {
   const form = new FormData();
   form.append("file", file);
 
@@ -20,13 +26,26 @@ export async function uploadImage(
   return res.json();
 }
 
+export interface MetadataResult {
+  key: string;
+  url: string;
+  metadata: {
+    name: string;
+    description: string;
+    location: string;
+    productType: string;
+    image: string | null;
+    createdAt: number;
+  };
+}
+
 export async function uploadMetadata(input: {
   name: string;
   description: string;
   location: string;
   productType: string;
-  imageCid?: string;
-}): Promise<{ cid: string; url: string }> {
+  imageUrl?: string;
+}): Promise<MetadataResult> {
   const res = await fetch(`${BACKEND_URL}/api/metadata`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
