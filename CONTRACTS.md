@@ -9,6 +9,7 @@
 | Contract | Address | Purpose |
 |---|---|---|
 | **CampaignFactory** (proxy) | [`0x3fA41528a22645Bef478E9eBae83981C02e98f74`](https://sepolia.basescan.org/address/0x3fA41528a22645Bef478E9eBae83981C02e98f74) | Permissionless campaign creation. `createCampaign(params)` with `msg.sender == params.producer`. |
+| **CampaignRegistry** | [`0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e`](https://sepolia.basescan.org/address/0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e) | Onchain map `campaign → metadataURI` + monotonic `version`. Producer-only write, gated by `factory.isCampaign`. Indexed by the subgraph into `Campaign.metadataURI` / `.metadataVersion`. Deploy block `40331554`. |
 | **MockUSDC** | [`0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E`](https://sepolia.basescan.org/address/0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E) | 6-dec testnet USDC. Public `mint(to, amount)` — anyone can mint any amount. |
 
 ### Implementations (used for each new campaign's proxies)
@@ -65,6 +66,8 @@ FAST campaign peripherals:
 NEXT_PUBLIC_CHAIN_ID=84532
 NEXT_PUBLIC_FACTORY_ADDRESS=0x3fA41528a22645Bef478E9eBae83981C02e98f74
 NEXT_PUBLIC_USDC_ADDRESS=0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E
+NEXT_PUBLIC_REGISTRY_ADDRESS=0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e
+NEXT_PUBLIC_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn
 ```
 
 ---
@@ -98,6 +101,17 @@ cast send 0x3fA41528a22645Bef478E9eBae83981C02e98f74 \
   --rpc-url https://sepolia.base.org --private-key $YOUR_PK
 # price 0.144 USD, minCap 10k, maxCap 100k, deadline +90d, season 180d, minProductClaim 5e18
 ```
+
+### Set/update campaign metadata URI (as producer)
+
+```bash
+cast send 0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e \
+  "setMetadata(address,string)" \
+  <CAMPAIGN_PROXY_ADDRESS> "https://growfi-media.fra1.digitaloceanspaces.com/metadata/<cid>.json" \
+  --rpc-url https://sepolia.base.org --private-key $YOUR_PK
+```
+
+Emits `MetadataSet(campaign, producer, version, uri)`. Subgraph picks it up and writes `Campaign.metadataURI` + `Campaign.metadataVersion` within a few seconds. Producers can call again to rotate the URL — `version` increments, `metadataURI` is overwritten.
 
 ### Upgrade a campaign contract (as producer)
 

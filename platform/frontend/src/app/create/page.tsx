@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { parseUnits } from "viem";
+import {
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
+import { parseUnits, decodeEventLog, type Address } from "viem";
 import { abis, getAddresses } from "@/contracts";
 import { uploadImage, uploadMetadata } from "@/lib/api";
 
@@ -61,19 +65,26 @@ export default function CreateCampaign() {
   const [status, setStatus] = useState<
     | { kind: "idle" }
     | { kind: "uploading"; message: string }
-    | { kind: "tx"; message: string }
-    | { kind: "success"; txHash: string }
+    | { kind: "creating"; message: string }
+    | { kind: "registering"; message: string; campaign: Address }
+    | { kind: "success"; campaign: Address; createTx: string; registryTx?: string }
     | { kind: "error"; error: string }
   >({ kind: "idle" });
 
   const { address: connectedAddress, isConnected } = useAccount();
-  const { factory } = getAddresses();
+  const { factory, registry } = getAddresses();
   const factoryDeployed =
     factory !== "0x0000000000000000000000000000000000000000";
+  const registryDeployed =
+    registry !== "0x0000000000000000000000000000000000000000";
 
   const { writeContractAsync } = useWriteContract();
-  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
-  const receipt = useWaitForTransactionReceipt({ hash: txHash });
+  const [createTxHash, setCreateTxHash] = useState<`0x${string}` | undefined>();
+  const [registryTxHash, setRegistryTxHash] = useState<`0x${string}` | undefined>();
+  const [pendingMetadataUrl, setPendingMetadataUrl] = useState<string | null>(null);
+
+  const createReceipt = useWaitForTransactionReceipt({ hash: createTxHash });
+  const registryReceipt = useWaitForTransactionReceipt({ hash: registryTxHash });
 
   const update = <K extends keyof FormData>(key: K, value: FormData[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -112,19 +123,17 @@ export default function CreateCampaign() {
       setStatus({ kind: "uploading", message: t("status.uploadingImage") });
       const image = await uploadImage(form.imageFile);
 
-      setStatus({
-        kind: "uploading",
-        message: t("status.uploadingMetadata"),
-      });
-      await uploadMetadata({
+      setStatus({ kind: "uploading", message: t("status.uploadingMetadata") });
+      const metadata = await uploadMetadata({
         name: form.name,
         description: form.description,
         location: form.location,
         productType: form.productType,
         imageUrl: image.url,
       });
+      setPendingMetadataUrl(metadata.url);
 
-      setStatus({ kind: "tx", message: t("status.confirmTx") });
+      setStatus({ kind: "creating", message: t("status.confirmTx") });
       const deadline = Math.floor(
         new Date(form.fundingDeadline).getTime() / 1000,
       );
@@ -150,8 +159,8 @@ export default function CreateCampaign() {
         ],
       });
 
-      setTxHash(hash);
-      setStatus({ kind: "tx", message: t("status.waitingTx") });
+      setCreateTxHash(hash);
+      setStatus({ kind: "creating", message: t("status.waitingTx") });
     } catch (err) {
       setStatus({
         kind: "error",
@@ -160,9 +169,107 @@ export default function CreateCampaign() {
     }
   };
 
-  if (receipt.isSuccess && status.kind === "tx" && txHash) {
-    setStatus({ kind: "success", txHash });
-  }
+  // Step 2: createCampaign confirmed → extract new campaign address from logs
+  //         → call registry.setMetadata to link the off-chain JSON URL.
+  useEffect(() => {
+    if (
+      status.kind !== "creating" ||
+      !createReceipt.isSuccess ||
+      !createReceipt.data ||
+      !createTxHash
+    ) {
+      return;
+    }
+
+    const factoryAbi = abis.CampaignFactory as readonly unknown[];
+    let newCampaign: Address | undefined;
+    for (const log of createReceipt.data.logs) {
+      try {
+        const decoded = decodeEventLog({
+          abi: factoryAbi,
+          data: log.data,
+          topics: log.topics,
+        });
+        if (decoded.eventName === "CampaignCreated") {
+          const args = decoded.args as { campaign: Address };
+          newCampaign = args.campaign;
+          break;
+        }
+      } catch {
+        // not a factory event, skip
+      }
+    }
+
+    if (!newCampaign) {
+      setStatus({
+        kind: "error",
+        error: "Campaign address not found in tx logs",
+      });
+      return;
+    }
+
+    // If registry isn't deployed, we still consider the deploy a success —
+    // metadata link just won't be queryable via subgraph yet.
+    if (!registryDeployed || !pendingMetadataUrl) {
+      setStatus({
+        kind: "success",
+        campaign: newCampaign,
+        createTx: createTxHash,
+      });
+      return;
+    }
+
+    setStatus({
+      kind: "registering",
+      message: t("status.linkingMetadata"),
+      campaign: newCampaign,
+    });
+
+    writeContractAsync({
+      address: registry,
+      abi: abis.CampaignRegistry as never,
+      functionName: "setMetadata",
+      args: [newCampaign, pendingMetadataUrl],
+    })
+      .then((h) => setRegistryTxHash(h))
+      .catch((err) => {
+        // Metadata linking is best-effort — don't fail the whole flow.
+        setStatus({
+          kind: "success",
+          campaign: newCampaign!,
+          createTx: createTxHash,
+        });
+        console.warn("setMetadata failed:", err);
+      });
+  }, [
+    status.kind,
+    createReceipt.isSuccess,
+    createReceipt.data,
+    createTxHash,
+    pendingMetadataUrl,
+    registryDeployed,
+    registry,
+    writeContractAsync,
+    t,
+  ]);
+
+  // Step 3: registry.setMetadata confirmed → final success
+  useEffect(() => {
+    if (
+      status.kind !== "registering" ||
+      !registryReceipt.isSuccess ||
+      !registryTxHash ||
+      !createTxHash
+    ) {
+      return;
+    }
+    setStatus({
+      kind: "success",
+      campaign: status.campaign,
+      createTx: createTxHash,
+      registryTx: registryTxHash,
+    });
+  }, [status, registryReceipt.isSuccess, registryTxHash, createTxHash]);
 
   return (
     <div className="max-w-[1440px] mx-auto px-8 pt-28 pb-24 flex flex-col lg:flex-row gap-16">
@@ -596,20 +703,51 @@ export default function CreateCampaign() {
               {status.kind === "uploading" && (
                 <StatusBox kind="info">{status.message}</StatusBox>
               )}
-              {status.kind === "tx" && (
+              {status.kind === "creating" && (
+                <StatusBox kind="info">{status.message}</StatusBox>
+              )}
+              {status.kind === "registering" && (
                 <StatusBox kind="info">{status.message}</StatusBox>
               )}
               {status.kind === "success" && (
                 <StatusBox kind="success">
-                  {t("status.success")}{" "}
-                  <a
-                    href={`https://sepolia.basescan.org/tx/${status.txHash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline font-semibold"
-                  >
-                    {t("status.viewTx")}
-                  </a>
+                  <div>{t("status.success")}</div>
+                  <div className="mt-2 space-y-1 text-xs font-normal">
+                    <div>
+                      <a
+                        href={`/campaign/${status.campaign}`}
+                        className="underline font-semibold"
+                      >
+                        {t("status.viewCampaign")}
+                      </a>{" "}
+                      <span className="text-on-surface-variant">
+                        ({status.campaign.slice(0, 8)}…{status.campaign.slice(-6)})
+                      </span>
+                    </div>
+                    <div>
+                      <a
+                        href={`https://sepolia.basescan.org/tx/${status.createTx}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline"
+                      >
+                        {t("status.viewCreateTx")}
+                      </a>
+                      {status.registryTx && (
+                        <>
+                          {" · "}
+                          <a
+                            href={`https://sepolia.basescan.org/tx/${status.registryTx}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline"
+                          >
+                            {t("status.viewRegistryTx")}
+                          </a>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </StatusBox>
               )}
               {status.kind === "error" && (
@@ -640,14 +778,17 @@ export default function CreateCampaign() {
               onClick={handleDeploy}
               disabled={
                 status.kind === "uploading" ||
-                status.kind === "tx" ||
+                status.kind === "creating" ||
+                status.kind === "registering" ||
                 !isConnected
               }
               className="regen-gradient text-white px-8 py-3 rounded-full font-semibold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {!isConnected
                 ? t("actions.connect")
-                : status.kind === "uploading" || status.kind === "tx"
+                : status.kind === "uploading" ||
+                    status.kind === "creating" ||
+                    status.kind === "registering"
                   ? t("actions.inProgress")
                   : t("actions.deploy")}
             </button>
