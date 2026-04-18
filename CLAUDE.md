@@ -51,6 +51,11 @@ Invariant config: `runs = 256, depth = 128, fail_on_revert = false` → ~33k ran
 - `StakingVault.unstake` is intentionally NOT `whenNotPaused` — principal exit must always remain available. Only `stake/restake/claimYield` pause.
 - `Campaign.buyback` is intentionally NOT `whenNotPaused` — emergency refund path for failed campaigns.
 - **Never use `yieldToken.totalSupply()` as a harvest denominator.** Always `stakingVault.seasonTotalYieldOwed(id)`.
+- **USDC redeem is a 2-phase flow.** Each phase emits its own event, and the names are semantically correct:
+  - `redeemUSDC(seasonId, yieldAmount)` — BURNS $YIELD, registers a pending claim. Emits `USDCCommitted(user, seasonId, yieldBurned, usdcAmount)`. No USDC moves here.
+  - `depositUSDC(seasonId, amount)` — producer funds the pool (98% → holders, 2% → feeRecipient). Emits `USDCDeposited`.
+  - `claimUSDC(seasonId)` — holder pulls their pro-rata USDC. Emits `USDCRedeemed(user, seasonId, amount)` — this is the ONLY event where USDC actually transfers.
+  - NB: the pre-2026-04-18 contract had these names swapped (old `USDCRedeemed` fired at commit time, old `USDCClaimed` fired at transfer). Never revert to the old names. See `docs/REDEEM_2STEP.md` for the full UX spec.
 
 ## Public views for UI / indexers
 
@@ -95,9 +100,14 @@ Example reference: `script/UpgradeFactoryV2.s.sol` (adds `minSeasonDuration`, re
 
 - `script/Deploy.s.sol` — mainnet/arbitrum full deploy (5 impls + factory impl + proxy).
 - `script/DeployTestnet.s.sol` — testnet variant that additionally deploys MockUSDC and seeds the deployer with 1M mUSDC.
-- `script/UpgradeFactoryV2.s.sol` — example factory upgrade path.
-- `script/SmokeTest.s.sol` — live-chain happy-path check (createCampaign + addAcceptedToken + buy, asserts mint math).
-- `script/SmokeTest1h.s.sol` — full lifecycle bootstrap with 1h season; stakes, ready for endSeason + harvest after time elapses.
+- `script/UpgradeFactoryV2.s.sol` — example factory upgrade (adds `minSeasonDuration`, uses `initializeV2` reinitializer).
+- `script/UpgradeHarvestManager.s.sol` — deploys a new HarvestManager impl, points factory at it for future campaigns, and walks through every HM proxy listed in env (OLIVE/FAST/SMOKE) upgrading each via its own ProxyAdmin. Template for per-campaign impl upgrades.
+- `script/SmokeTest.s.sol` — single-buy happy-path assertion (fixed-rate mint math).
+- `script/SmokeTest1h.s.sol` — single-actor lifecycle bootstrap with 1h season; stakes, ready for endSeason + harvest after time elapses.
+- `script/OliveSetup.s.sol` — **2-actor** lifecycle bootstrap (producer + 2nd staker, 30-min season). Producer buys to auto-activate + startSeason + stake; mints mUSDC to Bob; Bob buys + stakes.
+- `script/OliveFinish.s.sol` — Phase 2a of the 2-actor flow (endSeason, both claimYield, reportHarvest with single-leaf Merkle root, alice redeemUSDC, bob redeemProduct). Stops before depositUSDC; pair with `finish-olive.sh` for the tail.
+- `script/finish-olive.sh` — wraps `OliveFinish.s.sol` then executes `depositUSDC` + `claimUSDC` via cast reading live `remainingDepositGross`. Avoids forge-script double-simulation drift.
+- `script/finish-single-actor.sh` — pure-cast variant for single-actor campaigns (FAST-style). One cast per step; no forge simulation involved.
 
 ## Deployments
 
