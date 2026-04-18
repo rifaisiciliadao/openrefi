@@ -3,8 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {ITransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {HarvestManager} from "../src/HarvestManager.sol";
 import {CampaignFactory} from "../src/CampaignFactory.sol";
 
@@ -21,8 +20,7 @@ import {CampaignFactory} from "../src/CampaignFactory.sol";
 ///   FAST_HARVEST_MANAGER        — HM proxy #2
 ///   SMOKE_HARVEST_MANAGER       — HM proxy #3 (may not be set — skip if zero)
 contract UpgradeHarvestManager is Script {
-    bytes32 private constant ERC1967_ADMIN_SLOT =
-        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+    bytes32 private constant ERC1967_ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");

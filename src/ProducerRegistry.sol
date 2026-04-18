@@ -19,11 +19,7 @@ contract ProducerRegistry {
     ///         callers invalidate caches without polling the URI.
     mapping(address => uint256) public version;
 
-    event ProfileUpdated(
-        address indexed producer,
-        uint256 indexed version,
-        string uri
-    );
+    event ProfileUpdated(address indexed producer, uint256 indexed version, string uri);
 
     error EmptyURI();
 
