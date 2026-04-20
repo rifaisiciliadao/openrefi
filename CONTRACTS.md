@@ -2,27 +2,33 @@
 
 ## Base Sepolia (chain 84532)
 
-**Deployed:** 2026-04-17 · **Deployer/owner:** `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33`
+**Deployed:** 2026-04-20 (fresh redeploy) · **Deployer/owner:** `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33`
+
+> Previous addresses (pre-2026-04-20) are dead. This redeploy ships the
+> Campaign.sol fix that lets sell-back queue orders be consumed at maxCap
+> (pre-fix the `currentSupply >= maxCap` guard made the queue unreachable
+> once the campaign was fully funded, defeating the feature). See
+> `test/SellBackAtMaxCap.t.sol` for the regression suite.
 
 ### Entry points (user-facing)
 
 | Contract | Address | Purpose |
 |---|---|---|
-| **CampaignFactory** (proxy) | [`0x3fA41528a22645Bef478E9eBae83981C02e98f74`](https://sepolia.basescan.org/address/0x3fA41528a22645Bef478E9eBae83981C02e98f74) | Permissionless campaign creation. `createCampaign(params)` with `msg.sender == params.producer`. |
-| **CampaignRegistry** | [`0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e`](https://sepolia.basescan.org/address/0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e) | Onchain map `campaign → metadataURI` + monotonic `version`. Producer-only write, gated by `factory.isCampaign`. Indexed by the subgraph into `Campaign.metadataURI` / `.metadataVersion`. Deploy block `40331554`. |
-| **ProducerRegistry** | [`0x702915469f66415C70b4203b40ab9A97203D979b`](https://sepolia.basescan.org/address/0x702915469f66415C70b4203b40ab9A97203D979b) | Onchain map `producer address → profileURI` + monotonic `version`. Zero-admin; `setProfile(uri)` writes only the caller's own row. Indexed into the subgraph `Producer` entity. Deploy block `40338465`. EIP-55 checksum must match exactly — viem rejects other casings. |
-| **MockUSDC** | [`0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E`](https://sepolia.basescan.org/address/0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E) | 6-dec testnet USDC. Public `mint(to, amount)` — anyone can mint any amount. |
+| **CampaignFactory** (proxy) | [`0x199B430359595AD09d42F697f33f44dDFd658C12`](https://sepolia.basescan.org/address/0x199B430359595AD09d42F697f33f44dDFd658C12) | Permissionless campaign creation. `createCampaign(params)` with `msg.sender == params.producer`. Deploy block `40452808`. |
+| **CampaignRegistry** | [`0xe996a49a576bb4047C66821e48C9ea3Ce762f628`](https://sepolia.basescan.org/address/0xe996a49a576bb4047C66821e48C9ea3Ce762f628) | Onchain map `campaign → metadataURI` + monotonic `version`. Producer-only write, gated by `factory.isCampaign`. Indexed by the subgraph into `Campaign.metadataURI` / `.metadataVersion`. Deploy block `40452852`. |
+| **ProducerRegistry** | [`0xB804de4d151E5A8a9EBa61a9904EC3588c8EFb56`](https://sepolia.basescan.org/address/0xB804de4d151E5A8a9EBa61a9904EC3588c8EFb56) | Onchain map `producer address → profileURI` + monotonic `version`. Zero-admin; `setProfile(uri)` writes only the caller's own row. Indexed into the subgraph `Producer` entity. Deploy block `40452862`. EIP-55 checksum must match exactly — viem rejects other casings. |
+| **MockUSDC** | [`0xe307a7F03d62b446558b3D6c232a42830d9a2037`](https://sepolia.basescan.org/address/0xe307a7F03d62b446558b3D6c232a42830d9a2037) | 6-dec testnet USDC. Public `mint(to, amount)` — anyone can mint any amount. |
 
 ### Implementations (used for each new campaign's proxies)
 
-| Contract | Address | Deploy tx |
-|---|---|---|
-| Campaign impl | [`0x61afa5fDfB09b465Dafc5b868E186Dec832DE945`](https://sepolia.basescan.org/address/0x61afa5fDfB09b465Dafc5b868E186Dec832DE945) | [`0xa2ce96a2…`](https://sepolia.basescan.org/tx/0xa2ce96a2e85597d654b8823856776b0af9863cac60038d0de8b1e6a2cd8ded33) |
-| CampaignToken impl | [`0x0DBE11aD9c2bf4126FE8D422e7374dE47600A2ca`](https://sepolia.basescan.org/address/0x0DBE11aD9c2bf4126FE8D422e7374dE47600A2ca) | [`0x7228dd72…`](https://sepolia.basescan.org/tx/0x7228dd7263f8f4515c26f1eeb08893296823e01a94f4ba568530a8b7bf7ee3ff) |
-| StakingVault impl | [`0x81C4e22EC9198f2983217C483e4027cf49E940db`](https://sepolia.basescan.org/address/0x81C4e22EC9198f2983217C483e4027cf49E940db) | [`0xfd70b3fb…`](https://sepolia.basescan.org/tx/0xfd70b3fb2ff4d67d4bcd0a4535c89fa976039a76800d06894bd3679789e1edd9) |
-| YieldToken impl | [`0x092Ed1e0845f6817e24316A730E98ec074e5F017`](https://sepolia.basescan.org/address/0x092Ed1e0845f6817e24316A730E98ec074e5F017) | [`0x562a768b…`](https://sepolia.basescan.org/tx/0x562a768b969623760de624f76cf9b7ef6f3f9b90504044f9a032f42880c2f051) |
-| HarvestManager impl (v2, 2-step redeem) | [`0x944d4810c83C2a6E4c57d3F55C62A499fA0A79Ff`](https://sepolia.basescan.org/address/0x944d4810c83c2a6e4c57d3f55c62a499fa0a79ff) | Deployed 2026-04-18 via `script/UpgradeHarvestManager.s.sol`. Emits `USDCCommitted` / `USDCDeposited` / `USDCRedeemed`. Previously `0x8d434e38…` (pre-rename). |
-| Factory impl | [`0x38da3922d3Bc3281F57946618404F0E341777F68`](https://sepolia.basescan.org/address/0x38da3922d3Bc3281F57946618404F0E341777F68) | [`0xfee08622…`](https://sepolia.basescan.org/tx/0xfee08622258e8cefd67940446e2a4a777bf4b463f7b4f3dd4da19592f98045f1) |
+| Contract | Address |
+|---|---|
+| Campaign impl (sell-back @ maxCap fix) | [`0x1aE04bd38332F0B73F378aBD13b560c1Fd028557`](https://sepolia.basescan.org/address/0x1aE04bd38332F0B73F378aBD13b560c1Fd028557) |
+| CampaignToken impl | [`0x341be87780D6Ce9F7785900D3245CB61Fb3b1AE1`](https://sepolia.basescan.org/address/0x341be87780D6Ce9F7785900D3245CB61Fb3b1AE1) |
+| StakingVault impl | [`0x44c6fFB39505287c5e4cB4c1E1d6119504bcEaab`](https://sepolia.basescan.org/address/0x44c6fFB39505287c5e4cB4c1E1d6119504bcEaab) |
+| YieldToken impl | [`0x7b03B539958DB590813ba9ca8788F5DdCA4e1b75`](https://sepolia.basescan.org/address/0x7b03B539958DB590813ba9ca8788F5DdCA4e1b75) |
+| HarvestManager impl (2-step redeem) | [`0x2A53fFd704eF93B001aB7439f08E13d6836fC336`](https://sepolia.basescan.org/address/0x2A53fFd704eF93B001aB7439f08E13d6836fC336) |
+| Factory impl | [`0x71bFC33642477f86cd9A2aD50Dd63dEd170F4Ec5`](https://sepolia.basescan.org/address/0x71bFC33642477f86cd9A2aD50Dd63dEd170F4Ec5) |
 
 ### Configuration
 
@@ -33,21 +39,13 @@
 | Protocol fee (bps) | 200 (= 2%) |
 | Sequencer uptime feed | `0x0000…0000` (testnet, no sequencer guard) |
 | USDC | MockUSDC (see above) |
-| `minSeasonDuration` (V2) | `3600` sec (= 1 hour) — relaxed for testnet. Mainnet default is 30 days. |
+| `minSeasonDuration` | 30 days (factory default, not yet lowered) |
 
-### Factory V2 upgrade (2026-04-17)
+> Lower the floor for fast testnet smokes: `cast send <FACTORY> "setMinSeasonDuration(uint256)" 3600 --rpc-url ... --private-key $OWNER_PK`.
 
-| Item | Value |
-|---|---|
-| New factory impl | [`0x4Cd93a22f91Ab965a7c9e55045a41afb52b926b6`](https://sepolia.basescan.org/address/0x4Cd93a22f91Ab965a7c9e55045a41afb52b926b6#code) |
-| Factory ProxyAdmin | [`0xe501150BB81937Ff18B4a18c1eDB4Be1c787e01A`](https://sepolia.basescan.org/address/0xe501150BB81937Ff18B4a18c1eDB4Be1c787e01A) |
-| Upgrade script | `script/UpgradeFactoryV2.s.sol` |
+### 2-step USDC redeem
 
-V2 adds `minSeasonDuration` as a `uint256` storage field + `setMinSeasonDuration(uint256)` onlyOwner setter + `initializeV2()` reinitializer. Existing `createCampaign` validation switched from hardcoded `>= 30 days` to `>= minSeasonDuration`.
-
-### HarvestManager 2-step redeem upgrade (2026-04-18)
-
-The HarvestManager impl was replaced to fix semantic event names (old names had the `Committed`/`Redeemed` labels swapped). Each running campaign's HarvestManager proxy was individually upgraded via its own producer-owned ProxyAdmin. The pre-upgrade event names `USDCRedeemed` (at commit time) and `USDCClaimed` (at transfer) are **obsolete** — don't look for them in logs or ABIs. The new flow:
+HarvestManager implements the commit/deposit/claim split:
 
 | Step | Function | Event |
 |---|---|---|
@@ -55,21 +53,16 @@ The HarvestManager impl was replaced to fix semantic event names (old names had 
 | 2. fund | `depositUSDC(seasonId, amount)` — producer tops up the pool (98/2 split) | `USDCDeposited` |
 | 3. claim | `claimUSDC(seasonId)` — holder pulls pro-rata USDC | `USDCRedeemed(user, seasonId, amount)` |
 
-Full UX spec in `docs/REDEEM_2STEP.md`. Subgraph + frontend ABIs were re-extracted to match; `platform/subgraph/subgraph.yaml` + `platform/frontend/src/contracts/abis/HarvestManager.json` are authoritative.
+Full UX spec in `docs/REDEEM_2STEP.md`.
 
-### Smoke test campaigns (for integration testing)
+---
 
-| Campaign | Address | Season duration | State | Notes |
-|---|---|---|---|---|
-| SMOKE (default) | [`0x1bB2084dE7F56A31CF5B11Ad5788bf236Ada5266`](https://sepolia.basescan.org/address/0x1bB2084dE7F56A31CF5B11Ad5788bf236Ada5266) | 180 days | Funding (1 SMOKE bought, below minCap 10k) | created via `script/SmokeTest.s.sol` |
-| FAST (1-hour) | [`0x17c152432D066ccE7599fB3612c4CFBf58555977`](https://sepolia.basescan.org/address/0x17c152432D066ccE7599fB3612c4CFBf58555977) | 1 hour | Active, season 1 running | created via `script/SmokeTest1h.s.sol` |
+## Subgraph
 
-FAST campaign peripherals:
-- CampaignToken: `0xe6C3182D62D331B0DEA867c96fbDFe5f28C36710`
-- StakingVault: `0x35477E7a3400851f74a60bd8Dc14201C742B2a7A`
-- YieldToken: `0x42ddf5c40cA5dA832b29aC64316AaaeD1e99f2fD`
-- HarvestManager: `0x4796C635cEe0128259db6517853A97415DD8D35C`
-- Producer staked 104.16 FAST tokens (positionId 0) at season start. Wait ≥1 hour then `endSeason + reportHarvest + claimYield`.
+- Version `2.0.0` (tagged `prod`)
+- Deployed: 2026-04-20
+- API: `https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn`
+- Pin version: replace `prod` with `2.0.0` (useful during schema migrations so an older frontend can stick to a previous version).
 
 ---
 
@@ -77,32 +70,15 @@ FAST campaign peripherals:
 
 ```bash
 NEXT_PUBLIC_CHAIN_ID=84532
-NEXT_PUBLIC_FACTORY_ADDRESS=0x3fA41528a22645Bef478E9eBae83981C02e98f74
-NEXT_PUBLIC_USDC_ADDRESS=0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E
-NEXT_PUBLIC_REGISTRY_ADDRESS=0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e
-NEXT_PUBLIC_PRODUCER_REGISTRY_ADDRESS=0x702915469f66415C70b4203b40ab9A97203D979b
+NEXT_PUBLIC_FACTORY_ADDRESS=0x199B430359595AD09d42F697f33f44dDFd658C12
+NEXT_PUBLIC_USDC_ADDRESS=0xe307a7F03d62b446558b3D6c232a42830d9a2037
+NEXT_PUBLIC_REGISTRY_ADDRESS=0xe996a49a576bb4047C66821e48C9ea3Ce762f628
+NEXT_PUBLIC_PRODUCER_REGISTRY_ADDRESS=0xB804de4d151E5A8a9EBa61a9904EC3588c8EFb56
 NEXT_PUBLIC_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn
 NEXT_PUBLIC_BACKEND_URL=http://localhost:4001
 ```
 
-> **EIP-55 gotcha**: viem's address validator rejects mixed-case strings that aren't valid EIP-55 checksums. `ProducerRegistry`'s preferred checksum is `0x702915469f66415C70b4203b40ab9A97203D979b` (note the lowercased `C` and `b`s). If you paste raw-case from a block explorer and it fails, run `cast to-check-sum-address 0x...`.
-
----
-
-## Backend endpoints (port 4001)
-
-Used by the frontend and by the producer's reportHarvest flow.
-
-| Endpoint | Purpose |
-|---|---|
-| `POST /api/upload` | multipart image → DO Spaces, returns public URL |
-| `POST /api/metadata` | campaign metadata JSON → DO Spaces |
-| `POST /api/producer` | producer profile JSON → DO Spaces |
-| `GET /api/snapshot/:campaign/:seasonId` | live per-holder $YIELD snapshot for a season (subgraph + on-chain `earned`). Feeds directly into `/api/merkle/generate`. |
-| `POST /api/merkle/generate` | builds the Merkle tree for a season's product allocation, persists leaves+proofs, returns `{ root, url, count }`. Root goes into `HarvestManager.reportHarvest`. |
-| `GET /api/merkle/:campaign/:seasonId/:user` | returns `{ user, productAmount, proof }` for a single holder — consumed by the frontend's `redeemProduct` path. |
-
-All S3 endpoints require `DO_SPACES_KEY` + `DO_SPACES_SECRET` env; without them they return `503`. Tree payloads are written at `merkle/<campaign>/<seasonId>.json` with `public-read` ACL.
+> **EIP-55 gotcha**: viem's address validator rejects mixed-case strings that aren't valid EIP-55 checksums. Run `cast to-check-sum-address 0x...` after any new deploy. The addresses above are already in the correct checksum form.
 
 ---
 
@@ -111,7 +87,7 @@ All S3 endpoints require `DO_SPACES_KEY` + `DO_SPACES_SECRET` env; without them 
 ### Get test USDC (anyone)
 
 ```bash
-cast send 0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E \
+cast send 0xe307a7F03d62b446558b3D6c232a42830d9a2037 \
   "mint(address,uint256)" <YOUR_ADDRESS> 10000000000 \
   --rpc-url https://sepolia.base.org --private-key $YOUR_PK
 # → 10,000 mUSDC (6 decimals)
@@ -120,7 +96,7 @@ cast send 0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E \
 ### Read factory state
 
 ```bash
-cast call 0x3fA41528a22645Bef478E9eBae83981C02e98f74 \
+cast call 0x199B430359595AD09d42F697f33f44dDFd658C12 \
   "getCampaignCount()(uint256)" --rpc-url https://sepolia.base.org
 ```
 
@@ -129,7 +105,7 @@ cast call 0x3fA41528a22645Bef478E9eBae83981C02e98f74 \
 Use the frontend at `/create`, or raw call:
 
 ```bash
-cast send 0x3fA41528a22645Bef478E9eBae83981C02e98f74 \
+cast send 0x199B430359595AD09d42F697f33f44dDFd658C12 \
   "createCampaign((address,string,string,string,string,uint256,uint256,uint256,uint256,uint256,uint256))" \
   "(<YOUR_ADDRESS>,Olive Tree,OLIVE,Olive Yield,oYIELD,144000000000000000,10000000000000000000000,100000000000000000000000,$(( $(date +%s) + 7776000 )),15552000,5000000000000000000)" \
   --rpc-url https://sepolia.base.org --private-key $YOUR_PK
@@ -139,83 +115,58 @@ cast send 0x3fA41528a22645Bef478E9eBae83981C02e98f74 \
 ### Set/update producer profile (any address)
 
 ```bash
-cast send 0x702915469f66415C70B4203B40aB9a97203d979B \
+cast send 0xB804de4d151E5A8a9EBa61a9904EC3588c8EFb56 \
   "setProfile(string)" \
   "https://growfi-media.fra1.digitaloceanspaces.com/profiles/<cid>.json" \
   --rpc-url https://sepolia.base.org --private-key $YOUR_PK
 ```
 
-Emits `ProfileUpdated(producer, version, uri)`. Subgraph writes
-`Producer.profileURI` + `Producer.version` within a few seconds. Anyone
-can call — the registry keys on `msg.sender`, so a caller can only
-publish their own profile.
-
 ### Set/update campaign metadata URI (as producer)
 
 ```bash
-cast send 0xb0Ba4660b2D136BF087FA9bf0aec946f0a87597e \
+cast send 0xe996a49a576bb4047C66821e48C9ea3Ce762f628 \
   "setMetadata(address,string)" \
   <CAMPAIGN_PROXY_ADDRESS> "https://growfi-media.fra1.digitaloceanspaces.com/metadata/<cid>.json" \
   --rpc-url https://sepolia.base.org --private-key $YOUR_PK
 ```
 
-Emits `MetadataSet(campaign, producer, version, uri)`. Subgraph picks it up and writes `Campaign.metadataURI` + `Campaign.metadataVersion` within a few seconds. Producers can call again to rotate the URL — `version` increments, `metadataURI` is overwritten.
-
-### Upgrade a campaign contract (as producer)
-
-Each of your campaign's 5 proxies has an auto-deployed `ProxyAdmin` owned by you (the producer). To upgrade:
-
-```bash
-# 1. Find the ProxyAdmin of the proxy you want to upgrade
-cast storage <CAMPAIGN_PROXY_ADDRESS> \
-  0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103 \
-  --rpc-url https://sepolia.base.org
-# That's the ERC-1967 admin slot. The returned 32-byte value is the ProxyAdmin address (last 20 bytes).
-
-# 2. Deploy a new implementation (e.g. CampaignV2).
-
-# 3. Call upgradeAndCall via ProxyAdmin
-cast send <PROXY_ADMIN_ADDRESS> \
-  "upgradeAndCall(address,address,bytes)" \
-  <CAMPAIGN_PROXY_ADDRESS> <NEW_IMPL_ADDRESS> 0x \
-  --rpc-url https://sepolia.base.org --private-key $YOUR_PK
-```
-
-### Swap default impl for future campaigns (as factory owner)
-
-```bash
-# Example: swap Campaign implementation that new campaigns get by default
-cast send 0x3fA41528a22645Bef478E9eBae83981C02e98f74 \
-  "setCampaignImpl(address)" <NEW_IMPL> \
-  --rpc-url https://sepolia.base.org --private-key $OWNER_PK
-```
-
 ---
 
-## Verify contracts on BaseScan
+## Backend endpoints (port 4001)
 
-```bash
-# Example for CampaignFactory impl. Repeat for each contract.
-forge verify-contract \
-  0x38da3922d3Bc3281F57946618404F0E341777F68 \
-  src/CampaignFactory.sol:CampaignFactory \
-  --chain-id 84532 \
-  --verifier-url https://api-sepolia.basescan.org/api \
-  --etherscan-api-key $BASESCAN_API_KEY \
-  --watch
-```
-
-Constructor args: all implementations are zero-arg (use `Initializable`). For the factory proxy, see `abi.encode(address factoryImpl, address initialOwner, bytes initData)` — constructor args of `TransparentUpgradeableProxy`.
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/upload` | multipart image → DO Spaces |
+| `POST /api/metadata` | campaign metadata JSON → DO Spaces |
+| `POST /api/producer` | producer profile JSON → DO Spaces |
+| `GET /api/snapshot/:campaign/:seasonId` | per-holder $YIELD snapshot for the reportHarvest flow |
+| `POST /api/merkle/generate` | builds + stores the Merkle tree; returns `{ root, url, count }` |
+| `GET /api/merkle/:campaign/:seasonId/:user` | returns `{ user, productAmount, proof }` for product redemption |
 
 ---
 
 ## Reset / redeploy
 
-The MockUSDC and all implementations are immutable; to redeploy:
-
 ```bash
 source .env
-forge script script/DeployTestnet.s.sol --rpc-url https://sepolia.base.org --broadcast
+forge script script/DeployTestnet.s.sol \
+  --rpc-url https://sepolia.base.org \
+  --broadcast --slow --private-key $PRIVATE_KEY
+FACTORY=<new factory proxy> forge script script/DeployRegistry.s.sol \
+  --rpc-url https://sepolia.base.org --broadcast --private-key $PRIVATE_KEY
+forge script script/DeployProducerRegistry.s.sol \
+  --rpc-url https://sepolia.base.org --broadcast --private-key $PRIVATE_KEY
 ```
 
-Each invocation deploys a fresh set — old addresses become dead. Update the frontend env accordingly.
+After deploying, bump `platform/subgraph/package.json` version, update `platform/subgraph/subgraph.yaml` addresses + startBlocks, then:
+
+```bash
+cd platform/subgraph
+for n in Campaign CampaignFactory CampaignToken CampaignRegistry HarvestManager ProducerRegistry StakingVault YieldToken; do
+  jq '.abi' ../../out/$n.sol/$n.json > abis/$n.json
+done
+npm run prepare
+npm run deploy:goldsky:prod
+```
+
+Update `platform/frontend/.env.local` + `src/contracts/tokens.ts` (KNOWN_TOKENS mUSDC address) + re-extract ABIs to `src/contracts/abis/`.

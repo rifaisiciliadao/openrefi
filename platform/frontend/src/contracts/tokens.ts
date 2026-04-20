@@ -37,7 +37,7 @@ export const KNOWN_TOKENS: KnownToken[] = [
     symbol: "mUSDC",
     name: "Mock USDC (testnet)",
     addresses: {
-      84532: "0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E",
+      84532: "0xe307a7F03d62b446558b3D6c232a42830d9a2037",
       8453: null,
     },
     decimals: 6,
