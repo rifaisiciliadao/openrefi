@@ -24,6 +24,7 @@ import { HarvestPanel } from "@/components/HarvestPanel";
 import { ProducerManagePanel } from "@/components/ProducerManagePanel";
 import { RefundPanel, TriggerBuybackCta } from "@/components/RefundPanel";
 import { SellBackPanel } from "@/components/SellBackPanel";
+import { InvestorList } from "@/components/InvestorList";
 import { ActivateCtaBanner } from "@/components/ActivateCtaBanner";
 import { Spinner } from "@/components/Spinner";
 import { waitForTx } from "@/lib/waitForTx";
@@ -237,6 +238,19 @@ export default function CampaignDetail({
                     currentState={stateIdx}
                   />
                 </>
+              )}
+
+              {hasOnChainData && (
+                <InvestorList
+                  campaignAddress={campaignAddress}
+                  campaignToken={
+                    (cd?.[7]?.result as Address | undefined) ??
+                    "0x0000000000000000000000000000000000000000"
+                  }
+                  currentSupply={
+                    (cd?.[4]?.result as bigint | undefined) ?? 0n
+                  }
+                />
               )}
             </>
           )}

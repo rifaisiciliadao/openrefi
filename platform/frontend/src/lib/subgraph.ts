@@ -217,6 +217,75 @@ export function useCampaignInvestors(address: string | undefined) {
   });
 }
 
+/**
+ * Batch-resolve wallet → producer profile (name + avatar) in one round-trip.
+ * Used by the InvestorList widget so each row can show the registered name
+ * if the investor has ever published a profile via ProducerRegistry.
+ * Falls back to a shortened address upstream when no profile exists.
+ */
+export interface BatchProducerProfile {
+  id: string;
+  profileURI: string;
+  version: string;
+  name?: string;
+  avatar?: string;
+}
+
+export function useBatchProducerProfiles(
+  addresses: string[] | undefined,
+) {
+  const keys = (addresses ?? [])
+    .filter((a): a is string => !!a)
+    .map((a) => a.toLowerCase())
+    .sort();
+  const cacheKey = keys.join(",");
+  return useQuery({
+    queryKey: ["subgraph", "producers-batch", cacheKey],
+    enabled: keys.length > 0,
+    queryFn: async (): Promise<Map<string, BatchProducerProfile>> => {
+      const data = await gql<{ producers: Array<{
+        id: string;
+        profileURI: string;
+        version: string;
+      }> }>(
+        `
+        query BatchProducers($ids: [ID!]!) {
+          producers(where: { id_in: $ids }) {
+            id
+            profileURI
+            version
+          }
+        }
+        `,
+        { ids: keys },
+      );
+      // Fetch the off-chain JSON for each row in parallel so we can show
+      // name/avatar on the same render. Failures just drop that producer
+      // to address-only fallback.
+      const rows = await Promise.all(
+        data.producers.map(async (p) => {
+          if (!p.profileURI) return { ...p, name: undefined, avatar: undefined };
+          try {
+            const res = await fetch(p.profileURI, { cache: "force-cache" });
+            if (!res.ok) return { ...p };
+            const j = (await res.json()) as {
+              name?: string;
+              avatar?: string;
+            };
+            return { ...p, name: j.name, avatar: j.avatar };
+          } catch {
+            return { ...p };
+          }
+        }),
+      );
+      const map = new Map<string, BatchProducerProfile>();
+      for (const r of rows) map.set(r.id.toLowerCase(), r);
+      return map;
+    },
+    staleTime: 60_000,
+  });
+}
+
 export interface SubgraphSeason {
   id: string;
   seasonId: string;

@@ -238,6 +238,15 @@
       "escrowActive": "Campagne active — les paiements vont directement au producteur.",
       "demoNotice": "Données de démo. Déploie la factory et visite l'adresse d'une campagne réelle pour acheter on-chain."
     },
+    "investors": {
+      "title": "Investisseurs",
+      "count": "{count, plural, one {1 wallet} other {# wallets}}",
+      "sharePct": "{pct}% du supply",
+      "txCount": "{count, plural, one {1 tx} other {# txs}}",
+      "emptyTitle": "Aucun investisseur pour l'instant",
+      "emptyBody": "Sois le premier à acheter — ton wallet apparaîtra ici.",
+      "truncated": "Top {shown} sur {total}"
+    },
     "linkMetadata": {
       "title": "Lier les métadonnées à cette campagne",
       "body": "On-chain cette campagne est encore \"{name}\" — charge l'image de couverture, remplis les infos, puis signe une transaction pour les publier.",
