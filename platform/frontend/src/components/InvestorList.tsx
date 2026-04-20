@@ -101,61 +101,63 @@ export function InvestorList({
           return (
             <li
               key={inv.buyer}
-              className="flex items-center gap-3 py-2 border-b border-outline-variant/10 last:border-0"
+              className="border-b border-outline-variant/10 last:border-0"
             >
-              <div className="text-xs font-mono text-on-surface-variant w-6 shrink-0 text-right">
-                {i + 1}
-              </div>
-              {profile?.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profile.avatar}
-                  alt={displayName}
-                  className="w-9 h-9 rounded-full object-cover border border-outline-variant/15 shrink-0"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-primary-fixed text-on-primary-fixed-variant flex items-center justify-center text-[11px] font-bold shrink-0">
-                  {inv.buyer.slice(2, 4).toUpperCase()}
+              <Link
+                href={`/producer/${inv.buyer}`}
+                className="flex items-center gap-3 py-3 -mx-2 px-2 rounded-lg hover:bg-surface-container-low transition-colors"
+              >
+                <div className="text-xs font-mono text-on-surface-variant w-6 shrink-0 text-right">
+                  {i + 1}
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <Link
-                  href={`/producer/${inv.buyer}`}
-                  className="text-sm font-semibold text-on-surface hover:text-primary truncate block"
-                >
-                  {displayName}
-                  {profile?.name && (
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 16 16"
-                      className="inline-block ml-1 mb-0.5 text-primary"
-                      fill="currentColor"
-                      aria-label="verified"
-                    >
-                      <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.78 6.28l-4.5 4.5a.75.75 0 01-1.06 0l-2-2a.75.75 0 011.06-1.06L6.75 9.19l3.97-3.97a.75.75 0 011.06 1.06z" />
-                    </svg>
-                  )}
-                </Link>
-                <div className="text-[11px] text-on-surface-variant">
-                  {t("sharePct", {
-                    pct: sharePct.toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    }),
-                  })}{" "}
-                  · {t("txCount", { count: inv.purchaseCount })}
+                {profile?.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profile.avatar}
+                    alt={displayName}
+                    className="w-9 h-9 rounded-full object-cover border border-outline-variant/15 shrink-0"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-primary-fixed text-on-primary-fixed-variant flex items-center justify-center text-[11px] font-bold shrink-0">
+                    {inv.buyer.slice(2, 4).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-on-surface truncate">
+                    {displayName}
+                    {profile?.name && (
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 16 16"
+                        className="inline-block ml-1 mb-0.5 text-primary"
+                        fill="currentColor"
+                        aria-label="verified"
+                      >
+                        <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm3.78 6.28l-4.5 4.5a.75.75 0 01-1.06 0l-2-2a.75.75 0 011.06-1.06L6.75 9.19l3.97-3.97a.75.75 0 011.06 1.06z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-on-surface-variant">
+                    {t("sharePct", {
+                      pct: sharePct.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      }),
+                    })}{" "}
+                    · {t("txCount", { count: inv.purchaseCount })}
+                  </div>
                 </div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-sm font-bold text-on-surface whitespace-nowrap">
-                  {Number(
-                    formatUnits(inv.totalTokens, 18),
-                  ).toLocaleString(undefined, { maximumFractionDigits: 0 })}{" "}
-                  <span className="text-xs text-on-surface-variant">
-                    ${campaignSymbol}
-                  </span>
+                <div className="text-right shrink-0">
+                  <div className="text-sm font-bold text-on-surface whitespace-nowrap">
+                    {Number(
+                      formatUnits(inv.totalTokens, 18),
+                    ).toLocaleString(undefined, { maximumFractionDigits: 0 })}{" "}
+                    <span className="text-xs text-on-surface-variant">
+                      ${campaignSymbol}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </Link>
             </li>
           );
         })}

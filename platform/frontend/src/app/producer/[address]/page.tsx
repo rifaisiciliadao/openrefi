@@ -60,14 +60,14 @@ export default function ProducerPage({
 
   if (!isValid) {
     return (
-      <div className="max-w-7xl mx-auto px-8 pt-32 text-center">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-32 text-center">
         <p className="text-on-surface-variant">{t("invalidAddress")}</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-8 pt-28 pb-20">
+    <div className="max-w-7xl mx-auto px-4 md:px-8 pt-28 pb-20">
       {isOwner && (
         <ProducerAggregateDashboard producerAddress={producerAddress} />
       )}
@@ -80,27 +80,27 @@ export default function ProducerPage({
       )}
 
       <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
           {profile?.avatar ? (
             <img
               src={profile.avatar}
               alt={profile.name ?? ""}
-              className="w-20 h-20 rounded-full object-cover border border-outline-variant/15"
+              className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border border-outline-variant/15 shrink-0"
             />
           ) : (
-            <div className="w-20 h-20 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed-variant font-bold text-2xl">
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed-variant font-bold text-2xl shrink-0">
               {(profile?.name ?? producerAddress).slice(2, 4).toUpperCase()}
             </div>
           )}
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-on-surface">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-on-surface break-words">
               {profileLoadingCombined ? (
                 <span className="inline-block h-8 w-48 rounded-md bg-surface-container-high animate-pulse" />
               ) : (
                 profile?.name || t("anonymous")
               )}
             </h1>
-            <p className="text-sm text-on-surface-variant font-mono">
+            <p className="text-xs md:text-sm text-on-surface-variant font-mono break-all">
               {producerAddress}
             </p>
             {profile?.location && (

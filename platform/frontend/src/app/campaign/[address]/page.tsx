@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, use } from "react";
+import { useEffect, useState, use } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   useAccount,
@@ -43,7 +44,21 @@ export default function CampaignDetail({
   const { address } = use(params);
   const t = useTranslations("detail");
   const tHome = useTranslations("home");
-  const [activeTab, setActiveTab] = useState<Tab>("invest");
+  const searchParams = useSearchParams();
+  const initialTab = ((): Tab => {
+    const q = searchParams.get("tab");
+    return q === "stake" || q === "harvest" || q === "info" || q === "manage"
+      ? q
+      : "invest";
+  })();
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+  useEffect(() => {
+    const q = searchParams.get("tab");
+    if (q === "stake" || q === "harvest" || q === "info" || q === "manage") {
+      setActiveTab(q as Tab);
+    }
+  }, [searchParams]);
 
   const campaignAddress = address as Address;
   const isValidAddress = /^0x[a-fA-F0-9]{40}$/.test(campaignAddress);
@@ -100,26 +115,28 @@ export default function CampaignDetail({
   return (
     <>
       <section
-        className="relative w-full h-72 flex items-end px-8 lg:px-16 pb-12 bg-cover bg-center overflow-hidden"
+        className="relative w-full h-60 md:h-72 flex items-end px-4 md:px-8 lg:px-16 pb-8 md:pb-12 bg-cover bg-center overflow-hidden"
         style={heroStyle}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col gap-4">
-          <nav className="flex text-white/70 text-xs font-semibold uppercase tracking-wider">
-            <Link href="/">{t("breadcrumb")}</Link>
+        <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col gap-3 md:gap-4">
+          <nav className="flex items-center text-white/70 text-xs font-semibold uppercase tracking-wider min-h-[32px]">
+            <Link href="/" className="inline-flex items-center min-h-[32px] hover:text-white transition-colors">
+              {t("breadcrumb")}
+            </Link>
             <span className="mx-2">/</span>
-            <span className="text-white">{displayName}</span>
+            <span className="text-white truncate">{displayName}</span>
           </nav>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
+          <div className="flex items-start justify-between flex-wrap gap-3 md:gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight break-words">
                 {displayName}
               </h1>
               {displayLocation && (
-                <p className="text-white/90 mt-2">{displayLocation}</p>
+                <p className="text-white/90 mt-2 text-sm md:text-base">{displayLocation}</p>
               )}
             </div>
-            <span className="inline-flex items-center px-4 py-2 rounded-full bg-primary-fixed text-on-primary-fixed-variant text-xs font-semibold uppercase tracking-wider backdrop-blur-md">
+            <span className="inline-flex items-center px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary-fixed text-on-primary-fixed-variant text-[10px] md:text-xs font-semibold uppercase tracking-wider backdrop-blur-md shrink-0">
               {tHome(
                 stateKey === "buyback"
                   ? "state.ended"
@@ -131,7 +148,7 @@ export default function CampaignDetail({
       </section>
 
       <div className="sticky top-16 z-40 bg-surface/90 backdrop-blur-md border-b border-outline-variant/15">
-        <div className="max-w-7xl mx-auto px-8 lg:px-16 flex gap-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16 flex gap-4 md:gap-8 overflow-x-auto no-scrollbar">
           {[
             ...TAB_KEYS,
             ...(isProducerViewing ? (["manage"] as Tab[]) : []),
@@ -139,7 +156,7 @@ export default function CampaignDetail({
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`py-4 text-base font-semibold transition-colors border-b-2 ${
+              className={`py-4 text-sm md:text-base font-semibold transition-colors border-b-2 whitespace-nowrap ${
                 activeTab === key
                   ? "text-primary border-primary"
                   : "text-on-surface-variant border-transparent hover:text-on-surface"
@@ -152,7 +169,7 @@ export default function CampaignDetail({
       </div>
 
       {isProducerViewing && hasOnChainData && (
-        <div className="max-w-7xl mx-auto px-8 lg:px-16 pt-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16 pt-6">
           <ActivateCtaBanner
             campaignAddress={campaignAddress}
             currentState={stateIdx}
@@ -164,7 +181,7 @@ export default function CampaignDetail({
       )}
 
       {isProducerViewing && metadataMissing && (
-        <div className="max-w-7xl mx-auto px-8 lg:px-16 pt-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16 pt-6">
           <LinkMetadataBanner
             campaignAddress={campaignAddress}
             currentName={displayName}
@@ -172,7 +189,7 @@ export default function CampaignDetail({
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-8 lg:px-16 py-12 flex flex-col lg:flex-row gap-12 items-start">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16 py-8 md:py-12 flex flex-col lg:flex-row gap-8 md:gap-12 items-start">
         <div className="w-full lg:w-[65%] flex flex-col gap-6">
           {activeTab === "invest" && (
             <>

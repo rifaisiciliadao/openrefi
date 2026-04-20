@@ -4,7 +4,8 @@
     "create": "Create Campaign",
     "portfolio": "My Portfolio",
     "profile": "Profile",
-    "connectWallet": "Connect Wallet"
+    "connectWallet": "Connect Wallet",
+    "connect": "Connect"
   },
   "home": {
     "badge": "Regenerative Finance",

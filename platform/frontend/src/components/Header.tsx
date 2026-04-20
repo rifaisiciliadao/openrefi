@@ -11,8 +11,8 @@ export function Header() {
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-outline-variant/15">
-      <div className="flex justify-between items-center px-8 h-16 max-w-7xl mx-auto w-full gap-6">
-        <Link href="/" className="flex items-center gap-1 shrink-0">
+      <div className="flex justify-between items-center px-4 md:px-8 h-16 max-w-7xl mx-auto w-full gap-2 md:gap-6">
+        <Link href="/" className="flex items-center gap-1 shrink-0 min-w-0">
           <Logo />
         </Link>
 
@@ -37,7 +37,7 @@ export function Header() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <LanguageSwitcher />
           <ConnectButton.Custom>
             {({
@@ -51,7 +51,7 @@ export function Header() {
               const ready = mounted;
               const connected = ready && account && chain;
               const pillBase =
-                "h-10 px-4 rounded-full text-sm font-semibold bg-white border border-outline-variant/30 text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-2";
+                "h-10 px-3 md:px-4 rounded-full text-xs md:text-sm font-semibold bg-white border border-outline-variant/30 text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-2 whitespace-nowrap";
 
               return (
                 <div className="flex items-center gap-2" aria-hidden={!ready}>
@@ -61,13 +61,14 @@ export function Header() {
                       type="button"
                       className={pillBase}
                     >
-                      {t("connectWallet")}
+                      <span className="hidden sm:inline">{t("connectWallet")}</span>
+                      <span className="sm:hidden">{t("connect")}</span>
                     </button>
                   ) : chain.unsupported ? (
                     <button
                       onClick={openChainModal}
                       type="button"
-                      className="h-10 px-4 rounded-full text-sm font-semibold bg-error text-on-error flex items-center gap-2"
+                      className="h-10 px-3 md:px-4 rounded-full text-xs md:text-sm font-semibold bg-error text-on-error flex items-center gap-2 whitespace-nowrap"
                     >
                       Wrong network
                     </button>
@@ -86,12 +87,12 @@ export function Header() {
                         >
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                         </svg>
-                        <span className="hidden sm:inline">{t("profile")}</span>
+                        <span className="hidden md:inline">{t("profile")}</span>
                       </Link>
                       <button
                         onClick={openChainModal}
                         type="button"
-                        className={pillBase}
+                        className={`${pillBase} hidden sm:flex`}
                       >
                         {chain.hasIcon && chain.iconUrl && (
                           <img

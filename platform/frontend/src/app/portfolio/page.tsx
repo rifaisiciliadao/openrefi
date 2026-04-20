@@ -19,26 +19,26 @@ export default function Portfolio() {
 
   if (!isConnected) {
     return (
-      <div className="max-w-7xl mx-auto px-8 pt-32 pb-24 text-center">
-        <h1 className="text-4xl font-bold mb-3 text-on-surface">{t("title")}</h1>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-32 pb-24 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold mb-3 text-on-surface">{t("title")}</h1>
         <p className="text-on-surface-variant mb-8">{t("connectWallet")}</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-8 pt-28 pb-20">
+    <div className="max-w-7xl mx-auto px-4 md:px-8 pt-28 pb-20">
       <div className="flex items-start justify-between gap-4 mb-2">
-        <h1 className="text-4xl font-bold tracking-tight text-on-surface">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-on-surface">
           {t("title")}
         </h1>
         <RefreshButton
           onClick={() => refetch()}
           label={t("refresh")}
-          className="mt-2"
+          className="mt-2 shrink-0"
         />
       </div>
-      <p className="text-on-surface-variant mb-10 font-mono text-sm">
+      <p className="text-on-surface-variant mb-10 font-mono text-xs md:text-sm break-all">
         {user}
       </p>
 
@@ -65,8 +65,8 @@ export default function Portfolio() {
             {portfolio.purchases.length === 0 ? (
               <EmptyState text={t("noPurchases")} />
             ) : (
-              <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/15 overflow-hidden">
-                <table className="w-full text-sm">
+              <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/15 overflow-x-auto">
+                <table className="w-full text-sm min-w-[560px]">
                   <thead className="bg-surface-container-low">
                     <tr className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                       <th className="text-left px-6 py-3">
@@ -227,13 +227,13 @@ function Summary({ portfolio }: { portfolio: UserPortfolio }) {
   ];
 
   return (
-    <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/15 p-8 mb-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+    <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/15 p-5 md:p-8 mb-10 md:mb-12 grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-8">
       {stats.map((s) => (
-        <div key={s.label}>
-          <div className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+        <div key={s.label} className="min-w-0">
+          <div className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2 leading-tight">
             {s.label}
           </div>
-          <div className={`text-2xl font-bold ${s.color ?? "text-on-surface"}`}>
+          <div className={`text-xl md:text-2xl font-bold break-words ${s.color ?? "text-on-surface"}`}>
             {s.value}
           </div>
         </div>

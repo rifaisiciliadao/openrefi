@@ -327,7 +327,7 @@ export function StakingPanel({
           </label>
           <button
             onClick={() => setStakeAmount(formatUnits(balance, 18))}
-            className="text-xs text-on-surface-variant hover:text-primary transition-colors"
+            className="inline-flex items-center min-h-[32px] px-2 -mx-2 text-xs text-on-surface-variant hover:text-primary transition-colors"
           >
             {t("availableBalance", {
               amount: Number(formatUnits(balance, 18)).toFixed(2),

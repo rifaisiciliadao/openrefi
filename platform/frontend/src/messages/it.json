@@ -4,7 +4,8 @@
     "create": "Crea Campagna",
     "portfolio": "Portfolio",
     "profile": "Profilo",
-    "connectWallet": "Connetti Wallet"
+    "connectWallet": "Connetti Wallet",
+    "connect": "Connetti"
   },
   "home": {
     "badge": "Finanza Rigenerativa",

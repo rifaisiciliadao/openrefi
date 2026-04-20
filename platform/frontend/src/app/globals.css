@@ -43,3 +43,11 @@ body {
 .regen-gradient {
   background: linear-gradient(135deg, #006b2c 0%, #00873a 100%);
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

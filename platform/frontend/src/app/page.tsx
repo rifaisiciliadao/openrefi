@@ -80,7 +80,7 @@ export default function Home() {
 
   return (
     <>
-      <section className="max-w-7xl mx-auto px-8 pt-32 pb-20 flex flex-col items-center text-center">
+      <section className="max-w-7xl mx-auto px-4 md:px-8 pt-28 md:pt-32 pb-16 md:pb-20 flex flex-col items-center text-center">
         <div className="inline-flex items-center gap-2 bg-primary-fixed text-on-primary-fixed-variant px-4 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase mb-8">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z" />
@@ -88,7 +88,7 @@ export default function Home() {
           <span>{t("badge")}</span>
         </div>
 
-        <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-tight mb-6 max-w-4xl text-on-surface">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight mb-6 max-w-4xl text-on-surface">
           {t("titleLine1")} {t("titleLine2")}{" "}
           <span
             className="bg-clip-text text-transparent"
@@ -127,8 +127,8 @@ export default function Home() {
         )}
       </section>
 
-      <section className="max-w-5xl mx-auto px-8 mb-20">
-        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/15 p-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative overflow-hidden">
+      <section className="max-w-5xl mx-auto px-4 md:px-8 mb-16 md:mb-20">
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/15 p-6 md:p-8 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-primary-fixed/5 pointer-events-none" />
           {[
             {
@@ -158,10 +158,10 @@ export default function Home() {
             },
           ].map((stat) => (
             <div key={stat.label} className="flex flex-col relative z-10">
-              <span className={`text-3xl font-bold mb-1 ${stat.color}`}>
+              <span className={`text-2xl md:text-3xl font-bold mb-1 ${stat.color}`}>
                 {stat.value}
               </span>
-              <span className="text-xs font-semibold tracking-wider uppercase text-on-surface-variant">
+              <span className="text-[11px] md:text-xs font-semibold tracking-wider uppercase text-on-surface-variant leading-tight">
                 {stat.label}
               </span>
             </div>
@@ -169,23 +169,23 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="campaigns" className="max-w-7xl mx-auto px-8 pb-24">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12">
+      <section id="campaigns" className="max-w-7xl mx-auto px-4 md:px-8 pb-20 md:pb-24">
+        <div className="flex flex-col md:flex-row justify-between md:items-end mb-8 md:mb-12 gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-on-surface mb-2">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-on-surface mb-2">
               {t("featured.title")}
             </h2>
-            <p className="text-base text-on-surface-variant">
+            <p className="text-sm md:text-base text-on-surface-variant">
               {t("featured.subtitle")}
             </p>
           </div>
 
-          <div className="flex gap-2 mt-6 md:mt-0 bg-surface-container-low p-1 rounded-full">
+          <div className="flex gap-1 bg-surface-container-low p-1 rounded-full -mx-4 md:mx-0 px-4 md:px-1 overflow-x-auto no-scrollbar self-start md:self-auto">
             {FILTER_KEYS.map((key) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wider uppercase transition-all ${
+                className={`px-4 h-11 inline-flex items-center rounded-full text-xs font-semibold tracking-wider uppercase transition-all whitespace-nowrap ${
                   filter === key
                     ? "bg-surface-container-lowest text-on-surface shadow-sm"
                     : "text-on-surface-variant hover:text-on-surface"

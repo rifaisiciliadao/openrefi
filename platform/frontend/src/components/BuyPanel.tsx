@@ -463,7 +463,7 @@ export function BuyPanel({
                       selected &&
                       setPayAmount(formatUnits(balance, selected.decimals))
                     }
-                    className="text-xs text-on-surface-variant hover:text-primary transition-colors"
+                    className="inline-flex items-center min-h-[32px] px-2 -mx-2 text-xs text-on-surface-variant hover:text-primary transition-colors"
                   >
                     {t("balance", {
                       amount: selected

@@ -336,9 +336,9 @@ export default function CreateCampaign() {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto px-8 pt-28 pb-24 flex flex-col lg:flex-row gap-16">
-      <div className="flex-1 lg:w-3/5">
-        <div className="mb-12 flex items-center justify-between relative">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-8 pt-28 pb-20 md:pb-24 flex flex-col lg:flex-row gap-10 md:gap-16">
+      <div className="flex-1 lg:w-3/5 min-w-0">
+        <div className="mb-10 md:mb-12 flex items-center justify-between relative">
           <div className="absolute left-0 top-4 w-full h-0.5 bg-surface-container-high -z-10" />
           <div
             className="absolute left-0 top-4 h-0.5 bg-primary -z-10 transition-all duration-500"
@@ -349,7 +349,7 @@ export default function CreateCampaign() {
             return (
               <div
                 key={key}
-                className="flex flex-col items-center gap-2 bg-surface"
+                className="flex flex-col items-center gap-2 bg-surface px-1"
               >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
@@ -361,7 +361,7 @@ export default function CreateCampaign() {
                   {n}
                 </div>
                 <span
-                  className={`text-sm transition-colors ${
+                  className={`text-[11px] md:text-sm transition-colors text-center leading-tight ${
                     step === n
                       ? "font-semibold text-on-surface"
                       : "text-on-surface-variant"
@@ -377,7 +377,7 @@ export default function CreateCampaign() {
         {step === 1 && (
           <>
             <div className="mb-10">
-              <h1 className="text-3xl font-bold tracking-tight text-on-surface mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-on-surface mb-2">
                 {t("step1.title")}
               </h1>
               <p className="text-on-surface-variant">{t("step1.subtitle")}</p>
@@ -538,7 +538,7 @@ export default function CreateCampaign() {
         {step === 2 && (
           <>
             <div className="mb-10">
-              <h1 className="text-3xl font-bold tracking-tight text-on-surface mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-on-surface mb-2">
                 {t("step2.title")}
               </h1>
               <p className="text-on-surface-variant">{t("step2.subtitle")}</p>
@@ -622,7 +622,7 @@ export default function CreateCampaign() {
         {step === 3 && (
           <>
             <div className="mb-10">
-              <h1 className="text-3xl font-bold tracking-tight text-on-surface mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-on-surface mb-2">
                 {t("step3.title")}
               </h1>
               <p className="text-on-surface-variant">{t("step3.subtitle")}</p>
@@ -786,7 +786,7 @@ export default function CreateCampaign() {
         {step === 4 && status.kind !== "success" && (
           <>
             <div className="mb-10">
-              <h1 className="text-3xl font-bold tracking-tight text-on-surface mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-on-surface mb-2">
                 {t("step4.title")}
               </h1>
               <p className="text-on-surface-variant">{t("step4.subtitle")}</p>
