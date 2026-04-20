@@ -11,6 +11,9 @@ import {
   SellBackFilled as SellBackFilledEvent,
   SellBackCancelled as SellBackCancelledEvent,
   CampaignPaused as CampaignPausedEvent,
+  FundingDeadlineUpdated as FundingDeadlineUpdatedEvent,
+  MinCapUpdated as MinCapUpdatedEvent,
+  MaxCapUpdated as MaxCapUpdatedEvent,
 } from "../generated/templates/Campaign/Campaign";
 import {
   Campaign,
@@ -190,5 +193,28 @@ export function handleCampaignPaused(event: CampaignPausedEvent): void {
   const campaign = Campaign.load(event.address);
   if (campaign == null) return;
   campaign.paused = event.params.paused;
+  campaign.save();
+}
+
+export function handleFundingDeadlineUpdated(
+  event: FundingDeadlineUpdatedEvent,
+): void {
+  const campaign = Campaign.load(event.address);
+  if (campaign == null) return;
+  campaign.fundingDeadline = event.params.newDeadline;
+  campaign.save();
+}
+
+export function handleMinCapUpdated(event: MinCapUpdatedEvent): void {
+  const campaign = Campaign.load(event.address);
+  if (campaign == null) return;
+  campaign.minCap = event.params.newMinCap;
+  campaign.save();
+}
+
+export function handleMaxCapUpdated(event: MaxCapUpdatedEvent): void {
+  const campaign = Campaign.load(event.address);
+  if (campaign == null) return;
+  campaign.maxCap = event.params.newMaxCap;
   campaign.save();
 }

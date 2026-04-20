@@ -140,6 +140,9 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     );
     event SellBackCancelled(address indexed user, uint256 amountReturned);
     event CampaignPaused(bool paused);
+    event FundingDeadlineUpdated(uint256 oldDeadline, uint256 newDeadline);
+    event MinCapUpdated(uint256 oldMinCap, uint256 newMinCap);
+    event MaxCapUpdated(uint256 oldMaxCap, uint256 newMaxCap);
 
     // --- Errors ---
 
@@ -162,6 +165,10 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     error TooManyOpenSellBackOrders();
     error AlreadySet();
     error MinCapNotReached();
+    error DeadlineNotExtended();
+    error DeadlineInPast();
+    error NewMinCapBelowSupply();
+    error NewMaxCapBelowCommitted();
 
     // --- Modifiers ---
 
@@ -243,6 +250,70 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     /// @notice End the current staking season. Only callable by producer.
     function endSeason() external onlyProducer inState(State.Active) {
         stakingVault.endSeason();
+    }
+
+    // --- Campaign parameter updates ---
+    //
+    // Immutable-by-default was nice for trust-on-first-sight, but a producer
+    // whose funding window slips short (e.g. marketing delay, seasonal cycle
+    // shifted) used to have to upgrade the proxy through their ProxyAdmin
+    // just to move the deadline. Since the producer already owns the proxy
+    // admin they can always rewrite anything anyway, so the setters below
+    // don't widen the trust model — they just skip the impl-redeploy dance
+    // for the three parameters producers realistically want to tune.
+    //
+    // Guard-rails:
+    //   - setFundingDeadline only extends (never cuts short — buyers who
+    //     entered during Funding expected at least the original window).
+    //   - setMinCap / setMaxCap only before activation and only above the
+    //     already-committed supply, so neither can retroactively flip the
+    //     campaign into Active with surprise terms or invalidate sales.
+    //   - setMaxCap can also be called while Active (to loosen the hard cap
+    //     if demand exceeds the original plan), but never below currentSupply
+    //     + outstanding sell-back queue tokens (those are still claimable).
+
+    /// @notice Extend the funding deadline. Only callable during Funding.
+    ///         Cannot shorten — prevents surprise early-rug of buyers.
+    function setFundingDeadline(uint256 newDeadline) external onlyProducer {
+        if (state != State.Funding) revert InvalidState(State.Funding, state);
+        if (newDeadline <= block.timestamp) revert DeadlineInPast();
+        if (newDeadline <= fundingDeadline) revert DeadlineNotExtended();
+        uint256 oldDeadline = fundingDeadline;
+        fundingDeadline = newDeadline;
+        emit FundingDeadlineUpdated(oldDeadline, newDeadline);
+    }
+
+    /// @notice Change the min cap (soft cap that triggers activation).
+    ///         Funding-only. The new value must stay above currentSupply so
+    ///         this call cannot retroactively auto-activate the campaign
+    ///         behind buyers' backs (activation releases escrow funds).
+    function setMinCap(uint256 newMinCap) external onlyProducer {
+        if (state != State.Funding) revert InvalidState(State.Funding, state);
+        if (newMinCap == 0) revert ZeroAmount();
+        if (newMinCap <= currentSupply) revert NewMinCapBelowSupply();
+        if (newMinCap > maxCap) revert NewMinCapBelowSupply(); // semantic: min must stay ≤ max
+        uint256 oldMinCap = minCap;
+        minCap = newMinCap;
+        emit MinCapUpdated(oldMinCap, newMinCap);
+    }
+
+    /// @notice Change the max cap (hard cap on total minted supply).
+    ///         Allowed in Funding and Active; the new value must cover
+    ///         currentSupply plus the outstanding sell-back queue tokens
+    ///         so no committed position can be stranded.
+    function setMaxCap(uint256 newMaxCap) external onlyProducer {
+        if (state != State.Funding && state != State.Active) {
+            revert InvalidState(State.Active, state);
+        }
+        if (newMaxCap == 0) revert ZeroAmount();
+        uint256 committed = currentSupply + _queueTotalTokens();
+        if (newMaxCap < committed) revert NewMaxCapBelowCommitted();
+        if (state == State.Funding && newMaxCap < minCap) {
+            revert NewMaxCapBelowCommitted(); // min must stay ≤ max
+        }
+        uint256 oldMaxCap = maxCap;
+        maxCap = newMaxCap;
+        emit MaxCapUpdated(oldMaxCap, newMaxCap);
     }
 
     // --- Payment Token Management ---

@@ -11,9 +11,7 @@ contract FeeOnTransferToken is ERC20 {
     uint256 public immutable feeBps;
     uint8 private _decimalsValue;
 
-    constructor(string memory name_, string memory symbol_, uint8 decimals_, uint256 feeBps_)
-        ERC20(name_, symbol_)
-    {
+    constructor(string memory name_, string memory symbol_, uint8 decimals_, uint256 feeBps_) ERC20(name_, symbol_) {
         _decimalsValue = decimals_;
         feeBps = feeBps_;
     }

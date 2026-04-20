@@ -228,8 +228,7 @@ contract PoolSecurityTest is Test {
     function test_reentrancy_depositUSDC_blocksSelfReentry() public {
         // Build a parallel factory whose USDC is the reentrant token.
         ReentrantToken rog = new ReentrantToken("Rogue USDC", "rUSDC", 6);
-        CampaignFactory rogueFactory =
-            Deployer.deployProtocol(protocolOwner, feeRecipient, address(rog), address(0));
+        CampaignFactory rogueFactory = Deployer.deployProtocol(protocolOwner, feeRecipient, address(rog), address(0));
 
         vm.prank(producer);
         rogueFactory.createCampaign(

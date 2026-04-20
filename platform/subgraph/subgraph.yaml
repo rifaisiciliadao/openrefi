@@ -9,9 +9,9 @@ dataSources:
     name: CampaignFactory
     network: base-sepolia
     source:
-      address: "0x199B430359595AD09d42F697f33f44dDFd658C12"
+      address: "0x5178A4AB4c6400CeeB812663AFfd1bd5B0c9FF64"
       abi: CampaignFactory
-      startBlock: 40452808
+      startBlock: 40456524
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -35,9 +35,9 @@ dataSources:
     name: CampaignRegistry
     network: base-sepolia
     source:
-      address: "0xe996a49a576bb4047C66821e48C9ea3Ce762f628"
+      address: "0x6cfC4b78131947721A2370B594Ed81BD758a1e17"
       abi: CampaignRegistry
-      startBlock: 40452852
+      startBlock: 40456633
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -56,9 +56,9 @@ dataSources:
     name: ProducerRegistry
     network: base-sepolia
     source:
-      address: "0xB804de4d151E5A8a9EBa61a9904EC3588c8EFb56"
+      address: "0x2bbc8FE2626C7f83fDe22E4799E76B93Cc8b379e"
       abi: ProducerRegistry
-      startBlock: 40452862
+      startBlock: 40457114
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -116,6 +116,12 @@ templates:
           handler: handleSellBackCancelled
         - event: CampaignPaused(bool)
           handler: handleCampaignPaused
+        - event: FundingDeadlineUpdated(uint256,uint256)
+          handler: handleFundingDeadlineUpdated
+        - event: MinCapUpdated(uint256,uint256)
+          handler: handleMinCapUpdated
+        - event: MaxCapUpdated(uint256,uint256)
+          handler: handleMaxCapUpdated
 
   - kind: ethereum/contract
     name: StakingVault

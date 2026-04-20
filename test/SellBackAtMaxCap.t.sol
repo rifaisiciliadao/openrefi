@@ -36,9 +36,7 @@ contract SellBackAtMaxCapTest is Test {
 
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
-        factory = Deployer.deployProtocol(
-            address(this), feeRecipient, address(usdc), address(0)
-        );
+        factory = Deployer.deployProtocol(address(this), feeRecipient, address(usdc), address(0));
 
         vm.prank(producer);
         factory.createCampaign(
@@ -56,7 +54,7 @@ contract SellBackAtMaxCapTest is Test {
                 minProductClaim: 1e18
             })
         );
-        (address c, address ct,, ,,,) = factory.campaigns(0);
+        (address c, address ct,,,,,) = factory.campaigns(0);
         campaign = Campaign(c);
         campaignToken = CampaignToken(ct);
 
@@ -102,17 +100,9 @@ contract SellBackAtMaxCapTest is Test {
         campaign.buy(address(usdc), bobSpend);
 
         // Bob got 100 OLIVE from the queue.
-        assertEq(
-            campaignToken.balanceOf(bob) - bobBalBefore,
-            100e18,
-            "bob receives 100 OLIVE from queue"
-        );
+        assertEq(campaignToken.balanceOf(bob) - bobBalBefore, 100e18, "bob receives 100 OLIVE from queue");
         // Alice received the USDC proportionally.
-        assertEq(
-            usdc.balanceOf(alice) - aliceUsdcBefore,
-            bobSpend,
-            "alice paid out from queue fill"
-        );
+        assertEq(usdc.balanceOf(alice) - aliceUsdcBefore, bobSpend, "alice paid out from queue fill");
         // Supply stayed at cap — no new mint.
         assertEq(campaign.currentSupply(), MAX_CAP, "supply unchanged (burn+mint)");
         // Queue drained.
@@ -138,11 +128,7 @@ contract SellBackAtMaxCapTest is Test {
         // Bob's OLIVE balance: exactly 50 (clamped).
         assertEq(campaignToken.balanceOf(bob), 50e18, "clamped to queue size");
         // Bob spent half the USDC; the contract only pulled `bobSpend / 2`.
-        assertEq(
-            bobUsdcBefore - usdc.balanceOf(bob),
-            bobSpend / 2,
-            "bob charged only for what was available"
-        );
+        assertEq(bobUsdcBefore - usdc.balanceOf(bob), bobSpend / 2, "bob charged only for what was available");
         // Cap unchanged.
         assertEq(campaign.currentSupply(), MAX_CAP);
         assertEq(campaign.getSellBackQueueDepth(), 0);
