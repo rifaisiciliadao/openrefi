@@ -1,0 +1,124 @@
+# DigitalOcean App Platform spec for the GrowFi platform.
+#
+# Architecture: single public HTTPS endpoint (growfi-test.ondigitalocean.app
+# initially, custom domain later) with path-based routing:
+#   /           -> Next.js frontend
+#   /api/*      -> Fastify backend
+# Both are Docker-built from the monorepo; pushes to `main` auto-deploy.
+#
+# Create/update via:
+#   doctl apps create --spec .do/app.yaml          # first time
+#   doctl apps update <APP_ID> --spec .do/app.yaml # on spec changes
+# Secrets (DO_SPACES_KEY / DO_SPACES_SECRET) are set in the dashboard and
+# are NOT in this file; this spec only ships non-secret defaults.
+
+name: growfi-test
+region: fra
+
+# Path-based ingress: one domain, two services behind it.
+ingress:
+  rules:
+    - match:
+        path:
+          prefix: /api
+      component:
+        name: growfi-backend
+    - match:
+        path:
+          prefix: /
+      component:
+        name: growfi-frontend
+
+services:
+  # -----------------------------------------------------------------------
+  # Backend: Fastify — DO Spaces uploads + snapshot + merkle generation.
+  # -----------------------------------------------------------------------
+  - name: growfi-backend
+    dockerfile_path: platform/backend/Dockerfile
+    source_dir: platform/backend
+    github:
+      repo: rifaisiciliadao/growfi
+      branch: main
+      deploy_on_push: true
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 4001
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 15
+      period_seconds: 30
+      timeout_seconds: 5
+      failure_threshold: 3
+    envs:
+      - key: NODE_ENV
+        value: production
+        scope: RUN_TIME
+      - key: PORT
+        value: "4001"
+        scope: RUN_TIME
+      - key: HOST
+        value: 0.0.0.0
+        scope: RUN_TIME
+      - key: DO_SPACES_REGION
+        value: fra1
+        scope: RUN_TIME
+      - key: DO_SPACES_BUCKET
+        value: growfi-media
+        scope: RUN_TIME
+      - key: DO_SPACES_ENDPOINT
+        value: https://fra1.digitaloceanspaces.com
+        scope: RUN_TIME
+      - key: DO_SPACES_PUBLIC_BASE
+        value: https://growfi-media.fra1.digitaloceanspaces.com
+        scope: RUN_TIME
+      # Secrets (set via dashboard, not committed here):
+      #   DO_SPACES_KEY     (SECRET, RUN_TIME)
+      #   DO_SPACES_SECRET  (SECRET, RUN_TIME)
+      #   BASE_SEPOLIA_RPC  (optional override for the snapshot multicall)
+      #   SUBGRAPH_URL      (optional; defaults to growfi/prod in code)
+
+  # -----------------------------------------------------------------------
+  # Frontend: Next.js 16 standalone. All NEXT_PUBLIC_* are build-time,
+  # baked into the bundle — no way to change them without a rebuild.
+  # -----------------------------------------------------------------------
+  - name: growfi-frontend
+    dockerfile_path: platform/frontend/Dockerfile
+    source_dir: platform/frontend
+    github:
+      repo: rifaisiciliadao/growfi
+      branch: main
+      deploy_on_push: true
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 3000
+    health_check:
+      http_path: /
+      initial_delay_seconds: 20
+      period_seconds: 30
+      timeout_seconds: 5
+      failure_threshold: 3
+    envs:
+      - key: NEXT_PUBLIC_CHAIN_ID
+        value: "84532"
+        scope: BUILD_TIME
+      - key: NEXT_PUBLIC_FACTORY_ADDRESS
+        value: "0x5178A4AB4c6400CeeB812663AFfd1bd5B0c9FF64"
+        scope: BUILD_TIME
+      - key: NEXT_PUBLIC_USDC_ADDRESS
+        value: "0x1b0a76431b3CfD55b3be22497F03920C71623c47"
+        scope: BUILD_TIME
+      - key: NEXT_PUBLIC_REGISTRY_ADDRESS
+        value: "0x6cfC4b78131947721A2370B594Ed81BD758a1e17"
+        scope: BUILD_TIME
+      - key: NEXT_PUBLIC_PRODUCER_REGISTRY_ADDRESS
+        value: "0x2bbc8FE2626C7f83fDe22E4799E76B93Cc8b379e"
+        scope: BUILD_TIME
+      - key: NEXT_PUBLIC_SUBGRAPH_URL
+        value: https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn
+        scope: BUILD_TIME
+      # Same-origin — the /api prefix is routed to the backend service.
+      - key: NEXT_PUBLIC_BACKEND_URL
+        value: ""
+        scope: BUILD_TIME
+      # Secret (set via dashboard):
+      #   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID (SECRET, BUILD_TIME)
