@@ -298,6 +298,9 @@ export default function CampaignDetail({
             pricePerToken={pricePerToken}
             maxCap={(cd?.[3]?.result as bigint | undefined) ?? 0n}
             currentSupply={(cd?.[4]?.result as bigint | undefined) ?? 0n}
+            totalStaked={
+              sgCampaign ? BigInt(sgCampaign.totalStaked) : 0n
+            }
             currentYieldRate={
               sgCampaign ? BigInt(sgCampaign.currentYieldRate) : 0n
             }
@@ -685,11 +688,13 @@ function StatsCard({
   pricePerToken,
   maxCap,
   currentSupply,
+  totalStaked,
   currentYieldRate,
 }: {
   pricePerToken: bigint;
   maxCap: bigint;
   currentSupply: bigint;
+  totalStaked: bigint;
   currentYieldRate: bigint;
 }) {
   const t = useTranslations("detail.sidebar");
@@ -699,6 +704,8 @@ function StatsCard({
   const soldNum = Number(formatUnits(currentSupply, 18));
   const yieldRate =
     Math.round(Number(formatUnits(currentYieldRate, 18)) * 10) / 10;
+  const stakedPct =
+    maxCap > 0n ? Number((totalStaked * 10000n) / maxCap) / 100 : 0;
 
   const fmtNum = (n: number) => {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
@@ -727,7 +734,7 @@ function StatsCard({
       </div>
 
       <div className="pt-4 border-t border-outline-variant/15">
-        <div className="flex justify-between items-end mb-3">
+        <div className="flex justify-between items-end mb-1">
           <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
             {t("yieldRate")}
           </span>
@@ -735,21 +742,190 @@ function StatsCard({
             {yieldRate > 0 ? `${yieldRate}x` : "—"}
           </span>
         </div>
+        <p className="text-[11px] text-on-surface-variant mb-3">
+          {t("yieldStakedShare", {
+            pct: stakedPct.toLocaleString(undefined, {
+              maximumFractionDigits: 1,
+            }),
+          })}
+        </p>
 
-        <div className="relative h-2 bg-surface-container-high rounded-full overflow-hidden mb-2">
-          <div
-            className="absolute inset-y-0 left-0 regen-gradient rounded-full"
-            style={{
-              width: `${Math.max(0, Math.min(100, ((yieldRate - 1) / 4) * 100))}%`,
-            }}
+        <YieldRateCurve stakedPct={stakedPct} currentRate={yieldRate} />
+
+        <p className="text-xs text-on-surface-variant mt-3">{t("yieldHint")}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Inline SVG chart of `rate = 5 - 4 * (totalStaked / maxSupply)` — the
+ * stake-yield decay curve mandated by StakingVault.currentYieldRate().
+ *
+ * Visual design: solid green line from (0%, 5x) top-left to (100%, 1x)
+ * bottom-right, filled underneath with a downward gradient that fades to
+ * transparent. Y-axis labels (5x/3x/1x) + gridlines inside the chart area;
+ * the current staked-% position is marked with a filled primary dot plus a
+ * pulsing halo so the viewer's eye lands on it immediately. Zero deps
+ * (no charting library).
+ */
+function YieldRateCurve({
+  stakedPct,
+  currentRate,
+}: {
+  stakedPct: number;
+  currentRate: number;
+}) {
+  const t = useTranslations("detail.sidebar");
+  const W = 280;
+  const H = 120;
+  const PAD_L = 22;
+  const PAD_R = 10;
+  const PAD_TOP = 10;
+  const PAD_BOTTOM = 18;
+  const innerW = W - PAD_L - PAD_R;
+  const innerH = H - PAD_TOP - PAD_BOTTOM;
+
+  // Map pct [0,100] → x, rate [1,5] → y (5x at top).
+  const xFor = (pct: number) =>
+    PAD_L + (innerW * Math.min(100, Math.max(0, pct))) / 100;
+  const yFor = (rate: number) => {
+    const clamped = Math.min(5, Math.max(1, rate));
+    return PAD_TOP + (innerH * (5 - clamped)) / 4;
+  };
+
+  const curX = xFor(stakedPct);
+  const curY = yFor(currentRate);
+  const baseY = PAD_TOP + innerH;
+  const x0 = xFor(0);
+  const x100 = xFor(100);
+  const y5 = yFor(5);
+  const y1 = yFor(1);
+  const y3 = yFor(3);
+
+  const gridRates = [5, 4, 3, 2, 1];
+
+  return (
+    <div>
+      <svg
+        width="100%"
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`Yield rate curve, currently ${currentRate}x at ${stakedPct.toFixed(1)}% staked`}
+      >
+        <defs>
+          <linearGradient id="growfi-yield-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#00873a" stopOpacity="0.45" />
+            <stop offset="60%" stopColor="#00873a" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#00873a" stopOpacity="0" />
+          </linearGradient>
+          <filter id="growfi-yield-glow">
+            <feGaussianBlur stdDeviation="2.5" />
+          </filter>
+        </defs>
+
+        {/* Horizontal grid lines at each integer rate */}
+        {gridRates.map((r) => {
+          const y = yFor(r);
+          return (
+            <g key={r}>
+              <line
+                x1={PAD_L}
+                y1={y}
+                x2={W - PAD_R}
+                y2={y}
+                stroke="currentColor"
+                strokeWidth="0.5"
+                opacity={r === 3 ? 0.25 : 0.08}
+              />
+              {(r === 5 || r === 3 || r === 1) && (
+                <text
+                  x={PAD_L - 4}
+                  y={y + 3}
+                  fontSize="9"
+                  textAnchor="end"
+                  fill="currentColor"
+                  opacity="0.55"
+                  fontFamily="inherit"
+                >
+                  {r}x
+                </text>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Filled area beneath the decay line */}
+        <path
+          d={`M ${x0} ${y5} L ${x100} ${y1} L ${x100} ${baseY} L ${x0} ${baseY} Z`}
+          fill="url(#growfi-yield-fill)"
+        />
+        {/* Solid decay line */}
+        <line
+          x1={x0}
+          y1={y5}
+          x2={x100}
+          y2={y1}
+          stroke="#006b2c"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+
+        {/* Drop line from marker to x-axis */}
+        <line
+          x1={curX}
+          y1={curY}
+          x2={curX}
+          y2={baseY}
+          stroke="#006b2c"
+          strokeWidth="1"
+          strokeDasharray="2 3"
+          opacity="0.4"
+        />
+
+        {/* Pulsing halo */}
+        <circle
+          cx={curX}
+          cy={curY}
+          r="12"
+          fill="#00873a"
+          filter="url(#growfi-yield-glow)"
+          opacity="0.45"
+        >
+          <animate
+            attributeName="r"
+            values="8;14;8"
+            dur="2.4s"
+            repeatCount="indefinite"
           />
-        </div>
-        <div className="flex justify-between text-xs text-on-surface-variant">
-          <span>1x</span>
-          <span>3x</span>
-          <span>5x</span>
-        </div>
-        <p className="text-xs text-on-surface-variant mt-2">{t("yieldHint")}</p>
+          <animate
+            attributeName="opacity"
+            values="0.5;0.15;0.5"
+            dur="2.4s"
+            repeatCount="indefinite"
+          />
+        </circle>
+        {/* Solid marker */}
+        <circle cx={curX} cy={curY} r="4.5" fill="#006b2c" stroke="#fff" strokeWidth="1.5" />
+
+        {/* Y=3 midline label to anchor the scale */}
+        <text
+          x={W - PAD_R}
+          y={y3 - 3}
+          fontSize="8"
+          textAnchor="end"
+          fill="currentColor"
+          opacity="0.35"
+          fontFamily="inherit"
+        >
+          3x
+        </text>
+      </svg>
+      <div className="flex justify-between text-[10px] text-on-surface-variant -mt-1">
+        <span className="pl-[22px]">{t("yieldCurveStart")}</span>
+        <span>{t("yieldCurveEnd")}</span>
       </div>
     </div>
   );
