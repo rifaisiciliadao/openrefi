@@ -1,3 +1,11 @@
+// New GrowFi mark: outlined circle containing two opposing leaves.
+// Source: graphics/logos.jsx Logo08 + AppIcon(leaf). Colors map to the
+// site primary palette (#006b2c deep, #00873a mid).
+
+const INK = "#191c1e";
+const GREEN = "#00873a";
+const GREEN_DEEP = "#006b2c";
+
 export function Logo({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -8,35 +16,32 @@ export function Logo({ className = "" }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Leaf / seedling icon */}
-      <g transform="translate(0, 2)">
-        {/* Stem */}
-        <path
-          d="M16 30C16 30 16 20 16 16"
-          stroke="#2d6a2e"
-          strokeWidth="3"
-          strokeLinecap="round"
+      <g transform="translate(0,0) scale(0.409)">
+        <circle
+          cx="44"
+          cy="44"
+          r="42"
+          fill="none"
+          stroke={INK}
+          strokeWidth="2.5"
         />
-        {/* Left leaf */}
         <path
-          d="M16 18C16 18 6 16 4 8C4 8 14 6 16 14"
-          fill="#2d6a2e"
+          d="M 26 56 Q 26 32 44 26 Q 44 50 26 56 Z"
+          fill={GREEN}
         />
-        {/* Right leaf */}
         <path
-          d="M16 12C16 12 24 9 28 2C28 2 18 1 16 8"
-          fill="#2d6a2e"
+          d="M 62 32 Q 62 56 44 62 Q 44 38 62 32 Z"
+          fill={GREEN_DEEP}
         />
       </g>
-      {/* GrowFi text */}
       <text
-        x="40"
+        x="46"
         y="26"
-        fontFamily="Inter, sans-serif"
-        fontWeight="800"
+        fontFamily='"Inter Tight", Inter, sans-serif'
+        fontWeight="700"
         fontSize="24"
-        fill="#2d6a2e"
-        letterSpacing="-0.5"
+        fill={INK}
+        letterSpacing="-1"
       >
         GrowFi
       </text>
@@ -49,23 +54,25 @@ export function LogoIcon({ size = 32 }: { size?: number }) {
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="0 0 88 88"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path
-        d="M16 28C16 28 16 18 16 14"
-        stroke="#2d6a2e"
-        strokeWidth="3"
-        strokeLinecap="round"
+      <circle
+        cx="44"
+        cy="44"
+        r="42"
+        fill="none"
+        stroke={INK}
+        strokeWidth="2.5"
       />
       <path
-        d="M16 16C16 16 6 14 4 6C4 6 14 4 16 12"
-        fill="#2d6a2e"
+        d="M 26 56 Q 26 32 44 26 Q 44 50 26 56 Z"
+        fill={GREEN}
       />
       <path
-        d="M16 10C16 10 24 7 28 0C28 0 18 -1 16 6"
-        fill="#2d6a2e"
+        d="M 62 32 Q 62 56 44 62 Q 44 38 62 32 Z"
+        fill={GREEN_DEEP}
       />
     </svg>
   );

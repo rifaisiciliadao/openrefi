@@ -643,6 +643,21 @@
       "paid": "Payé avec",
       "received": "Reçu",
       "date": "Date"
+    },
+    "connectCta": "Connecter Wallet",
+    "preview": {
+      "positions": {
+        "label": "Positions",
+        "hint": "Vos tokens en stake générant du $YIELD chaque saison."
+      },
+      "purchases": {
+        "label": "Achats",
+        "hint": "Chaque achat effectué sur les campagnes."
+      },
+      "claims": {
+        "label": "Retraits",
+        "hint": "USDC et produit après chaque récolte."
+      }
     }
   },
   "footer": {

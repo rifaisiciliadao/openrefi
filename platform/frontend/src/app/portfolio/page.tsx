@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useAccount, useReadContracts } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { formatUnits, type Address } from "viem";
 import { useMemo } from "react";
 import { useUserPortfolio, type UserPortfolio } from "@/lib/subgraph";
@@ -18,12 +19,7 @@ export default function Portfolio() {
   const { data: portfolio, isLoading, refetch } = useUserPortfolio(user);
 
   if (!isConnected) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-32 pb-24 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold mb-3 text-on-surface">{t("title")}</h1>
-        <p className="text-on-surface-variant mb-8">{t("connectWallet")}</p>
-      </div>
-    );
+    return <PortfolioConnectPrompt />;
   }
 
   return (
@@ -135,6 +131,93 @@ export default function Portfolio() {
           </Section>
         </>
       )}
+    </div>
+  );
+}
+
+function PortfolioConnectPrompt() {
+  const t = useTranslations("portfolio");
+  return (
+    <div className="max-w-3xl mx-auto px-4 md:px-8 pt-24 md:pt-32 pb-24 text-center">
+      <div className="relative mx-auto mb-10 w-36 h-36 md:w-44 md:h-44">
+        {/* Pulsing halo rings */}
+        <span className="absolute inset-0 rounded-full bg-primary-fixed/50 animate-ping" />
+        <span
+          className="absolute inset-2 rounded-full bg-primary-fixed/40 animate-ping"
+          style={{ animationDelay: "0.6s" }}
+        />
+        <span
+          className="absolute inset-4 rounded-full bg-primary-fixed/30 animate-ping"
+          style={{ animationDelay: "1.2s" }}
+        />
+        <div className="absolute inset-6 rounded-full regen-gradient flex items-center justify-center shadow-2xl shadow-primary/40">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-white"
+            aria-hidden
+          >
+            <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7" />
+            <circle cx="17" cy="12" r="1.2" fill="currentColor" />
+          </svg>
+        </div>
+      </div>
+
+      <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-4">
+        {t("title")}
+      </h1>
+      <p className="text-base md:text-lg text-on-surface-variant mb-10 max-w-xl mx-auto leading-relaxed">
+        {t("connectWallet")}
+      </p>
+
+      <ConnectButton.Custom>
+        {({ openConnectModal, mounted }) => (
+          <button
+            type="button"
+            onClick={openConnectModal}
+            disabled={!mounted}
+            className="regen-gradient text-white h-14 px-10 rounded-full text-sm font-semibold tracking-widest uppercase shadow-lg shadow-primary/25 hover:opacity-90 transition inline-flex items-center gap-3 disabled:opacity-60"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h15a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7" />
+              <circle cx="17" cy="12" r="1.3" fill="currentColor" />
+            </svg>
+            {t("connectCta")}
+          </button>
+        )}
+      </ConnectButton.Custom>
+
+      <div className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+        {(["positions", "purchases", "claims"] as const).map((k) => (
+          <div
+            key={k}
+            className="bg-surface-container-lowest border border-outline-variant/15 rounded-2xl p-5"
+          >
+            <div className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
+              {t(`preview.${k}.label`)}
+            </div>
+            <div className="text-sm text-on-surface">
+              {t(`preview.${k}.hint`)}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -643,6 +643,21 @@
       "paid": "Paid with",
       "received": "Received",
       "date": "Date"
+    },
+    "connectCta": "Connect Wallet",
+    "preview": {
+      "positions": {
+        "label": "Positions",
+        "hint": "Your staked tokens earning $YIELD per season."
+      },
+      "purchases": {
+        "label": "Purchases",
+        "hint": "Every buy you've made across all campaigns."
+      },
+      "claims": {
+        "label": "Harvest claims",
+        "hint": "USDC & product redemptions after each harvest."
+      }
     }
   },
   "footer": {
