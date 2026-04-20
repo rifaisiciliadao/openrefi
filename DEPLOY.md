@@ -52,21 +52,23 @@ doctl spaces keys create growfi-app-platform \
   --grants 'bucket=growfi-media;permission=readwrite' \
   --output json
 
-# 2. Dump the live spec, add the two SECRET envs under growfi-backend,
-#    apply, delete the tmp file.
-doctl apps spec get $APP_ID > /tmp/growfi-spec.yaml
-# Edit /tmp/growfi-spec.yaml — append under the backend service's envs:
-#   - key: DO_SPACES_KEY
-#     scope: RUN_TIME
-#     type: SECRET
-#     value: <access_key from step 1>
-#   - key: DO_SPACES_SECRET
-#     scope: RUN_TIME
-#     type: SECRET
-#     value: <secret_key from step 1>
+# 2. Patch the live spec via jq (no yaml toolchain needed), apply, delete
+#    the tmp files. Using JSON output so `jq` can consume it directly.
+doctl apps spec get $APP_ID --format json > /tmp/spec.json
+jq --arg ak "<access_key>" --arg sk "<secret_key>" '
+  .services |= map(
+    if .name == "growfi-backend"
+    then .envs += [
+      {"key":"DO_SPACES_KEY","scope":"RUN_TIME","type":"SECRET","value":$ak},
+      {"key":"DO_SPACES_SECRET","scope":"RUN_TIME","type":"SECRET","value":$sk}
+    ]
+    else .
+    end
+  )
+' /tmp/spec.json > /tmp/spec-patched.json
 
-doctl apps update $APP_ID --spec /tmp/growfi-spec.yaml
-rm /tmp/growfi-spec.yaml
+doctl apps update $APP_ID --spec /tmp/spec-patched.json
+rm /tmp/spec.json /tmp/spec-patched.json
 ```
 
 After the update, App Platform re-deploys the backend (only — the
