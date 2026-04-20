@@ -453,6 +453,22 @@
         "noHolders": "No se encontraron stakers activos para esta temporada."
       },
       "acceptedTokensTitle": "Tokens de pago",
+      "parametersTitle": "Parámetros de la campaña",
+      "parameters": {
+        "subtitle": "Ajusta la campaña tras el lanzamiento. Cada campo es una tx separada con guard-rails (extender-only para deadline, caps ≥ supply emitido).",
+        "fundingDeadline": "Fecha límite recaudación",
+        "deadlineHint": "Solo durante Recaudación. Fecha posterior a la actual.",
+        "deadlineDisabledHint": "Bloqueado: la campaña ya no está en Recaudación.",
+        "minCap": "Cap mínimo",
+        "minCapHint": "Solo durante Recaudación. Por encima de currentSupply ({supply}) y ≤ cap máximo.",
+        "minCapDisabledHint": "Bloqueado: cap mínimo solo editable en Recaudación.",
+        "maxCap": "Cap máximo",
+        "maxCapHint": "Recaudación o Activa. ≥ currentSupply ({supply}) + cola sell-back.",
+        "maxCapDisabledHint": "Bloqueado: la campaña está en estado terminal.",
+        "tokensSuffix": "CAMP",
+        "save": "Guardar",
+        "saving": "Guardando…"
+      },
       "tokens": {
         "empty": "Ningún token de pago en whitelist. Agrega uno abajo para que los inversores puedan comprar.",
         "fixed": "Tasa fija",
@@ -673,6 +689,12 @@
     "setProfileConfirmed": "Perfil actualizado",
     "setProfileFailed": "Actualización de perfil fallida",
     "createCampaignConfirmed": "Campaña creada",
-    "createCampaignFailed": "Creación de campaña fallida"
+    "createCampaignFailed": "Creación de campaña fallida",
+    "setFundingDeadlineConfirmed": "Fecha límite actualizada",
+    "setFundingDeadlineFailed": "Actualización de fecha fallida",
+    "setMinCapConfirmed": "Cap mínimo actualizado",
+    "setMinCapFailed": "Actualización cap mínimo fallida",
+    "setMaxCapConfirmed": "Cap máximo actualizado",
+    "setMaxCapFailed": "Actualización cap máximo fallida"
   }
 }

@@ -453,6 +453,22 @@
         "noHolders": "Aucun staker actif trouvé pour cette saison."
       },
       "acceptedTokensTitle": "Tokens de paiement",
+      "parametersTitle": "Paramètres de la campagne",
+      "parameters": {
+        "subtitle": "Ajuste la campagne après le lancement. Chaque champ = une tx séparée avec garde-fous (date prolongeable seulement, caps ≥ supply émise).",
+        "fundingDeadline": "Date limite collecte",
+        "deadlineHint": "Collecte uniquement. Date postérieure à l'actuelle.",
+        "deadlineDisabledHint": "Bloqué : la campagne n'est plus en Collecte.",
+        "minCap": "Cap min",
+        "minCapHint": "Collecte uniquement. Au-dessus de currentSupply ({supply}) et ≤ cap max.",
+        "minCapDisabledHint": "Bloqué : cap min modifiable seulement en Collecte.",
+        "maxCap": "Cap max",
+        "maxCapHint": "Collecte ou Active. ≥ currentSupply ({supply}) + file sell-back.",
+        "maxCapDisabledHint": "Bloqué : la campagne est dans un état terminal.",
+        "tokensSuffix": "CAMP",
+        "save": "Enregistrer",
+        "saving": "En cours…"
+      },
       "tokens": {
         "empty": "Aucun token de paiement en whitelist. Ajoutes-en un pour que les investisseurs puissent acheter.",
         "fixed": "Taux fixe",
@@ -673,6 +689,12 @@
     "setProfileConfirmed": "Profil mis à jour",
     "setProfileFailed": "Mise à jour du profil échouée",
     "createCampaignConfirmed": "Campagne créée",
-    "createCampaignFailed": "Création de campagne échouée"
+    "createCampaignFailed": "Création de campagne échouée",
+    "setFundingDeadlineConfirmed": "Date limite mise à jour",
+    "setFundingDeadlineFailed": "Mise à jour date échouée",
+    "setMinCapConfirmed": "Cap min mis à jour",
+    "setMinCapFailed": "Mise à jour cap min échouée",
+    "setMaxCapConfirmed": "Cap max mis à jour",
+    "setMaxCapFailed": "Mise à jour cap max échouée"
   }
 }

@@ -453,6 +453,22 @@
         "noHolders": "No active $YIELD holders found for this season."
       },
       "acceptedTokensTitle": "Payment tokens",
+      "parametersTitle": "Campaign parameters",
+      "parameters": {
+        "subtitle": "Tune the campaign after launch. Each change is a separate on-chain tx with producer-only guard-rails (deadline extend-only, caps stay ≥ committed supply).",
+        "fundingDeadline": "Funding deadline",
+        "deadlineHint": "Funding-only. The new date must be later than the current one.",
+        "deadlineDisabledHint": "Lock: the campaign is already past Funding.",
+        "minCap": "Min cap (soft)",
+        "minCapHint": "Funding-only. Must stay above currentSupply ({supply}) and ≤ maxCap.",
+        "minCapDisabledHint": "Lock: min cap can only be tuned while in Funding.",
+        "maxCap": "Max cap (hard)",
+        "maxCapHint": "Funding or Active. Must stay ≥ currentSupply ({supply}) + outstanding sell-back queue.",
+        "maxCapDisabledHint": "Lock: the campaign is in a terminal state (Buyback/Ended).",
+        "tokensSuffix": "CAMP",
+        "save": "Save",
+        "saving": "Saving…"
+      },
       "tokens": {
         "empty": "No payment tokens whitelisted yet. Add one below so investors can buy.",
         "fixed": "Fixed rate",
@@ -673,6 +689,12 @@
     "setProfileConfirmed": "Profile updated",
     "setProfileFailed": "Profile update failed",
     "createCampaignConfirmed": "Campaign created",
-    "createCampaignFailed": "Campaign creation failed"
+    "createCampaignFailed": "Campaign creation failed",
+    "setFundingDeadlineConfirmed": "Funding deadline updated",
+    "setFundingDeadlineFailed": "Update deadline failed",
+    "setMinCapConfirmed": "Min cap updated",
+    "setMinCapFailed": "Update min cap failed",
+    "setMaxCapConfirmed": "Max cap updated",
+    "setMaxCapFailed": "Update max cap failed"
   }
 }

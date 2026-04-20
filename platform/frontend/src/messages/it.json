@@ -453,6 +453,22 @@
         "noHolders": "Nessuno staker attivo trovato per questa stagione."
       },
       "acceptedTokensTitle": "Token di pagamento",
+      "parametersTitle": "Parametri campagna",
+      "parameters": {
+        "subtitle": "Modifica la campagna dopo il lancio. Ogni campo è una tx separata con guard-rail (scadenza solo-estesa, cap sempre ≥ supply già mintata).",
+        "fundingDeadline": "Scadenza raccolta",
+        "deadlineHint": "Solo durante Raccolta. La nuova data deve essere posteriore a quella attuale.",
+        "deadlineDisabledHint": "Bloccato: la campagna non è più in Raccolta.",
+        "minCap": "Cap minimo (soft)",
+        "minCapHint": "Solo durante Raccolta. Deve stare sopra currentSupply ({supply}) e ≤ cap massimo.",
+        "minCapDisabledHint": "Bloccato: il cap minimo si può cambiare solo in Raccolta.",
+        "maxCap": "Cap massimo (hard)",
+        "maxCapHint": "Raccolta o Attiva. Deve stare ≥ currentSupply ({supply}) + coda sell-back.",
+        "maxCapDisabledHint": "Bloccato: la campagna è in uno stato terminale (Buyback/Chiusa).",
+        "tokensSuffix": "CAMP",
+        "save": "Salva",
+        "saving": "Salvataggio…"
+      },
       "tokens": {
         "empty": "Nessun token di pagamento in whitelist. Aggiungine uno sotto così gli investitori possono comprare.",
         "fixed": "Tasso fisso",
@@ -673,6 +689,12 @@
     "setProfileConfirmed": "Profilo aggiornato",
     "setProfileFailed": "Aggiornamento profilo fallito",
     "createCampaignConfirmed": "Campagna creata",
-    "createCampaignFailed": "Creazione campagna fallita"
+    "createCampaignFailed": "Creazione campagna fallita",
+    "setFundingDeadlineConfirmed": "Scadenza aggiornata",
+    "setFundingDeadlineFailed": "Aggiornamento scadenza fallito",
+    "setMinCapConfirmed": "Cap minimo aggiornato",
+    "setMinCapFailed": "Aggiornamento cap minimo fallito",
+    "setMaxCapConfirmed": "Cap massimo aggiornato",
+    "setMaxCapFailed": "Aggiornamento cap massimo fallito"
   }
 }

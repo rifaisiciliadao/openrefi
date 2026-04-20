@@ -107,6 +107,16 @@ export function ProducerManagePanel({
 
       <section className="mt-8">
         <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-4">
+          {t("parametersTitle")}
+        </h3>
+        <ParametersEditor
+          campaignAddress={campaignAddress}
+          currentState={currentState}
+        />
+      </section>
+
+      <section className="mt-8">
+        <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-4">
           {t("acceptedTokensTitle")}
         </h3>
         <AcceptedTokensManager campaignAddress={campaignAddress} />
@@ -1327,6 +1337,274 @@ function ObligationCard({
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Producer-only inline editor for the 3 campaign parameters the Campaign.sol
+ * contract allows to mutate post-deploy: funding deadline, minCap, maxCap.
+ *
+ *   - setFundingDeadline: Funding-only; extend-only (guard-rails enforced on
+ *     both sides — UI disables non-extending values so the tx doesn't waste
+ *     gas reverting `DeadlineNotExtended`).
+ *   - setMinCap: Funding-only; > currentSupply, ≤ maxCap.
+ *   - setMaxCap: Funding or Active; ≥ currentSupply + outstanding queue.
+ *
+ * Each field submits its own tx (so one mistake doesn't lose the others).
+ */
+function ParametersEditor({
+  campaignAddress,
+  currentState,
+}: {
+  campaignAddress: Address;
+  currentState: number;
+}) {
+  const t = useTranslations("detail.manage.parameters");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
+  const { writeContractAsync } = useWriteContract();
+
+  const { data, refetch } = useReadContracts({
+    contracts: [
+      { address: campaignAddress, abi: campaignAbi, functionName: "fundingDeadline" },
+      { address: campaignAddress, abi: campaignAbi, functionName: "minCap" },
+      { address: campaignAddress, abi: campaignAbi, functionName: "maxCap" },
+      { address: campaignAddress, abi: campaignAbi, functionName: "currentSupply" },
+    ] as never,
+    query: { refetchInterval: 20_000 },
+  });
+  type MaybeResult = { result?: unknown };
+  const rows = (data ?? []) as readonly MaybeResult[];
+  const onChainDeadline =
+    (rows[0]?.result as bigint | undefined) ?? 0n;
+  const onChainMinCap = (rows[1]?.result as bigint | undefined) ?? 0n;
+  const onChainMaxCap = (rows[2]?.result as bigint | undefined) ?? 0n;
+  const onChainSupply = (rows[3]?.result as bigint | undefined) ?? 0n;
+
+  const [deadlineInput, setDeadlineInput] = useState("");
+  const [minCapInput, setMinCapInput] = useState("");
+  const [maxCapInput, setMaxCapInput] = useState("");
+  const [pending, setPending] = useState<
+    null | "deadline" | "minCap" | "maxCap"
+  >(null);
+
+  const currentDeadlineIso = onChainDeadline
+    ? new Date(Number(onChainDeadline) * 1000).toISOString().slice(0, 10)
+    : "";
+  const currentMinCapStr = Number(formatUnits(onChainMinCap, 18)).toString();
+  const currentMaxCapStr = Number(formatUnits(onChainMaxCap, 18)).toString();
+
+  const deadlineDisabled = currentState !== 0;
+  const minCapDisabled = currentState !== 0;
+  const maxCapDisabled = currentState !== 0 && currentState !== 1;
+
+  const run = async (
+    kind: "deadline" | "minCap" | "maxCap",
+    args: Parameters<typeof writeContractAsync>[0],
+  ) => {
+    setPending(kind);
+    try {
+      const hash = await writeContractAsync(args);
+      const r = await waitForTx(hash);
+      if (r.status !== "success") throw new Error("Transaction reverted");
+      await refetch();
+      if (kind === "deadline") setDeadlineInput("");
+      if (kind === "minCap") setMinCapInput("");
+      if (kind === "maxCap") setMaxCapInput("");
+      notify.success(
+        tx(
+          kind === "deadline"
+            ? "setFundingDeadlineConfirmed"
+            : kind === "minCap"
+              ? "setMinCapConfirmed"
+              : "setMaxCapConfirmed",
+        ),
+        hash,
+      );
+    } catch (err) {
+      notify.error(
+        tx(
+          kind === "deadline"
+            ? "setFundingDeadlineFailed"
+            : kind === "minCap"
+              ? "setMinCapFailed"
+              : "setMaxCapFailed",
+        ),
+        err,
+      );
+    } finally {
+      setPending(null);
+    }
+  };
+
+  const submitDeadline = () => {
+    if (!deadlineInput) return;
+    const ts = BigInt(Math.floor(new Date(deadlineInput).getTime() / 1000));
+    run("deadline", {
+      address: campaignAddress,
+      abi: campaignAbi,
+      functionName: "setFundingDeadline",
+      args: [ts],
+    });
+  };
+  const submitMinCap = () => {
+    if (!minCapInput || Number(minCapInput) <= 0) return;
+    run("minCap", {
+      address: campaignAddress,
+      abi: campaignAbi,
+      functionName: "setMinCap",
+      args: [parseUnits(minCapInput, 18)],
+    });
+  };
+  const submitMaxCap = () => {
+    if (!maxCapInput || Number(maxCapInput) <= 0) return;
+    run("maxCap", {
+      address: campaignAddress,
+      abi: campaignAbi,
+      functionName: "setMaxCap",
+      args: [parseUnits(maxCapInput, 18)],
+    });
+  };
+
+  return (
+    <div className="bg-surface-container-low rounded-xl p-5 border border-outline-variant/15 space-y-4">
+      <p className="text-xs text-on-surface-variant">{t("subtitle")}</p>
+
+      <ParamField
+        label={t("fundingDeadline")}
+        current={currentDeadlineIso || "—"}
+        hint={
+          deadlineDisabled
+            ? t("deadlineDisabledHint")
+            : t("deadlineHint")
+        }
+        disabled={deadlineDisabled}
+      >
+        <div className="flex gap-2">
+          <input
+            type="date"
+            value={deadlineInput}
+            onChange={(e) => setDeadlineInput(e.target.value)}
+            disabled={deadlineDisabled}
+            className="input flex-1"
+          />
+          <button
+            type="button"
+            onClick={submitDeadline}
+            disabled={deadlineDisabled || !deadlineInput || pending !== null}
+            className="regen-gradient text-white rounded-full px-4 h-10 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {pending === "deadline" && <Spinner size={12} />}
+            {pending === "deadline" ? t("saving") : t("save")}
+          </button>
+        </div>
+      </ParamField>
+
+      <ParamField
+        label={t("minCap")}
+        current={
+          currentMinCapStr + " $" + t("tokensSuffix")
+        }
+        hint={
+          minCapDisabled
+            ? t("minCapDisabledHint")
+            : t("minCapHint", {
+                supply: Number(
+                  formatUnits(onChainSupply, 18),
+                ).toLocaleString(undefined, { maximumFractionDigits: 0 }),
+              })
+        }
+        disabled={minCapDisabled}
+      >
+        <div className="flex gap-2">
+          <input
+            type="number"
+            value={minCapInput}
+            onChange={(e) => setMinCapInput(e.target.value)}
+            placeholder={currentMinCapStr}
+            disabled={minCapDisabled}
+            className="input flex-1"
+            min="0"
+          />
+          <button
+            type="button"
+            onClick={submitMinCap}
+            disabled={minCapDisabled || !minCapInput || pending !== null}
+            className="regen-gradient text-white rounded-full px-4 h-10 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {pending === "minCap" && <Spinner size={12} />}
+            {pending === "minCap" ? t("saving") : t("save")}
+          </button>
+        </div>
+      </ParamField>
+
+      <ParamField
+        label={t("maxCap")}
+        current={
+          currentMaxCapStr + " $" + t("tokensSuffix")
+        }
+        hint={
+          maxCapDisabled
+            ? t("maxCapDisabledHint")
+            : t("maxCapHint", {
+                supply: Number(
+                  formatUnits(onChainSupply, 18),
+                ).toLocaleString(undefined, { maximumFractionDigits: 0 }),
+              })
+        }
+        disabled={maxCapDisabled}
+      >
+        <div className="flex gap-2">
+          <input
+            type="number"
+            value={maxCapInput}
+            onChange={(e) => setMaxCapInput(e.target.value)}
+            placeholder={currentMaxCapStr}
+            disabled={maxCapDisabled}
+            className="input flex-1"
+            min="0"
+          />
+          <button
+            type="button"
+            onClick={submitMaxCap}
+            disabled={maxCapDisabled || !maxCapInput || pending !== null}
+            className="regen-gradient text-white rounded-full px-4 h-10 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {pending === "maxCap" && <Spinner size={12} />}
+            {pending === "maxCap" ? t("saving") : t("save")}
+          </button>
+        </div>
+      </ParamField>
+    </div>
+  );
+}
+
+function ParamField({
+  label,
+  current,
+  hint,
+  disabled,
+  children,
+}: {
+  label: string;
+  current: string;
+  hint: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`rounded-lg border border-outline-variant/10 p-4 ${disabled ? "bg-surface-container/30 opacity-70" : "bg-surface-container-lowest"}`}
+    >
+      <div className="flex items-center justify-between mb-2 text-xs">
+        <span className="font-semibold uppercase tracking-wider text-on-surface-variant">
+          {label}
+        </span>
+        <span className="font-mono text-on-surface">{current}</span>
+      </div>
+      {children}
+      <p className="text-[11px] text-on-surface-variant mt-2">{hint}</p>
     </div>
   );
 }
