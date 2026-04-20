@@ -23,6 +23,10 @@ ingress:
           prefix: /api
       component:
         name: growfi-backend
+        # Backend routes are defined with the `/api/...` prefix (e.g.
+        # `app.post("/api/upload", ...)`); without preserving the prefix
+        # the ingress strips `/api` and every route 404s.
+        preserve_path_prefix: true
     - match:
         path:
           prefix: /
