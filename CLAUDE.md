@@ -114,7 +114,7 @@ Example reference: `script/UpgradeFactoryV2.s.sol` (adds `minSeasonDuration`, re
 
 ## Deployments
 
-See `CONTRACTS.md` for current Base Sepolia addresses (factory proxy, impls, ProxyAdmin, smoke campaigns, frontend env vars).
+See `CONTRACTS.md` for current Base Sepolia addresses (factory proxy, impls, ProxyAdmin, smoke campaigns, frontend env vars). See `DEPLOY.md` for the DigitalOcean App Platform runbook (frontend + backend) — `.do/app.yaml` spec, per-service Dockerfiles, secret injection via dashboard, and the auto-deploy-on-push flow against the `main` branch.
 
 ## Audit history
 
@@ -157,6 +157,7 @@ platform/
 - **Known tokens catalog**: `src/contracts/tokens.ts` — curated `KNOWN_TOKENS` list with per-chain addresses and Chainlink feeds. Only `mUSDC` is `enabled: true` on Sepolia; others are `enabled: false` preview for mainnet. Used by `/create` step 3, `ProducerManagePanel` → AcceptedTokensManager.
 - **Env** (`.env.local`): `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`, `NEXT_PUBLIC_BACKEND_URL`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_FACTORY_ADDRESS`, `NEXT_PUBLIC_USDC_ADDRESS`, `NEXT_PUBLIC_SUBGRAPH_URL`.
 - **Contract glue**: ABIs extracted from `forge build` via `jq` → `src/contracts/abis/*.json`. Hooks in `src/contracts/hooks.ts`. Minimal ERC20 ABI in `src/contracts/erc20.ts`.
+- **Prod build**: `next.config.ts` ships with `output: "standalone"` so the Docker image copies only `.next/standalone/server.js` plus static assets (~150 MB), not the full `node_modules`. The multi-stage `platform/frontend/Dockerfile` accepts every `NEXT_PUBLIC_*` as a build ARG — miss one and the build fails loudly. `.do/app.yaml` feeds the current Base Sepolia addresses at BUILD_TIME scope; secret public vars (only `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`) live in the dashboard. Root `DEPLOY.md` is the runbook.
 
 ### Backend (`platform/backend/`)
 
