@@ -7,6 +7,7 @@ import { useAccount, useWriteContract } from "wagmi";
 import { waitForTransactionReceipt } from "@wagmi/core";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Address } from "viem";
+import { useTxNotify } from "@/lib/useTxNotify";
 import {
   useSubgraphProducer,
   useProducerCampaigns,
@@ -256,6 +257,8 @@ function ProfileForm({
   const [error, setError] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
 
   const pollEnabled = busy === "indexing";
   const indexed = useProducerIndexed(
@@ -315,11 +318,13 @@ function ProfileForm({
       if (r.status !== "success") throw new Error("setProfile reverted");
       // Now wait for subgraph to index the new version
       setBusy("indexing");
+      notify.success(tx("setProfileConfirmed"), hash);
     } catch (err) {
       setBusy(null);
       const msg = err instanceof Error ? err.message : String(err);
       if (!/user (rejected|denied)/i.test(msg)) {
         setError(msg);
+        notify.error(tx("setProfileFailed"), err);
       }
     }
   };

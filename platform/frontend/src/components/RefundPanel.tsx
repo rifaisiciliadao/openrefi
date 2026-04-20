@@ -14,6 +14,7 @@ import { abis } from "@/contracts";
 import { config } from "@/app/providers";
 import { erc20Abi } from "@/contracts/erc20";
 import { Spinner } from "./Spinner";
+import { useTxNotify } from "@/lib/useTxNotify";
 
 interface Props {
   campaignAddress: Address;
@@ -39,6 +40,8 @@ export function RefundPanel({
   currentState,
 }: Props) {
   const t = useTranslations("detail.refund");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { address: user, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
@@ -127,9 +130,11 @@ export function RefundPanel({
       await refetchRefundable();
       await refetchBalance();
       setSuccessHash(hash);
+      notify.success(tx("buybackConfirmed"), hash);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!/user (rejected|denied)/i.test(msg)) setError(msg);
+      notify.error(tx("buybackFailed"), err);
       console.error(err);
     } finally {
       setPending(null);
@@ -287,6 +292,8 @@ export function TriggerBuybackCta({
   onTriggered?: () => void;
 }) {
   const t = useTranslations("detail.refund");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { writeContractAsync } = useWriteContract();
 
   const [pending, setPending] = useState<"sig" | "chain" | null>(null);
@@ -311,9 +318,11 @@ export function TriggerBuybackCta({
       const r = await waitForTransactionReceipt(config, { hash });
       if (r.status !== "success") throw new Error("triggerBuyback reverted");
       onTriggered?.();
+      notify.success(tx("triggerBuybackConfirmed"), hash);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!/user (rejected|denied)/i.test(msg)) setError(msg);
+      notify.error(tx("triggerBuybackFailed"), err);
       console.error(err);
     } finally {
       setPending(null);

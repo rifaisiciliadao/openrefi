@@ -14,6 +14,7 @@ import { abis, getAddresses } from "@/contracts";
 import { config } from "@/app/providers";
 import { erc20Abi } from "@/contracts/erc20";
 import { Spinner } from "./Spinner";
+import { useTxNotify } from "@/lib/useTxNotify";
 
 type AcceptedTokenInfo = {
   address: Address;
@@ -227,6 +228,8 @@ export function BuyPanel({
   // Tx state — imperative flow in each handler, no receipt useEffect races.
   const [status, setStatus] = useState<TxStatus>({ kind: "idle" });
   const { writeContractAsync } = useWriteContract();
+  const notify = useTxNotify();
+  const tx = useTranslations("tx");
 
   // Boundary checks from the contract: contract.buy() reverts if
   //   currentSupply >= maxCap (MaxCapReached). Pre-check it so users see
@@ -269,9 +272,11 @@ export function BuyPanel({
       const r = await waitForTransactionReceipt(config, { hash });
       if (r.status !== "success") throw new Error("Approval reverted");
       await refetchBalanceAllowance();
+      notify.success(tx("approvalConfirmed"), hash);
       setStatus({ kind: "idle" });
     } catch (err) {
       handleError(err);
+      notify.error(tx("approvalFailed"), err);
     }
   };
 
@@ -289,9 +294,11 @@ export function BuyPanel({
       const r = await waitForTransactionReceipt(config, { hash });
       if (r.status !== "success") throw new Error("Mint reverted");
       await refetchBalanceAllowance();
+      notify.success(tx("mintConfirmed"), hash);
       setStatus({ kind: "idle" });
     } catch (err) {
       handleError(err);
+      notify.error(tx("mintFailed"), err);
     }
   };
 
@@ -312,9 +319,11 @@ export function BuyPanel({
       if (r.status !== "success") {
         throw new Error("Purchase reverted on-chain");
       }
+      notify.success(tx("buyConfirmed"), hash);
       setStatus({ kind: "success", hash });
     } catch (err) {
       handleError(err);
+      notify.error(tx("buyFailed"), err);
     }
   };
 

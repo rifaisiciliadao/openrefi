@@ -14,6 +14,7 @@ import { abis } from "@/contracts";
 import { config } from "@/app/providers";
 import { erc20Abi } from "@/contracts/erc20";
 import { Spinner } from "./Spinner";
+import { useTxNotify } from "@/lib/useTxNotify";
 
 interface Props {
   campaignToken: Address;
@@ -41,6 +42,8 @@ export function StakingPanel({
   seasonDuration,
 }: Props) {
   const t = useTranslations("detail.stake");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { address: user, isConnected } = useAccount();
 
   type TxPhase = "sig" | "chain";
@@ -209,14 +212,22 @@ export function StakingPanel({
       refetchPositions();
       refetchBalAllow();
       if (kind === "stake") setStakeAmount("");
+      notify.success(tx(`${successKey(kind)}Confirmed`), hash);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!/user (rejected|denied)/i.test(msg)) setTxError(msg);
+      notify.error(tx(`${successKey(kind)}Failed`), err);
       console.error(err);
     } finally {
       setPending(null);
     }
   };
+
+  function successKey(kind: "approve" | "stake" | "claim" | "unstake" | "restake") {
+    if (kind === "approve") return "approval" as const;
+    if (kind === "claim") return "claimYield" as const;
+    return kind;
+  }
 
   const pendingKind = pending?.kind ?? null;
 

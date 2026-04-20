@@ -17,6 +17,7 @@ import { abis, getAddresses } from "@/contracts";
 import { config } from "@/app/providers";
 import { erc20Abi } from "@/contracts/erc20";
 import { useSubgraphCampaign, useSubgraphProducer } from "@/lib/subgraph";
+import { useTxNotify } from "@/lib/useTxNotify";
 import { useCampaignMetadata, useProducerProfile } from "@/lib/metadata";
 import { uploadImage, uploadMetadata } from "@/lib/api";
 import { BuyPanel } from "@/components/BuyPanel";
@@ -315,6 +316,8 @@ function LinkMetadataBanner({
   currentName: string;
 }) {
   const t = useTranslations("detail.linkMetadata");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { registry } = getAddresses();
   const queryClient = useQueryClient();
   const { writeContractAsync } = useWriteContract();
@@ -368,6 +371,7 @@ function LinkMetadataBanner({
       setStage({ kind: "confirming" });
       const r = await waitForTransactionReceipt(config, { hash });
       if (r.status !== "success") throw new Error("setMetadata reverted");
+      notify.success(tx("setMetadataConfirmed"), hash);
 
       // Poll subgraph until it picks up the new metadataURI, then close.
       setStage({ kind: "indexing" });
@@ -384,6 +388,7 @@ function LinkMetadataBanner({
         setStage({ kind: "idle" });
       } else {
         setStage({ kind: "error", message: msg });
+        notify.error(tx("setMetadataFailed"), err);
       }
     }
   };

@@ -16,6 +16,7 @@ import { erc20Abi } from "@/contracts/erc20";
 import { useCampaignSeasons, type SubgraphSeason } from "@/lib/subgraph";
 import { fetchSnapshot, generateMerkleTree } from "@/lib/api";
 import { Spinner } from "./Spinner";
+import { useTxNotify } from "@/lib/useTxNotify";
 
 const campaignAbi = abis.Campaign as never;
 
@@ -149,6 +150,8 @@ function AcceptedTokensManager({
   campaignAddress: Address;
 }) {
   const t = useTranslations("detail.manage.tokens");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { writeContractAsync } = useWriteContract();
 
   const { data: acceptedAddresses, refetch: refetchAccepted } = useReadContract(
@@ -237,8 +240,10 @@ function AcceptedTokensManager({
       const r = await waitForTransactionReceipt(config, { hash });
       if (r.status !== "success") throw new Error("remove reverted");
       await refetchAccepted();
+      notify.success(tx("removeTokenConfirmed"), hash);
     } catch (err) {
       handleError(err);
+      notify.error(tx("removeTokenFailed"), err);
     } finally {
       setPending(null);
     }
@@ -278,8 +283,10 @@ function AcceptedTokensManager({
       if (r.status !== "success") throw new Error("add reverted");
       setAddRate("");
       await refetchAccepted();
+      notify.success(tx("addTokenConfirmed"), hash);
     } catch (err) {
       handleError(err);
+      notify.error(tx("addTokenFailed"), err);
     } finally {
       setPending(null);
     }
@@ -438,6 +445,8 @@ function LifecycleSection({
   onChange: () => void;
 }) {
   const t = useTranslations("detail.manage");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { writeContractAsync } = useWriteContract();
 
   const { data: currentSeasonIdRaw, refetch: refetchSeasonId } =
@@ -484,9 +493,11 @@ function LifecycleSection({
       if (r.status !== "success") throw new Error("Transaction reverted");
       onChange();
       refetchSeasonId();
+      notify.success(tx(`${action}Confirmed`), hash);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!/user (rejected|denied)/i.test(msg)) setError(msg);
+      notify.error(tx(`${action}Failed`), err);
       console.error(err);
     } finally {
       setPendingAction(null);
@@ -674,6 +685,8 @@ function ReportHarvestCard({
   onReported: () => void;
 }) {
   const t = useTranslations("detail.manage");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { writeContractAsync } = useWriteContract();
 
   const [totalValueUSD, setTotalValueUSD] = useState("");
@@ -753,12 +766,14 @@ function ReportHarvestCard({
 
       setStage({ kind: "success", hash });
       onReported();
+      notify.success(tx("reportHarvestConfirmed"), hash);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (/user (rejected|denied)/i.test(msg)) {
         setStage({ kind: "idle" });
       } else {
         setStage({ kind: "error", message: msg });
+        notify.error(tx("reportHarvestFailed"), err);
       }
     }
   };
@@ -884,6 +899,8 @@ function ObligationCard({
   harvestManager: Address;
 }) {
   const t = useTranslations("detail.manage");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { usdc: usdcAddress } = getAddresses();
   const { writeContractAsync } = useWriteContract();
 
@@ -957,6 +974,7 @@ function ObligationCard({
       setStage({ kind: "approving-chain" });
       const ar = await waitForTransactionReceipt(config, { hash: approveHash });
       if (ar.status !== "success") throw new Error("Approve reverted");
+      notify.success(tx("approvalConfirmed"), approveHash);
 
       // 2. depositUSDC
       setStage({ kind: "depositing-sig" });
@@ -975,8 +993,10 @@ function ObligationCard({
       await refetchRemaining();
       setAmount("");
       setStage({ kind: "success", hash: depositHash });
+      notify.success(tx("depositUsdcConfirmed"), depositHash);
     } catch (err) {
       handleError(err);
+      notify.error(tx("depositUsdcFailed"), err);
     }
   };
 

@@ -14,6 +14,7 @@ import { abis } from "@/contracts";
 import { config } from "@/app/providers";
 import { erc20Abi } from "@/contracts/erc20";
 import { Spinner } from "./Spinner";
+import { useTxNotify } from "@/lib/useTxNotify";
 
 interface Props {
   campaignAddress: Address;
@@ -41,6 +42,8 @@ export function SellBackPanel({
   currentState,
 }: Props) {
   const t = useTranslations("detail.sellBack");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { address: user, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
@@ -132,8 +135,10 @@ export function SellBackPanel({
       const r = await waitForTransactionReceipt(config, { hash });
       if (r.status !== "success") throw new Error("Approve reverted");
       await refetch();
+      notify.success(tx("approvalConfirmed"), hash);
     } catch (err) {
       handleError(err);
+      notify.error(tx("approvalFailed"), err);
     } finally {
       setPending(null);
     }
@@ -154,8 +159,10 @@ export function SellBackPanel({
       if (r.status !== "success") throw new Error("sellBack reverted");
       setAmount("");
       await refetch();
+      notify.success(tx("sellBackConfirmed"), hash);
     } catch (err) {
       handleError(err);
+      notify.error(tx("sellBackFailed"), err);
     } finally {
       setPending(null);
     }
@@ -174,8 +181,10 @@ export function SellBackPanel({
       const r = await waitForTransactionReceipt(config, { hash });
       if (r.status !== "success") throw new Error("cancelSellBack reverted");
       await refetch();
+      notify.success(tx("cancelSellBackConfirmed"), hash);
     } catch (err) {
       handleError(err);
+      notify.error(tx("cancelSellBackFailed"), err);
     } finally {
       setPending(null);
     }

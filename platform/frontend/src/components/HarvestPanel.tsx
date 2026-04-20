@@ -16,6 +16,7 @@ import { erc20Abi } from "@/contracts/erc20";
 import { useCampaignSeasons, type SubgraphSeason } from "@/lib/subgraph";
 import { fetchMerkleProof } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import { useTxNotify } from "@/lib/useTxNotify";
 
 interface Props {
   campaignAddress: Address;
@@ -31,6 +32,8 @@ export function HarvestPanel({
   yieldToken,
 }: Props) {
   const t = useTranslations("detail.harvest");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { address: user, isConnected } = useAccount();
 
   const [pending, setPending] = useState<{
@@ -76,14 +79,24 @@ export function HarvestPanel({
       if (r.status !== "success") throw new Error("Transaction reverted on-chain");
       void refetchSeasons();
       void refetchBalance();
+      notify.success(tx(`${harvestKey(args)}Confirmed`), hash);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!/user (rejected|denied)/i.test(msg)) setTxError(msg);
+      notify.error(tx(`${harvestKey(args)}Failed`), err);
       console.error(err);
     } finally {
       setPending(null);
     }
   };
+
+  function harvestKey(args: Parameters<typeof writeContractAsync>[0]) {
+    const fn = (args as { functionName?: string }).functionName;
+    if (fn === "redeemUSDC") return "commit" as const;
+    if (fn === "redeemProduct") return "redeemProduct" as const;
+    if (fn === "claimUSDC") return "claimUsdc" as const;
+    return "approval" as const;
+  }
 
   const pendingKind = pending?.kind ?? null;
 

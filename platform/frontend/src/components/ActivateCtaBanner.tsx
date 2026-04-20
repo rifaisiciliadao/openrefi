@@ -8,6 +8,7 @@ import type { Address } from "viem";
 import { abis } from "@/contracts";
 import { config } from "@/app/providers";
 import { Spinner } from "./Spinner";
+import { useTxNotify } from "@/lib/useTxNotify";
 
 /**
  * Urgent CTA for the producer once their campaign has crossed minCap but
@@ -44,6 +45,8 @@ export function ActivateCtaBanner({
   onActivated?: () => void;
 }) {
   const t = useTranslations("detail.activateCta");
+  const tx = useTranslations("tx");
+  const notify = useTxNotify();
   const { writeContractAsync } = useWriteContract();
   const [pending, setPending] = useState<"sig" | "chain" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +68,11 @@ export function ActivateCtaBanner({
       const r = await waitForTransactionReceipt(config, { hash });
       if (r.status !== "success") throw new Error("activateCampaign reverted");
       onActivated?.();
+      notify.success(tx("activateConfirmed"), hash);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!/user (rejected|denied)/i.test(msg)) setError(msg);
+      notify.error(tx("activateFailed"), err);
       console.error(err);
     } finally {
       setPending(null);
