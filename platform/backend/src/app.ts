@@ -360,10 +360,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     };
   });
 
-  app.setErrorHandler((err, _req, reply) => {
+  app.setErrorHandler((err: unknown, _req, reply) => {
     app.log.error(err);
-    reply.status(err.statusCode || 500).send({
-      error: err.message || "Errore interno",
+    const maybeStatus = (err as { statusCode?: number })?.statusCode;
+    const maybeMsg =
+      (err as { message?: string })?.message ??
+      (typeof err === "string" ? err : null);
+    reply.status(maybeStatus ?? 500).send({
+      error: maybeMsg ?? "Errore interno",
     });
   });
 
