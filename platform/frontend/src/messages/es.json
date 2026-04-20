@@ -142,7 +142,7 @@
         "days": "{count} días",
         "units": "{count} unidades"
       },
-      "notice": "El deploy requiere que la wallet conectada firme. Se desplegarán 5 contratos en 1 tx (Campaign, Token, StakingVault, YieldToken, HarvestManager)."
+      "notice": "Firma desde la wallet conectada cuando se te pida."
     },
     "actions": {
       "back": "← Atrás",
@@ -170,6 +170,13 @@
       "errorFactory": "CampaignFactory aún no desplegado. Configura NEXT_PUBLIC_FACTORY_ADDRESS.",
       "errorImage": "Sube una imagen de portada",
       "errorDeadline": "Configura el plazo de financiación"
+    },
+    "success": {
+      "title": "Campaña live on-chain",
+      "body": "{name} está desplegada y lista para recibir a sus primeros inversores.",
+      "defaultName": "Tu campaña",
+      "cta": "Abrir campaña",
+      "viewOnExplorer": "Ver transacción de deploy"
     },
     "preview": {
       "title": "Vista Previa",
@@ -458,16 +465,22 @@
         "subtitle": "Ajusta la campaña tras el lanzamiento. Cada campo es una tx separada con guard-rails (extender-only para deadline, caps ≥ supply emitido).",
         "fundingDeadline": "Fecha límite recaudación",
         "deadlineHint": "Solo durante Recaudación. Fecha posterior a la actual.",
-        "deadlineDisabledHint": "Bloqueado: la campaña ya no está en Recaudación.",
+        "deadlineDisabledHint": "Campaña ya {state}: el deadline se edita solo en Recaudación.",
         "minCap": "Cap mínimo",
         "minCapHint": "Solo durante Recaudación. Por encima de currentSupply ({supply}) y ≤ cap máximo.",
-        "minCapDisabledHint": "Bloqueado: cap mínimo solo editable en Recaudación.",
+        "minCapDisabledHint": "Campaña ya {state}: el cap mínimo se edita solo en Recaudación.",
         "maxCap": "Cap máximo",
         "maxCapHint": "Recaudación o Activa. ≥ currentSupply ({supply}) + cola sell-back.",
-        "maxCapDisabledHint": "Bloqueado: la campaña está en estado terminal.",
+        "maxCapDisabledHint": "Campaña en {state}: el cap máximo se edita solo en Recaudación o Activa.",
         "tokensSuffix": "CAMP",
         "save": "Guardar",
-        "saving": "Guardando…"
+        "saving": "Guardando…",
+        "states": {
+          "funding": "Recaudación",
+          "active": "Activa",
+          "buyback": "Buyback",
+          "ended": "Cerrada"
+        }
       },
       "tokens": {
         "empty": "Ningún token de pago en whitelist. Agrega uno abajo para que los inversores puedan comprar.",

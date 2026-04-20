@@ -142,7 +142,7 @@
         "days": "{count} days",
         "units": "{count} units"
       },
-      "notice": "Deploy requires the connected wallet to sign. 5 contracts will be deployed in 1 tx (Campaign, Token, StakingVault, YieldToken, HarvestManager)."
+      "notice": "Sign from your connected wallet when prompted."
     },
     "actions": {
       "back": "← Back",
@@ -170,6 +170,13 @@
       "errorFactory": "CampaignFactory not yet deployed. Set NEXT_PUBLIC_FACTORY_ADDRESS.",
       "errorImage": "Upload a cover image",
       "errorDeadline": "Set the funding deadline"
+    },
+    "success": {
+      "title": "Campaign live on-chain",
+      "body": "{name} is deployed and ready to receive its first investors.",
+      "defaultName": "Your campaign",
+      "cta": "Open campaign",
+      "viewOnExplorer": "View deploy transaction"
     },
     "preview": {
       "title": "Preview",
@@ -458,16 +465,22 @@
         "subtitle": "Tune the campaign after launch. Each change is a separate on-chain tx with producer-only guard-rails (deadline extend-only, caps stay ≥ committed supply).",
         "fundingDeadline": "Funding deadline",
         "deadlineHint": "Funding-only. The new date must be later than the current one.",
-        "deadlineDisabledHint": "Lock: the campaign is already past Funding.",
+        "deadlineDisabledHint": "Campaign already {state}: the funding deadline is editable only during Funding.",
         "minCap": "Min cap (soft)",
         "minCapHint": "Funding-only. Must stay above currentSupply ({supply}) and ≤ maxCap.",
-        "minCapDisabledHint": "Lock: min cap can only be tuned while in Funding.",
+        "minCapDisabledHint": "Campaign already {state}: min cap is editable only during Funding.",
         "maxCap": "Max cap (hard)",
         "maxCapHint": "Funding or Active. Must stay ≥ currentSupply ({supply}) + outstanding sell-back queue.",
-        "maxCapDisabledHint": "Lock: the campaign is in a terminal state (Buyback/Ended).",
+        "maxCapDisabledHint": "Campaign in {state}: max cap is editable only during Funding or Active.",
         "tokensSuffix": "CAMP",
         "save": "Save",
-        "saving": "Saving…"
+        "saving": "Saving…",
+        "states": {
+          "funding": "Funding",
+          "active": "Active",
+          "buyback": "Buyback",
+          "ended": "Ended"
+        }
       },
       "tokens": {
         "empty": "No payment tokens whitelisted yet. Add one below so investors can buy.",

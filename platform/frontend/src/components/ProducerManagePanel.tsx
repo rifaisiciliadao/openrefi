@@ -1467,6 +1467,11 @@ function ParametersEditor({
     });
   };
 
+  const stateKey =
+    (["funding", "active", "buyback", "ended"] as const)[currentState] ??
+    "funding";
+  const stateLabel = t(`states.${stateKey}`);
+
   return (
     <div className="bg-surface-container-low rounded-xl p-5 border border-outline-variant/15 space-y-4">
       <p className="text-xs text-on-surface-variant">{t("subtitle")}</p>
@@ -1476,7 +1481,7 @@ function ParametersEditor({
         current={currentDeadlineIso || "—"}
         hint={
           deadlineDisabled
-            ? t("deadlineDisabledHint")
+            ? t("deadlineDisabledHint", { state: stateLabel })
             : t("deadlineHint")
         }
         disabled={deadlineDisabled}
@@ -1508,7 +1513,7 @@ function ParametersEditor({
         }
         hint={
           minCapDisabled
-            ? t("minCapDisabledHint")
+            ? t("minCapDisabledHint", { state: stateLabel })
             : t("minCapHint", {
                 supply: Number(
                   formatUnits(onChainSupply, 18),
@@ -1546,7 +1551,7 @@ function ParametersEditor({
         }
         hint={
           maxCapDisabled
-            ? t("maxCapDisabledHint")
+            ? t("maxCapDisabledHint", { state: stateLabel })
             : t("maxCapHint", {
                 supply: Number(
                   formatUnits(onChainSupply, 18),

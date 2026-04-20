@@ -142,7 +142,7 @@
         "days": "{count} giorni",
         "units": "{count} unità"
       },
-      "notice": "Il deploy richiede che il wallet connesso firmi. Verranno deployati 5 contratti in 1 tx (Campaign, Token, StakingVault, YieldToken, HarvestManager)."
+      "notice": "Firma dal wallet connesso quando richiesto."
     },
     "actions": {
       "back": "← Indietro",
@@ -170,6 +170,13 @@
       "errorFactory": "CampaignFactory non ancora deployata. Imposta NEXT_PUBLIC_FACTORY_ADDRESS.",
       "errorImage": "Carica un'immagine di copertina",
       "errorDeadline": "Imposta la scadenza di funding"
+    },
+    "success": {
+      "title": "Campagna live on-chain",
+      "body": "{name} è deployata e pronta a ricevere i primi investitori.",
+      "defaultName": "La tua campagna",
+      "cta": "Apri campagna",
+      "viewOnExplorer": "Vedi transazione di deploy"
     },
     "preview": {
       "title": "Anteprima",
@@ -458,16 +465,22 @@
         "subtitle": "Modifica la campagna dopo il lancio. Ogni campo è una tx separata con guard-rail (scadenza solo-estesa, cap sempre ≥ supply già mintata).",
         "fundingDeadline": "Scadenza raccolta",
         "deadlineHint": "Solo durante Raccolta. La nuova data deve essere posteriore a quella attuale.",
-        "deadlineDisabledHint": "Bloccato: la campagna non è più in Raccolta.",
+        "deadlineDisabledHint": "Campagna già {state}: la scadenza raccolta è modificabile solo durante Raccolta.",
         "minCap": "Cap minimo (soft)",
         "minCapHint": "Solo durante Raccolta. Deve stare sopra currentSupply ({supply}) e ≤ cap massimo.",
-        "minCapDisabledHint": "Bloccato: il cap minimo si può cambiare solo in Raccolta.",
+        "minCapDisabledHint": "Campagna già {state}: il cap minimo si può cambiare solo durante Raccolta.",
         "maxCap": "Cap massimo (hard)",
         "maxCapHint": "Raccolta o Attiva. Deve stare ≥ currentSupply ({supply}) + coda sell-back.",
-        "maxCapDisabledHint": "Bloccato: la campagna è in uno stato terminale (Buyback/Chiusa).",
+        "maxCapDisabledHint": "Campagna in {state}: il cap massimo si può cambiare solo in Raccolta o Attiva.",
         "tokensSuffix": "CAMP",
         "save": "Salva",
-        "saving": "Salvataggio…"
+        "saving": "Salvataggio…",
+        "states": {
+          "funding": "Raccolta",
+          "active": "Attiva",
+          "buyback": "Buyback",
+          "ended": "Chiusa"
+        }
       },
       "tokens": {
         "empty": "Nessun token di pagamento in whitelist. Aggiungine uno sotto così gli investitori possono comprare.",

@@ -12,6 +12,8 @@ import {
 } from "@/contracts/tokens";
 import { uploadImage, uploadMetadata } from "@/lib/api";
 import { waitForTx } from "@/lib/waitForTx";
+import Link from "next/link";
+import { txUrl } from "@/lib/explorer";
 
 type FormData = {
   name: string;
@@ -773,7 +775,15 @@ export default function CreateCampaign() {
           </>
         )}
 
-        {step === 4 && (
+        {step === 4 && status.kind === "success" && (
+          <DeploySuccessScreen
+            campaign={status.campaign}
+            createTx={status.createTx}
+            name={form.name}
+          />
+        )}
+
+        {step === 4 && status.kind !== "success" && (
           <>
             <div className="mb-10">
               <h1 className="text-3xl font-bold tracking-tight text-on-surface mb-2">
@@ -838,20 +848,9 @@ export default function CreateCampaign() {
                 />
               </ReviewSection>
 
-              <div className="bg-primary-fixed/20 rounded-xl p-4 flex items-start gap-3 border border-primary/20">
-                <svg
-                  className="text-primary shrink-0 mt-0.5"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-                </svg>
-                <p className="text-sm text-on-surface-variant">
-                  {t("step4.notice")}
-                </p>
-              </div>
+              <p className="text-xs text-on-surface-variant px-2 mt-2">
+                {t("step4.notice")}
+              </p>
 
               {status.kind === "uploading-image" && (
                 <StatusBox kind="info">
@@ -891,47 +890,6 @@ export default function CreateCampaign() {
                       })}
                 </StatusBox>
               )}
-              {status.kind === "success" && (
-                <StatusBox kind="success">
-                  <div>{t("status.success")}</div>
-                  <div className="mt-2 space-y-1 text-xs font-normal">
-                    <div>
-                      <a
-                        href={`/campaign/${status.campaign}`}
-                        className="underline font-semibold"
-                      >
-                        {t("status.viewCampaign")}
-                      </a>{" "}
-                      <span className="text-on-surface-variant">
-                        ({status.campaign.slice(0, 8)}…{status.campaign.slice(-6)})
-                      </span>
-                    </div>
-                    <div>
-                      <a
-                        href={`https://sepolia.basescan.org/tx/${status.createTx}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline"
-                      >
-                        {t("status.viewCreateTx")}
-                      </a>
-                      {status.registryTx && (
-                        <>
-                          {" · "}
-                          <a
-                            href={`https://sepolia.basescan.org/tx/${status.registryTx}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="underline"
-                          >
-                            {t("status.viewRegistryTx")}
-                          </a>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </StatusBox>
-              )}
               {status.kind === "error" && (
                 <StatusBox kind="error">{status.error}</StatusBox>
               )}
@@ -939,36 +897,38 @@ export default function CreateCampaign() {
           </>
         )}
 
-        <div className="flex items-center justify-between gap-4 pt-8 mt-8 border-t border-surface-container-high">
-          <button
-            onClick={prev}
-            disabled={step === 1}
-            className="px-6 py-3 text-on-surface-variant hover:text-on-surface font-semibold transition disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {t("actions.back")}
-          </button>
+        {status.kind !== "success" && (
+          <div className="flex items-center justify-between gap-4 pt-8 mt-8 border-t border-surface-container-high">
+            <button
+              onClick={prev}
+              disabled={step === 1}
+              className="px-6 py-3 text-on-surface-variant hover:text-on-surface font-semibold transition disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {t("actions.back")}
+            </button>
 
-          {step < 4 ? (
-            <button
-              onClick={next}
-              className="regen-gradient text-white px-8 py-3 rounded-full font-semibold hover:opacity-90 transition shadow-lg shadow-primary/20"
-            >
-              {t("actions.next")}
-            </button>
-          ) : (
-            <button
-              onClick={handleDeploy}
-              disabled={deployBusy || !isConnected}
-              className="regen-gradient text-white px-8 py-3 rounded-full font-semibold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {!isConnected
-                ? t("actions.connect")
-                : deployBusy
-                  ? t("actions.inProgress")
-                  : t("actions.deploy")}
-            </button>
-          )}
-        </div>
+            {step < 4 ? (
+              <button
+                onClick={next}
+                className="regen-gradient text-white px-8 py-3 rounded-full font-semibold hover:opacity-90 transition shadow-lg shadow-primary/20"
+              >
+                {t("actions.next")}
+              </button>
+            ) : (
+              <button
+                onClick={handleDeploy}
+                disabled={deployBusy || !isConnected}
+                className="regen-gradient text-white px-8 py-3 rounded-full font-semibold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {!isConnected
+                  ? t("actions.connect")
+                  : deployBusy
+                    ? t("actions.inProgress")
+                    : t("actions.deploy")}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="lg:w-2/5 mt-12 lg:mt-0">
@@ -1133,6 +1093,78 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between items-baseline py-1.5 border-b border-surface-container-low last:border-0">
       <span className="text-sm text-on-surface-variant">{label}</span>
       <span className="text-sm font-semibold text-on-surface">{value}</span>
+    </div>
+  );
+}
+
+/**
+ * Full-screen confirmation after createCampaign lands on-chain. Replaces
+ * the entire step-4 review (not a banner below it) so the producer gets
+ * one clear next action — "Vai alla campagna" — instead of a wall of
+ * tx hashes and an implicit scroll-to-find-the-link.
+ */
+function DeploySuccessScreen({
+  campaign,
+  createTx,
+  name,
+}: {
+  campaign: Address;
+  createTx: `0x${string}`;
+  name: string;
+}) {
+  const t = useTranslations("create.success");
+  return (
+    <div className="py-16 flex flex-col items-center text-center max-w-xl mx-auto">
+      <div className="w-20 h-20 rounded-full regen-gradient flex items-center justify-center mb-6 shadow-lg shadow-primary/30">
+        <svg
+          width="40"
+          height="40"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-white"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </div>
+
+      <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-on-surface mb-3">
+        {t("title")}
+      </h1>
+      <p className="text-on-surface-variant mb-10 max-w-md">
+        {t("body", { name: name || t("defaultName") })}
+      </p>
+
+      <Link
+        href={`/campaign/${campaign}`}
+        className="regen-gradient text-white rounded-full h-14 px-10 text-base font-semibold hover:opacity-90 transition shadow-lg shadow-primary/20 flex items-center gap-3 mb-4"
+      >
+        {t("cta")}
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M5 12h14M13 5l7 7-7 7" />
+        </svg>
+      </Link>
+
+      <a
+        href={txUrl(createTx)}
+        target="_blank"
+        rel="noreferrer"
+        className="text-xs text-on-surface-variant hover:text-primary underline"
+      >
+        {t("viewOnExplorer")}
+      </a>
     </div>
   );
 }
