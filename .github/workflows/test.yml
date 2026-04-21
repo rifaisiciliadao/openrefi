@@ -14,6 +14,9 @@ jobs:
   check:
     name: Foundry project
     runs-on: ubuntu-latest
+    # Hard cap so a hung test (public-RPC retry loop, misbehaving invariant,
+    # etc.) can never burn 6h of CI time again. The full suite runs in ~10min.
+    timeout-minutes: 25
     permissions:
       contents: read
     steps:
@@ -34,5 +37,9 @@ jobs:
       - name: Run Forge build
         run: forge build --sizes
 
+      # test/fork/* targets hit hardcoded public RPCs (arb1.arbitrum.io,
+      # base, mainnet) which rate-limit and hang inside vm.createSelectFork
+      # on GitHub Actions — the try/catch doesn't abort the retry loop.
+      # Matches the documented local command in CLAUDE.md.
       - name: Run Forge tests
-        run: forge test -vvv
+        run: forge test -vvv --no-match-path "test/fork/*"
