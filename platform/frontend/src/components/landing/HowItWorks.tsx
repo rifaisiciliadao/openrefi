@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useInView } from "@/lib/landing/useInView";
+import { StepIllustration } from "./StepIllustration";
 
 const STEP_NUMBERS = ["01", "02", "03", "04", "05"];
 
@@ -12,14 +13,14 @@ export function HowItWorks() {
   return (
     <section
       id="how"
-      className="glass-section relative w-full py-32 md:py-40"
+      className="glass-section relative w-full py-40 md:py-56"
       style={{
         borderTop: "1px solid rgba(255,255,255,0.5)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
       }}
     >
-      <div ref={ref} className="mx-auto max-w-7xl px-6 md:px-8">
-        <div className="mb-20 max-w-3xl">
+      <div ref={ref} className="mx-auto max-w-6xl px-6 md:px-8">
+        <div className="mb-28 max-w-3xl md:mb-36">
           <span
             className={`reveal ${inView ? "in-view" : ""} mb-6 inline-block text-xs font-bold tracking-[0.18em] uppercase`}
             style={{ color: "#1a1a1a", fontFamily: "var(--font-header)" }}
@@ -33,55 +34,74 @@ export function HowItWorks() {
             {t("title1")} <em>{t("title2")}</em>
           </h2>
           <p
-            className={`reveal reveal-delay-2 ${inView ? "in-view" : ""} mt-6 max-w-xl text-lg leading-relaxed`}
+            className={`reveal reveal-delay-2 ${inView ? "in-view" : ""} mt-8 max-w-xl text-lg leading-relaxed`}
             style={{ color: "#1a1a1a" }}
           >
             {t("intro")}
           </p>
         </div>
 
-        <ol className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5 lg:gap-3">
-          {STEP_NUMBERS.map((n, i) => (
-            <li
-              key={n}
-              className={`reveal reveal-delay-${Math.min(i + 1, 6)} ${inView ? "in-view" : ""} group relative flex flex-col rounded-2xl p-6 transition-all duration-500 hover:-translate-y-1`}
-              style={{
-                background: "rgba(255,255,255,0.68)",
-                border: "1px solid rgba(255,255,255,0.7)",
-                backdropFilter: "blur(14px) saturate(1.1)",
-                WebkitBackdropFilter: "blur(14px) saturate(1.1)",
-                boxShadow:
-                  "0 1px 0 0 rgba(255,255,255,0.8) inset, 0 6px 20px -8px rgba(0,0,0,0.08)",
-              }}
-            >
-              <span
-                className="font-display inline-flex h-8 w-8 items-center justify-center rounded-full text-xs transition-all duration-300 group-hover:scale-110"
-                style={{
-                  color: "#ffffff",
-                  background:
-                    "linear-gradient(135deg, #006b2c 0%, #00873a 100%)",
-                  boxShadow: "0 2px 8px -2px rgba(0,135,58,0.4)",
-                }}
+        <ol className="relative flex flex-col gap-24 md:gap-32">
+          {STEP_NUMBERS.map((n, i) => {
+            const isRightIllustration = i % 2 === 1;
+            return (
+              <li
+                key={n}
+                className={`reveal reveal-delay-${Math.min(i + 1, 6)} ${inView ? "in-view" : ""} grid grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-20`}
               >
-                {n}
-              </span>
-              <h3
-                className="font-display mt-5 text-xl leading-tight transition-transform duration-300 group-hover:translate-x-0.5"
-                style={{ color: "#000000" }}
-              >
-                {t(`steps.${i}.title`)}
-              </h3>
-              <p
-                className="mt-3 text-base leading-relaxed"
-                style={{ color: "#1a1a1a" }}
-              >
-                {t(`steps.${i}.body`)}
-              </p>
-            </li>
-          ))}
+                <div
+                  className={`flex justify-center ${isRightIllustration ? "md:order-2" : ""}`}
+                >
+                  <div
+                    className="relative aspect-square w-full max-w-[360px] overflow-hidden rounded-[32%]"
+                    style={{
+                      background:
+                        "linear-gradient(160deg, rgba(232,244,235,0.85) 0%, rgba(215,235,220,0.7) 55%, rgba(193,223,200,0.5) 100%)",
+                      border: "1px solid rgba(0,107,44,0.12)",
+                      boxShadow:
+                        "0 1px 0 0 rgba(255,255,255,0.9) inset, 0 18px 40px -20px rgba(0,107,44,0.25)",
+                    }}
+                  >
+                    <StepIllustration
+                      step={i}
+                      className="absolute inset-0 h-full w-full"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  className={`flex flex-col ${isRightIllustration ? "md:order-1" : ""}`}
+                >
+                  <span
+                    className="font-display inline-flex h-10 w-10 items-center justify-center rounded-full text-xs"
+                    style={{
+                      color: "#ffffff",
+                      background:
+                        "linear-gradient(135deg, #006b2c 0%, #00873a 100%)",
+                      boxShadow: "0 4px 14px -4px rgba(0,135,58,0.45)",
+                    }}
+                  >
+                    {n}
+                  </span>
+                  <h3
+                    className="font-display mt-6 text-3xl leading-tight sm:text-4xl"
+                    style={{ color: "#000000" }}
+                  >
+                    {t(`steps.${i}.title`)}
+                  </h3>
+                  <p
+                    className="mt-5 max-w-lg text-lg leading-relaxed"
+                    style={{ color: "#1a1a1a" }}
+                  >
+                    {t(`steps.${i}.body`)}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
         </ol>
 
-        <div className="mt-20 flex flex-col items-start gap-6 border-t border-[#eaeaea] pt-10 md:flex-row md:items-center md:justify-between">
+        <div className="mt-32 flex flex-col items-start gap-8 border-t border-[#eaeaea] pt-12 md:flex-row md:items-center md:justify-between">
           <p
             className={`reveal ${inView ? "in-view" : ""} max-w-xl text-base leading-relaxed`}
             style={{ color: "#1a1a1a" }}

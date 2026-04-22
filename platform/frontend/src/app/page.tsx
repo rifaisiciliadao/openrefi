@@ -12,8 +12,8 @@ export default function Home() {
       <VideoBackground />
       <div className="relative z-0">
         <Hero />
-        <HowItWorks />
         <Campaigns />
+        <HowItWorks />
         <Trust />
         <Partners />
         <LandingFooter />
