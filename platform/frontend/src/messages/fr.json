@@ -725,5 +725,177 @@
     "setMinCapFailed": "Mise à jour cap min échouée",
     "setMaxCapConfirmed": "Cap max mis à jour",
     "setMaxCapFailed": "Mise à jour cap max échouée"
+  },
+  "landing": {
+    "nav": {
+      "home": "Home",
+      "how": "Comment ça marche",
+      "campaigns": "Campagnes",
+      "trust": "Sécurité",
+      "portfolio": "Portfolio",
+      "create": "Créer",
+      "connectWallet": "Connecter Wallet",
+      "connect": "Connecter",
+      "fundCta": "Financer la Récolte"
+    },
+    "hero": {
+      "badge": "Première campagne live · Sharewood Forest, Sicile",
+      "titleA": "Investis dans la",
+      "titleLand": "terre.",
+      "titleB": "Récolte le",
+      "titleYield": "rendement.",
+      "subtitle1": "Finance de vraies récoltes siciliennes onchain. 1 000 $ rapportent",
+      "subtitleHighlight": "5 litres d'huile d'olive extra vierge pressée à froid",
+      "subtitle2": "à la récolte — ou tes USDC de retour, verrouillés en escrow jusqu'au soft cap.",
+      "ctaFund": "Financer la Récolte",
+      "ctaHow": "Comment ça marche",
+      "statOnchain": "Onchain",
+      "statOnchainNote": "Factory + 5 proxies par campagne",
+      "statYield": "Rendement daily",
+      "statYieldNote": "Dynamique, décroît à mesure que le vault se remplit",
+      "statFee": "Fee protocole",
+      "statFeeNote": "Prélevée une fois, jamais sur le secondaire",
+      "statTests": "Tests réussis",
+      "statTestsNote": "33k runs invariants · 0 failures",
+      "scroll": "Défiler"
+    },
+    "how": {
+      "kicker": "Comment ça marche",
+      "title1": "Cinq étapes.",
+      "title2": "Un cycle vivant.",
+      "intro": "Chaque campagne est une state machine onchain. Soft cap manqué ? Remboursement automatique en un bloc. Récolte échouée ? Le protocole ouvre la fenêtre buyback USDC. Pas de votes DAO, pas de comités — le code fait loi.",
+      "steps": [
+        {
+          "title": "Le producteur lance la campagne",
+          "body": "Un producteur sicilien tokenise la prochaine récolte en $CAMPAIGN. Fixe soft cap, hard cap, deadline. Tous les paramètres immuables onchain dès la minute zéro."
+        },
+        {
+          "title": "Tu finances en USDC",
+          "body": "Dépose de l'USDC, reçois du $CAMPAIGN 1:1 au prix listé. Soft cap non atteint avant la deadline ? Brûle $CAMPAIGN, récupère 100% de tes USDC en une transaction. Zéro risque de contrepartie."
+        },
+        {
+          "title": "Stake, gagne du $YIELD",
+          "body": "Stake $CAMPAIGN pendant la saison. Accumule $YIELD (le token de récolte — $OIL, $CITRUS, selon la culture) à 1–5× par jour. Le taux décroît à mesure que le vault se remplit : les premiers stakers gagnent plus."
+        },
+        {
+          "title": "Rédemption : produit ou USDC",
+          "body": "À la récolte, brûle $YIELD pour l'huile physique — vérifiée via Merkle proof sur ton wallet — ou pour ta part pro-rata du pool USDC. 98% aux holders, 2% fee protocole."
+        },
+        {
+          "title": "Saison suivante ou sortie",
+          "body": "Restake pour la récolte suivante, ou unstake sans pénalité en fin de saison. Besoin de liquidité avant ? Place un sell-back — les nouveaux acheteurs te remplissent en premier au prix actuel, FIFO."
+        }
+      ],
+      "tail": "Le protocole est commodity-agnostic. Huile aujourd'hui, agrumes, vin, miel, café demain. N'importe quel producteur peut lancer une campagne — sans permission, sans comité.",
+      "ctaSee": "Voir les campagnes live"
+    },
+    "campaigns": {
+      "kicker": "Campagnes",
+      "title1": "Une vraie récolte.",
+      "title2": "Cinq autres à venir.",
+      "intro": "Sharewood Forest est live. Les autres sont des placeholders — onboarding en cours. Chaque nouvelle campagne passe par la même factory permissionless, zéro gatekeeping.",
+      "filters": {
+        "all": "Toutes",
+        "funding": "Funding",
+        "active": "Actives",
+        "closed": "Fermées"
+      },
+      "stateLabel": {
+        "funding": "Funding",
+        "active": "Active",
+        "ended": "Fermée",
+        "coming": "Bientôt"
+      },
+      "progress": "Progrès",
+      "comingProducer": "Onboarding producteur",
+      "expectedYield": "Rendement attendu",
+      "ctaFund": "Financer cette récolte",
+      "ctaView": "Voir"
+    },
+    "trust": {
+      "kicker": "Sécurité",
+      "title1": "Ne fais pas confiance.",
+      "title2": "Vérifie.",
+      "intro": "Code open-source sur GitHub. Contrats déployés et vérifiés sur Base. Subgraph public. Si quelque chose semble louche, tu le vois en premier. Si le producteur ne livre pas la récolte, le protocole ouvre une fenêtre buyback USDC de 90 jours — le producteur doit déposer ou les holders claim pro-rata.",
+      "ghBtn": "GitHub",
+      "docsBtn": "Documentation",
+      "contractBtn": "Lire le smart contract",
+      "items": [
+        {
+          "label": "Contrats vérifiés",
+          "value": "Base Sepolia",
+          "detail": "Six proxies upgradeables par campagne. ProxyAdmin transférable à 0x0 au lancement pour immuabilité totale."
+        },
+        {
+          "label": "Test suite",
+          "value": "123+ tests",
+          "detail": "Unit + integration + 39 red-team + 11 invariants stateful fuzzés à 33k runs chacun. Un test échoué bloque le deploy."
+        },
+        {
+          "label": "Oracle",
+          "value": "Chainlink",
+          "detail": "Chaque feed validé : non négatif, mis à jour en 1h, decimals cap à 18. Zéro surface de manipulation."
+        },
+        {
+          "label": "Fee protocole",
+          "value": "2%",
+          "detail": "Fee unique. Prélevée à l'activation et à la récolte. Jamais sur le secondaire. Pas de withdrawal admin, pas de rescue function."
+        }
+      ],
+      "escrowTitle1": "Escrow réel.",
+      "escrowTitle2": "Remboursement automatique.",
+      "escrowBody": "Les fonds restent dans le contrat Campaign jusqu'à atteindre le soft cap. Si la deadline passe sous le cap, n'importe quel wallet peut déclencher le buyback — chaque investisseur brûle son $CAMPAIGN et retire les USDC exacts qu'il a payés. Zéro discrétion, un bloc, pas de vote DAO."
+    },
+    "footer": {
+      "tagline1": "Finance régénérative",
+      "tagline2": "pour une planète vivante.",
+      "about": "GrowFi est construit par Rifai Sicilia DAO. Commodity-agnostic, chain-agnostic, permissionless. N'importe quel producteur, n'importe quelle récolte, n'importe quelle chain — aucune approbation requise.",
+      "colProduct": "Produit",
+      "colProtocol": "Protocole",
+      "colCommunity": "Communauté",
+      "linkHow": "Comment ça marche",
+      "linkCampaigns": "Campagnes",
+      "linkProducers": "Pour producteurs",
+      "linkPortfolio": "Portfolio",
+      "linkDocs": "Documentation",
+      "linkContracts": "Smart contracts",
+      "linkSubgraph": "Subgraph",
+      "linkAudit": "Audit",
+      "linkGithub": "GitHub",
+      "linkDiscord": "Discord",
+      "linkTwitter": "Twitter",
+      "linkNewsletter": "Newsletter",
+      "copy": "© {year} Rifai Sicilia DAO. Code open-source sous licence MIT.",
+      "terms": "Conditions",
+      "privacy": "Confidentialité",
+      "contact": "Contact"
+    },
+    "placeholders": {
+      "catania": {
+        "name": "Agrumes de Catane",
+        "product": "Oranges Tarocco",
+        "location": "Catane, Sicile"
+      },
+      "etna": {
+        "name": "Vignoble de l'Etna",
+        "product": "Nerello Mascalese",
+        "location": "Etna Nord, Sicile"
+      },
+      "avola": {
+        "name": "Amandes d'Avola",
+        "product": "Amandes Pizzuta",
+        "location": "Agrigente, Sicile"
+      },
+      "bronte": {
+        "name": "Noisettes de Bronte",
+        "product": "Noisettes AOP",
+        "location": "Bronte, Sicile"
+      },
+      "nebrodi": {
+        "name": "Châtaignes des Nebrodi",
+        "product": "Châtaignes de montagne",
+        "location": "Nebrodi, Sicile"
+      }
+    }
   }
 }

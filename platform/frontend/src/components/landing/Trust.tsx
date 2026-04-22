@@ -1,35 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useInView } from "@/lib/landing/useInView";
 
-const TRUST_ITEMS = [
-  {
-    label: "Verified contracts",
-    value: "Base Sepolia",
-    detail:
-      "Six upgradeable proxies per campaign. ProxyAdmin transferable to the zero address at launch for full immutability.",
-  },
-  {
-    label: "Test suite",
-    value: "123+ tests",
-    detail:
-      "Unit + integration + 39 adversarial red-team attacks + 11 stateful invariants fuzzed at 33k random sequences each. One failing test blocks deployment.",
-  },
-  {
-    label: "Oracle",
-    value: "Chainlink",
-    detail:
-      "Every price feed validated: non-negative, updated within 1 hour, decimals capped at 18. No oracle manipulation surface.",
-  },
-  {
-    label: "Protocol fee",
-    value: "2%",
-    detail:
-      "Single fee. Deducted at activation and at harvest. Never on the secondary market. No admin withdrawal, no rescue function.",
-  },
-];
+const ITEM_COUNT = 4;
 
 export function Trust() {
+  const t = useTranslations("landing.trust");
   const { ref, inView } = useInView<HTMLDivElement>();
 
   return (
@@ -51,23 +28,19 @@ export function Trust() {
                 fontFamily: "var(--font-header)",
               }}
             >
-              Trust
+              {t("kicker")}
             </span>
             <h2
               className={`reveal reveal-delay-1 ${inView ? "in-view" : ""} font-display text-4xl sm:text-5xl md:text-6xl`}
               style={{ color: "#ffffff", lineHeight: "1.02" }}
             >
-              Don&apos;t trust. <em>Verify.</em>
+              {t("title1")} <em>{t("title2")}</em>
             </h2>
             <p
               className={`reveal reveal-delay-2 ${inView ? "in-view" : ""} mt-8 max-w-md text-lg leading-relaxed`}
               style={{ color: "rgba(255,255,255,0.86)" }}
             >
-              Code is open-source on GitHub. Contracts are deployed and
-              verified on Base. The subgraph is public. If something looks off,
-              you see it first. If the producer doesn&apos;t deliver the harvest,
-              the protocol opens a 90-day USDC buyback window — producer must
-              deposit or holders claim pro-rata.
+              {t("intro")}
             </p>
 
             <div
@@ -88,14 +61,14 @@ export function Trust() {
                 >
                   <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
                 </svg>
-                GitHub
+                {t("ghBtn")}
               </a>
               <a
                 href="#"
                 className="group inline-flex items-center gap-2 rounded-full border border-white/25 px-6 py-2.5 text-sm font-bold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/10"
                 style={{ fontFamily: "var(--font-header)" }}
               >
-                Documentation
+                {t("docsBtn")}
                 <svg
                   width="14"
                   height="14"
@@ -115,16 +88,16 @@ export function Trust() {
                 className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-black transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_12px_32px_-8px_rgba(255,255,255,0.3)]"
                 style={{ fontFamily: "var(--font-header)" }}
               >
-                Read the smart contract
+                {t("contractBtn")}
               </a>
             </div>
           </div>
 
           <div className="md:col-span-7">
             <dl className="grid grid-cols-1 gap-0 sm:grid-cols-2">
-              {TRUST_ITEMS.map((item, i) => (
+              {Array.from({ length: ITEM_COUNT }).map((_, i) => (
                 <div
-                  key={item.label}
+                  key={i}
                   className={`reveal reveal-delay-${Math.min(i + 1, 6)} ${inView ? "in-view" : ""} group relative flex flex-col py-8 transition-colors duration-400 hover:bg-white/[0.04] md:py-10`}
                   style={{
                     borderTop:
@@ -147,19 +120,19 @@ export function Trust() {
                       fontFamily: "var(--font-header)",
                     }}
                   >
-                    {item.label}
+                    {t(`items.${i}.label`)}
                   </dt>
                   <dd
                     className="font-display mt-3 text-4xl sm:text-5xl"
                     style={{ color: "#ffffff" }}
                   >
-                    {item.value}
+                    {t(`items.${i}.value`)}
                   </dd>
                   <p
                     className="mt-4 max-w-xs text-base leading-relaxed"
                     style={{ color: "rgba(255,255,255,0.82)" }}
                   >
-                    {item.detail}
+                    {t(`items.${i}.detail`)}
                   </p>
                 </div>
               ))}
@@ -197,17 +170,13 @@ export function Trust() {
                     className="font-display text-xl"
                     style={{ color: "#ffffff" }}
                   >
-                    Real escrow. <em>Automatic refund.</em>
+                    {t("escrowTitle1")} <em>{t("escrowTitle2")}</em>
                   </h3>
                   <p
                     className="mt-2 text-base leading-relaxed"
                     style={{ color: "rgba(255,255,255,0.86)" }}
                   >
-                    Funds sit in the Campaign contract until the soft cap is
-                    reached. If the deadline passes under-funded, any wallet
-                    can trigger buyback — every investor burns their $CAMPAIGN
-                    and withdraws the exact USDC they paid in. Zero
-                    discretion, one block, no DAO vote.
+                    {t("escrowBody")}
                   </p>
                 </div>
               </div>

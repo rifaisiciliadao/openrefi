@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Nav } from "./Nav";
 import { useCountUp } from "@/lib/landing/useCountUp";
 
@@ -76,6 +77,7 @@ function StatCard({ index, headline, kicker, note, counter }: StatCardProps) {
 }
 
 export function Hero() {
+  const t = useTranslations("landing.hero");
   return (
     <section id="home" className="relative min-h-screen w-full overflow-hidden">
       <div
@@ -116,7 +118,7 @@ export function Hero() {
                   style={{ background: "#00873a" }}
                 />
               </span>
-              First campaign live · Sharewood Forest, Sicily
+              {t("badge")}
             </span>
           </span>
 
@@ -128,8 +130,9 @@ export function Hero() {
               textShadow: "0 1px 0 rgba(255,255,255,0.4)",
             }}
           >
-            Invest in the <em>land.</em>
-            <br className="hidden sm:block" /> Harvest the <em>yield.</em>
+            {t("titleA")} <em>{t("titleLand")}</em>
+            <br className="hidden sm:block" /> {t("titleB")}{" "}
+            <em>{t("titleYield")}</em>
           </h1>
 
           <p
@@ -139,7 +142,7 @@ export function Hero() {
               textShadow: "0 1px 0 rgba(255,255,255,0.4)",
             }}
           >
-            Fund real Sicilian olive harvests onchain. $1,000 returns{" "}
+            {t("subtitle1")}{" "}
             <span
               style={{
                 fontFamily: "var(--font-header)",
@@ -147,10 +150,9 @@ export function Hero() {
                 color: "#000000",
               }}
             >
-              5 liters of cold-pressed extra-virgin olive oil
+              {t("subtitleHighlight")}
             </span>{" "}
-            at harvest — or your USDC back, locked in smart contract escrow
-            until the soft cap is met.
+            {t("subtitle2")}
           </p>
 
           <div className="animate-fade-rise-delay-2 mt-12 flex flex-col items-center gap-3 sm:flex-row sm:gap-5">
@@ -160,7 +162,7 @@ export function Hero() {
               style={{ fontFamily: "var(--font-header)" }}
             >
               <span className="relative z-10 inline-flex items-center gap-2">
-                Fund the Harvest
+                {t("ctaFund")}
                 <svg
                   width="16"
                   height="16"
@@ -181,7 +183,7 @@ export function Hero() {
               className="shimmer-host shimmer-host-dark inline-flex items-center gap-2 rounded-full border border-black/15 bg-white/70 px-10 py-5 text-base font-bold text-black backdrop-blur-md transition-all duration-300 hover:bg-white"
               style={{ fontFamily: "var(--font-header)" }}
             >
-              See how it works
+              {t("ctaHow")}
             </a>
           </div>
 
@@ -189,28 +191,28 @@ export function Hero() {
             <StatCard
               index={0}
               headline="100%"
-              kicker="Onchain"
-              note="Factory + 5 proxies per campaign"
+              kicker={t("statOnchain")}
+              note={t("statOnchainNote")}
               counter={{ to: 100, suffix: "%" }}
             />
             <StatCard
               index={1}
               headline="1–5×"
-              kicker="Daily yield"
-              note="Dynamic, decays as vault fills"
+              kicker={t("statYield")}
+              note={t("statYieldNote")}
             />
             <StatCard
               index={2}
               headline="2%"
-              kicker="Protocol fee"
-              note="Deducted once, never on secondary"
+              kicker={t("statFee")}
+              note={t("statFeeNote")}
               counter={{ to: 2, suffix: "%" }}
             />
             <StatCard
               index={3}
               headline="123+"
-              kicker="Tests passed"
-              note="33k invariant runs · 0 failures"
+              kicker={t("statTests")}
+              note={t("statTestsNote")}
               counter={{ to: 123, suffix: "+" }}
             />
           </div>
@@ -227,7 +229,7 @@ export function Hero() {
                 fontWeight: 700,
               }}
             >
-              Scroll
+              {t("scroll")}
             </span>
             <span
               className="relative inline-block h-10 w-[1px]"

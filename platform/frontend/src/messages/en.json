@@ -725,5 +725,177 @@
     "setMinCapFailed": "Update min cap failed",
     "setMaxCapConfirmed": "Max cap updated",
     "setMaxCapFailed": "Update max cap failed"
+  },
+  "landing": {
+    "nav": {
+      "home": "Home",
+      "how": "How it works",
+      "campaigns": "Campaigns",
+      "trust": "Trust",
+      "portfolio": "Portfolio",
+      "create": "Create",
+      "connectWallet": "Connect Wallet",
+      "connect": "Connect",
+      "fundCta": "Fund the Harvest"
+    },
+    "hero": {
+      "badge": "First campaign live · Sharewood Forest, Sicily",
+      "titleA": "Invest in the",
+      "titleLand": "land.",
+      "titleB": "Harvest the",
+      "titleYield": "yield.",
+      "subtitle1": "Fund real Sicilian olive harvests onchain. $1,000 returns",
+      "subtitleHighlight": "5 liters of cold-pressed extra-virgin olive oil",
+      "subtitle2": "at harvest — or your USDC back, locked in smart contract escrow until the soft cap is met.",
+      "ctaFund": "Fund the Harvest",
+      "ctaHow": "See how it works",
+      "statOnchain": "Onchain",
+      "statOnchainNote": "Factory + 5 proxies per campaign",
+      "statYield": "Daily yield",
+      "statYieldNote": "Dynamic, decays as vault fills",
+      "statFee": "Protocol fee",
+      "statFeeNote": "Deducted once, never on secondary",
+      "statTests": "Tests passed",
+      "statTestsNote": "33k invariant runs · 0 failures",
+      "scroll": "Scroll"
+    },
+    "how": {
+      "kicker": "How it works",
+      "title1": "Five steps.",
+      "title2": "One living cycle.",
+      "intro": "Every campaign is an onchain state machine. Soft cap missed? Automatic refund in one block. Harvest fails? Protocol triggers the USDC buyback window. No DAO votes, no committees — code is law.",
+      "steps": [
+        {
+          "title": "Producer launches the campaign",
+          "body": "A Sicilian producer tokenizes next season's harvest as $CAMPAIGN. Sets soft cap, hard cap, funding deadline. All parameters immutable onchain from minute one."
+        },
+        {
+          "title": "You fund in USDC",
+          "body": "Deposit USDC, receive $CAMPAIGN 1:1 at the listed price. Soft cap missed before the deadline? Burn $CAMPAIGN, get 100% of your USDC back in one transaction. Zero counterparty risk."
+        },
+        {
+          "title": "Stake, earn $YIELD",
+          "body": "Stake $CAMPAIGN during the harvest season. Accrue $YIELD (the harvest token — $OIL, $CITRUS, whatever the crop is) at 1–5× per day. Rate decays as the vault fills, so earlier stakers earn more."
+        },
+        {
+          "title": "Redeem: product or USDC",
+          "body": "At harvest, burn $YIELD for physical olive oil — verified on your wallet via Merkle proof — or for your pro-rata share of the USDC pool. 98% to holders, 2% protocol fee."
+        },
+        {
+          "title": "Next season or exit",
+          "body": "Restake for the next harvest, or unstake with zero penalty once the season ends. Need liquidity early? Queue a sell-back — new buyers fill you first at the current price, FIFO."
+        }
+      ],
+      "tail": "Protocol is commodity-agnostic. Olive oil today, citrus, wine, honey, coffee tomorrow. Any producer can launch a campaign — no permission required, no approval committee.",
+      "ctaSee": "See live campaigns"
+    },
+    "campaigns": {
+      "kicker": "Campaigns",
+      "title1": "One real harvest.",
+      "title2": "Five more to come.",
+      "intro": "Sharewood Forest is live. The other listings are placeholder producers — onboarding in progress. Every new campaign goes through the same permissionless factory, no gatekeeping.",
+      "filters": {
+        "all": "All",
+        "funding": "Funding",
+        "active": "Active",
+        "closed": "Closed"
+      },
+      "stateLabel": {
+        "funding": "Funding",
+        "active": "Active",
+        "ended": "Closed",
+        "coming": "Coming soon"
+      },
+      "progress": "Progress",
+      "comingProducer": "Producer onboarding",
+      "expectedYield": "Expected yield",
+      "ctaFund": "Fund this harvest",
+      "ctaView": "View"
+    },
+    "trust": {
+      "kicker": "Trust",
+      "title1": "Don't trust.",
+      "title2": "Verify.",
+      "intro": "Code is open-source on GitHub. Contracts are deployed and verified on Base. The subgraph is public. If something looks off, you see it first. If the producer doesn't deliver the harvest, the protocol opens a 90-day USDC buyback window — producer must deposit or holders claim pro-rata.",
+      "ghBtn": "GitHub",
+      "docsBtn": "Documentation",
+      "contractBtn": "Read the smart contract",
+      "items": [
+        {
+          "label": "Verified contracts",
+          "value": "Base Sepolia",
+          "detail": "Six upgradeable proxies per campaign. ProxyAdmin transferable to the zero address at launch for full immutability."
+        },
+        {
+          "label": "Test suite",
+          "value": "123+ tests",
+          "detail": "Unit + integration + 39 adversarial red-team attacks + 11 stateful invariants fuzzed at 33k random sequences each. One failing test blocks deployment."
+        },
+        {
+          "label": "Oracle",
+          "value": "Chainlink",
+          "detail": "Every price feed validated: non-negative, updated within 1 hour, decimals capped at 18. No oracle manipulation surface."
+        },
+        {
+          "label": "Protocol fee",
+          "value": "2%",
+          "detail": "Single fee. Deducted at activation and at harvest. Never on the secondary market. No admin withdrawal, no rescue function."
+        }
+      ],
+      "escrowTitle1": "Real escrow.",
+      "escrowTitle2": "Automatic refund.",
+      "escrowBody": "Funds sit in the Campaign contract until the soft cap is reached. If the deadline passes under-funded, any wallet can trigger buyback — every investor burns their $CAMPAIGN and withdraws the exact USDC they paid in. Zero discretion, one block, no DAO vote."
+    },
+    "footer": {
+      "tagline1": "Regenerative finance",
+      "tagline2": "for a living planet.",
+      "about": "GrowFi is built by Rifai Sicilia DAO. Commodity-agnostic, chain-agnostic, permissionless. Any producer, any harvest, any chain — no approval required.",
+      "colProduct": "Product",
+      "colProtocol": "Protocol",
+      "colCommunity": "Community",
+      "linkHow": "How it works",
+      "linkCampaigns": "Campaigns",
+      "linkProducers": "For producers",
+      "linkPortfolio": "Portfolio",
+      "linkDocs": "Documentation",
+      "linkContracts": "Smart contracts",
+      "linkSubgraph": "Subgraph",
+      "linkAudit": "Audit",
+      "linkGithub": "GitHub",
+      "linkDiscord": "Discord",
+      "linkTwitter": "Twitter",
+      "linkNewsletter": "Newsletter",
+      "copy": "© {year} Rifai Sicilia DAO. All code open-source under MIT license.",
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "contact": "Contact"
+    },
+    "placeholders": {
+      "catania": {
+        "name": "Catania Citrus",
+        "product": "Tarocco oranges",
+        "location": "Catania, Sicily"
+      },
+      "etna": {
+        "name": "Etna Vineyard",
+        "product": "Nerello Mascalese",
+        "location": "Etna Nord, Sicily"
+      },
+      "avola": {
+        "name": "Avola Almonds",
+        "product": "Pizzuta almonds",
+        "location": "Agrigento, Sicily"
+      },
+      "bronte": {
+        "name": "Bronte Hazelnuts",
+        "product": "PDO hazelnuts",
+        "location": "Bronte, Sicily"
+      },
+      "nebrodi": {
+        "name": "Nebrodi Chestnuts",
+        "product": "Mountain chestnuts",
+        "location": "Nebrodi, Sicily"
+      }
+    }
   }
 }

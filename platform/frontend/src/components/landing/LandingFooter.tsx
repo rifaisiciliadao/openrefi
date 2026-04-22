@@ -1,40 +1,50 @@
 "use client";
 
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { LandingLogo } from "./LandingLogo";
 import { useInView } from "@/lib/landing/useInView";
 
-const COLS: { title: string; links: { label: string; href: string }[] }[] = [
-  {
-    title: "Product",
-    links: [
-      { label: "How it works", href: "#how" },
-      { label: "Campaigns", href: "#campaigns" },
-      { label: "For producers", href: "#" },
-      { label: "Portfolio", href: "#" },
-    ],
-  },
-  {
-    title: "Protocol",
-    links: [
-      { label: "Documentation", href: "#" },
-      { label: "Smart contracts", href: "#" },
-      { label: "Subgraph", href: "#" },
-      { label: "Audit", href: "#" },
-    ],
-  },
-  {
-    title: "Community",
-    links: [
-      { label: "GitHub", href: "https://github.com/rifaisiciliadao/growfi" },
-      { label: "Discord", href: "#" },
-      { label: "Twitter", href: "#" },
-      { label: "Newsletter", href: "#" },
-    ],
-  },
-];
-
 export function LandingFooter() {
+  const t = useTranslations("landing.footer");
   const { ref, inView } = useInView<HTMLDivElement>();
+
+  const COLS: {
+    title: string;
+    links: { label: string; href: string; external?: boolean; internal?: boolean }[];
+  }[] = [
+    {
+      title: t("colProduct"),
+      links: [
+        { label: t("linkHow"), href: "#how" },
+        { label: t("linkCampaigns"), href: "#campaigns" },
+        { label: t("linkProducers"), href: "/create", internal: true },
+        { label: t("linkPortfolio"), href: "/portfolio", internal: true },
+      ],
+    },
+    {
+      title: t("colProtocol"),
+      links: [
+        { label: t("linkDocs"), href: "#" },
+        { label: t("linkContracts"), href: "#" },
+        { label: t("linkSubgraph"), href: "#" },
+        { label: t("linkAudit"), href: "#" },
+      ],
+    },
+    {
+      title: t("colCommunity"),
+      links: [
+        {
+          label: t("linkGithub"),
+          href: "https://github.com/rifaisiciliadao/growfi",
+          external: true,
+        },
+        { label: t("linkDiscord"), href: "#" },
+        { label: t("linkTwitter"), href: "#" },
+        { label: t("linkNewsletter"), href: "#" },
+      ],
+    },
+  ];
 
   return (
     <footer
@@ -52,15 +62,13 @@ export function LandingFooter() {
               className="font-display mt-6 max-w-sm text-2xl leading-snug"
               style={{ color: "#000000" }}
             >
-              Regenerative finance <em>for a living planet.</em>
+              {t("tagline1")} <em>{t("tagline2")}</em>
             </p>
             <p
               className="mt-6 max-w-sm text-base leading-relaxed"
               style={{ color: "#1a1a1a" }}
             >
-              GrowFi is built by Rifai Sicilia DAO. Commodity-agnostic,
-              chain-agnostic, permissionless. Any producer, any harvest, any
-              chain — no approval required.
+              {t("about")}
             </p>
           </div>
 
@@ -79,19 +87,23 @@ export function LandingFooter() {
                 <ul className="flex flex-col gap-3">
                   {col.links.map((link) => (
                     <li key={link.label}>
-                      <a
-                        href={link.href}
-                        className="text-base transition-colors"
-                        style={{ color: "#4a4a4a" }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.color = "#000000")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.color = "#4a4a4a")
-                        }
-                      >
-                        {link.label}
-                      </a>
+                      {link.internal ? (
+                        <Link
+                          href={link.href}
+                          className="text-base transition-colors text-[#4a4a4a] hover:text-black"
+                        >
+                          {link.label}
+                        </Link>
+                      ) : (
+                        <a
+                          href={link.href}
+                          target={link.external ? "_blank" : undefined}
+                          rel={link.external ? "noopener noreferrer" : undefined}
+                          className="text-base transition-colors text-[#4a4a4a] hover:text-black"
+                        >
+                          {link.label}
+                        </a>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -105,18 +117,17 @@ export function LandingFooter() {
           style={{ borderColor: "#eaeaea" }}
         >
           <p className="text-xs" style={{ color: "#4a4a4a" }}>
-            © {new Date().getFullYear()} Rifai Sicilia DAO. All code
-            open-source under MIT license.
+            {t("copy", { year: new Date().getFullYear() })}
           </p>
           <div className="flex gap-6 text-xs" style={{ color: "#4a4a4a" }}>
             <a href="#" className="transition-colors hover:text-black">
-              Terms
+              {t("terms")}
             </a>
             <a href="#" className="transition-colors hover:text-black">
-              Privacy
+              {t("privacy")}
             </a>
             <a href="#" className="transition-colors hover:text-black">
-              Contact
+              {t("contact")}
             </a>
           </div>
         </div>
