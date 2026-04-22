@@ -744,19 +744,26 @@
       "titleLand": "tierra.",
       "titleB": "Cosecha el",
       "titleYield": "rendimiento.",
-      "subtitle1": "Financia cosechas sicilianas reales onchain. $1.000 retornan",
-      "subtitleHighlight": "5 litros de aceite extra virgen prensado en frío",
-      "subtitle2": "en la cosecha — o tus USDC de vuelta, bloqueados en escrow hasta el soft cap.",
+      "subtitle1": "Financia cosechas reales onchain:",
+      "subtitleHighlight": "invierte en olivos, cosecha aceite",
+      "examples": [
+        "invierte en olivos, cosecha aceite",
+        "invierte en trigo, cosecha harina",
+        "invierte en vides, cosecha vino",
+        "invierte en cacao, cosecha chocolate",
+        "invierte en café verde, cosecha café tostado"
+      ],
+      "subtitle2": "— en la cosecha retiras producto físico, o tus USDC de vuelta, bloqueados en escrow hasta el soft cap.",
       "ctaFund": "Financia la Cosecha",
       "ctaHow": "Cómo funciona",
       "statOnchain": "Onchain",
       "statOnchainNote": "Factory + 5 proxies por campaña",
-      "statYield": "Rendimiento daily",
-      "statYieldNote": "Dinámico, decae al llenarse el vault",
-      "statFee": "Fee protocolo",
-      "statFeeNote": "Deducida una vez, nunca en secundario",
-      "statTests": "Tests pasados",
-      "statTestsNote": "33k runs invariants · 0 failures",
+      "statCampaigns": "Campañas",
+      "statCampaignsNote": "Campañas deployadas onchain",
+      "statAvgYield": "Yield medio",
+      "statAvgYieldNote": "Multiplier medio en todas las campañas",
+      "statRaised": "Recaudado",
+      "statRaisedNote": "Total recaudado onchain",
       "scroll": "Scroll"
     },
     "how": {
@@ -792,8 +799,8 @@
     "campaigns": {
       "kicker": "Campañas",
       "title1": "Una cosecha real.",
-      "title2": "Cinco más por venir.",
-      "intro": "Sharewood Forest está live. Las otras son placeholders — onboarding en curso. Cada nueva campaña pasa por la misma factory permissionless, cero gatekeeping.",
+      "title2": "Lanza la tuya.",
+      "intro": "Sharewood Forest está live. Cada nueva campaña pasa por la misma factory permissionless — cero gatekeeping, cero aprobaciones.",
       "filters": {
         "all": "Todas",
         "funding": "Funding",
@@ -803,14 +810,15 @@
       "stateLabel": {
         "funding": "Funding",
         "active": "Activa",
-        "ended": "Cerrada",
-        "coming": "Próximamente"
+        "ended": "Cerrada"
       },
       "progress": "Progreso",
-      "comingProducer": "Onboarding productor",
       "expectedYield": "Rendimiento esperado",
       "ctaFund": "Financia esta cosecha",
-      "ctaView": "Ver"
+      "ctaView": "Ver",
+      "createTitle": "¿Eres productor?",
+      "createBody": "Tokeniza tu próxima cosecha en minutos. Factory permissionless, sin aprobaciones.",
+      "createCta": "Crear campaña"
     },
     "trust": {
       "kicker": "Confianza",
@@ -818,18 +826,11 @@
       "title2": "Verifica.",
       "intro": "Código open-source en GitHub. Contratos deployados y verificados en Base. Subgraph público. Si algo se ve raro, lo ves tú primero. Si el productor no entrega, el protocolo abre ventana buyback USDC de 90 días — el productor debe depositar o los holders reclaman pro-rata.",
       "ghBtn": "GitHub",
-      "docsBtn": "Documentación",
-      "contractBtn": "Lee el smart contract",
       "items": [
         {
           "label": "Contratos verificados",
-          "value": "Base Sepolia",
+          "value": "Base · otros L2 pronto",
           "detail": "Seis proxies upgradeables por campaña. ProxyAdmin transferible a 0x0 al lanzamiento para inmutabilidad total."
-        },
-        {
-          "label": "Test suite",
-          "value": "123+ tests",
-          "detail": "Unit + integration + 39 red-team + 11 invariants stateful fuzzed a 33k runs c/u. Un test fallido bloquea el deploy."
         },
         {
           "label": "Oracle",
@@ -860,42 +861,11 @@
       "linkDocs": "Documentación",
       "linkContracts": "Smart contracts",
       "linkSubgraph": "Subgraph",
-      "linkAudit": "Audit",
+      "linkWebsite": "Sitio web",
       "linkGithub": "GitHub",
-      "linkDiscord": "Discord",
-      "linkTwitter": "Twitter",
-      "linkNewsletter": "Newsletter",
-      "copy": "© {year} Rifai Sicilia DAO. Todo el código open-source bajo licencia MIT.",
-      "terms": "Términos",
-      "privacy": "Privacidad",
-      "contact": "Contacto"
-    },
-    "placeholders": {
-      "catania": {
-        "name": "Cítricos de Catania",
-        "product": "Naranjas Tarocco",
-        "location": "Catania, Sicilia"
-      },
-      "etna": {
-        "name": "Viñedo del Etna",
-        "product": "Nerello Mascalese",
-        "location": "Etna Norte, Sicilia"
-      },
-      "avola": {
-        "name": "Almendras de Avola",
-        "product": "Almendras Pizzuta",
-        "location": "Agrigento, Sicilia"
-      },
-      "bronte": {
-        "name": "Avellanas de Bronte",
-        "product": "Avellanas DOP",
-        "location": "Bronte, Sicilia"
-      },
-      "nebrodi": {
-        "name": "Castañas Nebrodi",
-        "product": "Castañas de montaña",
-        "location": "Nebrodi, Sicilia"
-      }
+      "linkTwitter": "X (Twitter)",
+      "linkInstagram": "Instagram",
+      "copy": "© {year} Rifai Sicilia DAO. Todo el código open-source bajo licencia MIT."
     }
   }
 }

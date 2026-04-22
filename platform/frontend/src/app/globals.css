@@ -67,6 +67,7 @@ body {
 
   --font-header: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-crimson-text), ui-serif, Georgia, 'Times New Roman', serif;
+  --font-accent: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-header);
 
   --weight-header: 700;

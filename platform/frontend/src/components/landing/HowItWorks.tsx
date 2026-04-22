@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useInView } from "@/lib/landing/useInView";
 
@@ -96,8 +95,8 @@ export function HowItWorks() {
           >
             {t("tail")}
           </p>
-          <Link
-            href="/create"
+          <a
+            href="#campaigns"
             className={`reveal reveal-delay-2 ${inView ? "in-view" : ""} group inline-flex shrink-0 items-center gap-2 rounded-full bg-black px-8 py-3.5 text-sm font-bold text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.4)]`}
             style={{ fontFamily: "var(--font-header)" }}
           >
@@ -115,7 +114,7 @@ export function HowItWorks() {
             >
               <path d="M5 12h14M13 5l7 7-7 7" />
             </svg>
-          </Link>
+          </a>
         </div>
       </div>
     </section>

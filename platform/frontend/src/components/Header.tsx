@@ -90,20 +90,6 @@ export function Header() {
                         <span className="hidden md:inline">{t("profile")}</span>
                       </Link>
                       <button
-                        onClick={openChainModal}
-                        type="button"
-                        className={`${pillBase} hidden sm:flex`}
-                      >
-                        {chain.hasIcon && chain.iconUrl && (
-                          <img
-                            src={chain.iconUrl}
-                            alt={chain.name ?? "chain"}
-                            className="w-4 h-4 rounded-full"
-                          />
-                        )}
-                        {chain.name}
-                      </button>
-                      <button
                         onClick={openAccountModal}
                         type="button"
                         className={pillBase}

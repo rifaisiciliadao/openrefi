@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { formatUnits } from "viem";
 import { Nav } from "./Nav";
+import { RotatingHighlight } from "./RotatingHighlight";
 import { useCountUp } from "@/lib/landing/useCountUp";
+import { useSubgraphCampaigns } from "@/lib/subgraph";
+
+const HERO_EXAMPLES_COUNT = 5;
 
 type StatCardProps = {
   index: number;
@@ -14,6 +19,7 @@ type StatCardProps = {
     to: number;
     suffix?: string;
     prefix?: string;
+    decimals?: number;
   };
 };
 
@@ -28,10 +34,15 @@ function StatCard({ index, headline, kicker, note, counter }: StatCardProps) {
     to: counter?.to ?? 0,
     duration: 1600,
     active: Boolean(counter) && started,
+    decimals: counter?.decimals ?? 0,
   });
 
+  const formatted = counter?.decimals
+    ? count.formatted
+    : Math.round(count.value).toLocaleString();
+
   const display = counter
-    ? `${counter.prefix ?? ""}${count.formatted}${counter.suffix ?? ""}`
+    ? `${counter.prefix ?? ""}${formatted}${counter.suffix ?? ""}`
     : headline;
 
   return (
@@ -67,7 +78,7 @@ function StatCard({ index, headline, kicker, note, counter }: StatCardProps) {
         {kicker}
       </span>
       <span
-        className="mt-2 max-w-[22ch] text-[11px] leading-snug opacity-0 transition-opacity duration-400 group-hover:opacity-100"
+        className="mt-2 max-w-[22ch] text-[11px] leading-snug"
         style={{ color: "#4a4a4a" }}
       >
         {note}
@@ -78,6 +89,25 @@ function StatCard({ index, headline, kicker, note, counter }: StatCardProps) {
 
 export function Hero() {
   const t = useTranslations("landing.hero");
+  const { data: campaigns } = useSubgraphCampaigns();
+
+  const aggregates = useMemo(() => {
+    const list = campaigns ?? [];
+    if (list.length === 0) {
+      return { count: 0, avgYield: 0, totalRaised: 0 };
+    }
+    const yields = list
+      .map((c) => Number(formatUnits(BigInt(c.currentYieldRate), 18)))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    const avgYield =
+      yields.length > 0 ? yields.reduce((a, b) => a + b, 0) / yields.length : 0;
+    const totalRaised = list.reduce(
+      (sum, c) => sum + Number(formatUnits(BigInt(c.totalRaised), 18)),
+      0,
+    );
+    return { count: list.length, avgYield, totalRaised };
+  }, [campaigns]);
+
   return (
     <section id="home" className="relative min-h-screen w-full overflow-hidden">
       <div
@@ -142,16 +172,7 @@ export function Hero() {
               textShadow: "0 1px 0 rgba(255,255,255,0.4)",
             }}
           >
-            {t("subtitle1")}{" "}
-            <span
-              style={{
-                fontFamily: "var(--font-header)",
-                fontWeight: 700,
-                color: "#000000",
-              }}
-            >
-              {t("subtitleHighlight")}
-            </span>{" "}
+            {t("subtitle1")} <RotatingHighlight count={HERO_EXAMPLES_COUNT} />{" "}
             {t("subtitle2")}
           </p>
 
@@ -197,23 +218,32 @@ export function Hero() {
             />
             <StatCard
               index={1}
-              headline="1–5×"
-              kicker={t("statYield")}
-              note={t("statYieldNote")}
+              headline={aggregates.count.toString()}
+              kicker={t("statCampaigns")}
+              note={t("statCampaignsNote")}
+              counter={{ to: aggregates.count }}
             />
             <StatCard
               index={2}
-              headline="2%"
-              kicker={t("statFee")}
-              note={t("statFeeNote")}
-              counter={{ to: 2, suffix: "%" }}
+              headline={
+                aggregates.avgYield > 0
+                  ? `${aggregates.avgYield.toFixed(1)}×`
+                  : "—"
+              }
+              kicker={t("statAvgYield")}
+              note={t("statAvgYieldNote")}
+              counter={
+                aggregates.avgYield > 0
+                  ? { to: aggregates.avgYield, suffix: "×", decimals: 1 }
+                  : undefined
+              }
             />
             <StatCard
               index={3}
-              headline="123+"
-              kicker={t("statTests")}
-              note={t("statTestsNote")}
-              counter={{ to: 123, suffix: "+" }}
+              headline={`$${Math.round(aggregates.totalRaised).toLocaleString()}`}
+              kicker={t("statRaised")}
+              note={t("statRaisedNote")}
+              counter={{ to: aggregates.totalRaised, prefix: "$" }}
             />
           </div>
 

@@ -26,22 +26,41 @@ export function LandingFooter() {
       title: t("colProtocol"),
       links: [
         { label: t("linkDocs"), href: "#" },
-        { label: t("linkContracts"), href: "#" },
-        { label: t("linkSubgraph"), href: "#" },
-        { label: t("linkAudit"), href: "#" },
+        {
+          label: t("linkContracts"),
+          href: "https://sepolia.basescan.org/address/0x5178A4AB4c6400CeeB812663AFfd1bd5B0c9FF64",
+          external: true,
+        },
+        {
+          label: t("linkSubgraph"),
+          href: "https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn",
+          external: true,
+        },
       ],
     },
     {
       title: t("colCommunity"),
       links: [
         {
+          label: t("linkWebsite"),
+          href: "https://www.rifaisicilia.com/",
+          external: true,
+        },
+        {
           label: t("linkGithub"),
           href: "https://github.com/rifaisiciliadao/growfi",
           external: true,
         },
-        { label: t("linkDiscord"), href: "#" },
-        { label: t("linkTwitter"), href: "#" },
-        { label: t("linkNewsletter"), href: "#" },
+        {
+          label: t("linkTwitter"),
+          href: "https://x.com/RifaiSicilia",
+          external: true,
+        },
+        {
+          label: t("linkInstagram"),
+          href: "https://www.instagram.com/rifaisicilia/",
+          external: true,
+        },
       ],
     },
   ];
@@ -113,23 +132,12 @@ export function LandingFooter() {
         </div>
 
         <div
-          className="mt-16 flex flex-col items-start justify-between gap-4 border-t pt-8 md:flex-row md:items-center"
+          className="mt-16 flex items-center border-t pt-8"
           style={{ borderColor: "#eaeaea" }}
         >
           <p className="text-xs" style={{ color: "#4a4a4a" }}>
             {t("copy", { year: new Date().getFullYear() })}
           </p>
-          <div className="flex gap-6 text-xs" style={{ color: "#4a4a4a" }}>
-            <a href="#" className="transition-colors hover:text-black">
-              {t("terms")}
-            </a>
-            <a href="#" className="transition-colors hover:text-black">
-              {t("privacy")}
-            </a>
-            <a href="#" className="transition-colors hover:text-black">
-              {t("contact")}
-            </a>
-          </div>
         </div>
       </div>
     </footer>

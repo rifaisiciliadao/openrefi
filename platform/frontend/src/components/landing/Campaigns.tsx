@@ -8,22 +8,7 @@ import { useInView } from "@/lib/landing/useInView";
 import { useSubgraphCampaigns, type SubgraphCampaign } from "@/lib/subgraph";
 import { useCampaignMetadata } from "@/lib/metadata";
 
-type CampaignState = "funding" | "active" | "ended" | "coming";
-
-type PlaceholderKey =
-  | "catania"
-  | "etna"
-  | "avola"
-  | "bronte"
-  | "nebrodi";
-
-const PLACEHOLDER_SLOTS: { key: PlaceholderKey; hueA: string; hueB: string }[] = [
-  { key: "catania", hueA: "#a8481e", hueB: "#f2a14d" },
-  { key: "etna", hueA: "#3a1c2e", hueB: "#8e3a5d" },
-  { key: "avola", hueA: "#6b4c2a", hueB: "#e8c28a" },
-  { key: "bronte", hueA: "#3d2a1a", hueB: "#a07448" },
-  { key: "nebrodi", hueA: "#3a3632", hueB: "#8a7a6a" },
-];
+type CampaignState = "funding" | "active" | "ended";
 
 function StateBadge({
   state,
@@ -45,17 +30,11 @@ function StateBadge({
             color: "#ffffff",
             border: "rgba(255,255,255,0.22)",
           }
-        : state === "coming"
-          ? {
-              bg: "rgba(255,255,255,0.9)",
-              color: "#1f1f1f",
-              border: "rgba(0,0,0,0.14)",
-            }
-          : {
-              bg: "rgba(255,255,255,0.88)",
-              color: "#4a4a4a",
-              border: "rgba(0,0,0,0.12)",
-            };
+        : {
+            bg: "rgba(255,255,255,0.88)",
+            color: "#4a4a4a",
+            border: "rgba(0,0,0,0.12)",
+          };
 
   return (
     <span
@@ -298,108 +277,86 @@ function LiveCampaignCard({
   );
 }
 
-function PlaceholderCard({
-  slot,
+function CreateCampaignCard({
   revealDelay,
   inView,
 }: {
-  slot: (typeof PLACEHOLDER_SLOTS)[number];
   revealDelay: number;
   inView: boolean;
 }) {
   const t = useTranslations("landing.campaigns");
-  const tp = useTranslations(`landing.placeholders.${slot.key}`);
 
   return (
-    <article
-      className={`reveal reveal-delay-${revealDelay} ${inView ? "in-view" : ""} group relative flex flex-col overflow-hidden rounded-2xl transition-all duration-500 cursor-not-allowed`}
+    <Link
+      href="/create"
+      className={`reveal reveal-delay-${revealDelay} ${inView ? "in-view" : ""} group relative flex min-h-[460px] flex-col items-center justify-center overflow-hidden rounded-2xl p-8 text-center transition-all duration-500 hover:-translate-y-2`}
       style={{
-        border: "1px solid rgba(255,255,255,0.7)",
-        background: "rgba(255,255,255,0.85)",
+        border: "1.5px dashed rgba(0,107,44,0.35)",
+        background:
+          "linear-gradient(135deg, rgba(0,107,44,0.05) 0%, rgba(127,252,151,0.12) 100%)",
         backdropFilter: "blur(14px) saturate(1.1)",
         WebkitBackdropFilter: "blur(14px) saturate(1.1)",
-        boxShadow:
-          "0 1px 0 0 rgba(255,255,255,0.8) inset, 0 8px 24px -10px rgba(0,0,0,0.1)",
-        opacity: 0.5,
       }}
     >
-      <div
-        className="relative h-56 overflow-hidden"
+      <span
+        className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
         style={{
-          background: `linear-gradient(135deg, ${slot.hueA} 0%, ${slot.hueB} 100%)`,
+          background:
+            "radial-gradient(circle at 50% 50%, rgba(0,135,58,0.12) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="flex h-16 w-16 items-center justify-center rounded-full transition-transform duration-500 group-hover:scale-110"
+        style={{
+          background: "linear-gradient(135deg, #006b2c 0%, #00873a 100%)",
+          boxShadow: "0 8px 24px -8px rgba(0,135,58,0.5)",
         }}
       >
-        <div
-          className="absolute inset-0 animate-slow-pan"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(0,0,0,0.25) 0%, transparent 60%)",
-            mixBlendMode: "overlay",
-          }}
-        />
-        <div className="absolute left-4 top-4">
-          <StateBadge state="coming" label={t("stateLabel.coming")} />
-        </div>
-        <div className="absolute bottom-4 right-4 text-right">
-          <span
-            className="font-display text-[10px] tracking-[0.15em] uppercase"
-            style={{ color: "rgba(255,255,255,0.94)" }}
-          >
-            {t("expectedYield")}
-          </span>
-          <div
-            className="font-display text-4xl leading-none"
-            style={{ color: "#ffffff" }}
-          >
-            —
-          </div>
-        </div>
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
       </div>
-
-      <div className="flex flex-1 flex-col p-6">
-        <h3
-          className="font-display text-2xl leading-tight"
-          style={{ color: "#000000" }}
+      <h3
+        className="font-display mt-6 text-2xl leading-tight"
+        style={{ color: "#000000" }}
+      >
+        {t("createTitle")}
+      </h3>
+      <p
+        className="mt-3 max-w-xs text-sm leading-relaxed"
+        style={{ color: "#1a1a1a" }}
+      >
+        {t("createBody")}
+      </p>
+      <span
+        className="mt-8 inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-bold text-white transition-all duration-300 group-hover:scale-[1.04] group-hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.4)]"
+        style={{ fontFamily: "var(--font-header)" }}
+      >
+        {t("createCta")}
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-transform duration-300 group-hover:translate-x-1"
         >
-          {tp("name")}
-        </h3>
-        <div
-          className="mt-1 flex items-center gap-2 text-sm"
-          style={{ color: "#4a4a4a" }}
-        >
-          <span>{tp("product")}</span>
-          <span>·</span>
-          <span>{tp("location")}</span>
-        </div>
-
-        <div
-          className="mt-6 flex items-center justify-between text-xs font-bold tracking-wider uppercase"
-          style={{ color: "#4a4a4a", fontFamily: "var(--font-header)" }}
-        >
-          <span>{t("progress")}</span>
-          <span style={{ color: "#000000" }}>—</span>
-        </div>
-        <div
-          className="mt-2 h-[3px] w-full overflow-hidden rounded-full"
-          style={{ background: "#f0f0f0" }}
-        >
-          <div
-            className="h-full rounded-full"
-            style={{ width: "0%", background: "#b5b5b5" }}
-          />
-        </div>
-
-        <div
-          className="mt-6 flex items-center justify-between border-t pt-4 text-xs"
-          style={{ borderColor: "#eaeaea", color: "#4a4a4a" }}
-        >
-          <span style={{ fontFamily: "var(--font-header)", fontWeight: 700 }}>
-            {t("comingProducer")}
-          </span>
-          <span>—</span>
-        </div>
-      </div>
-    </article>
+          <path d="M5 12h14M13 5l7 7-7 7" />
+        </svg>
+      </span>
+    </Link>
   );
 }
 
@@ -408,15 +365,9 @@ export function Campaigns() {
   const { ref, inView } = useInView<HTMLDivElement>();
   const { data: onChainCampaigns } = useSubgraphCampaigns();
 
-  // Cap to 6 slots total; fill remainder with placeholders so the
-  // grid always looks populated even before subgraph results.
   const live = useMemo(
-    () => (onChainCampaigns ?? []).slice(0, 6),
+    () => onChainCampaigns ?? [],
     [onChainCampaigns],
-  );
-  const placeholders = PLACEHOLDER_SLOTS.slice(
-    0,
-    Math.max(0, 6 - live.length),
   );
 
   return (
@@ -482,14 +433,10 @@ export function Campaigns() {
               inView={inView}
             />
           ))}
-          {placeholders.map((slot, i) => (
-            <PlaceholderCard
-              key={slot.key}
-              slot={slot}
-              revealDelay={Math.min(live.length + i + 1, 6)}
-              inView={inView}
-            />
-          ))}
+          <CreateCampaignCard
+            revealDelay={Math.min(live.length + 1, 6)}
+            inView={inView}
+          />
         </div>
       </div>
     </section>

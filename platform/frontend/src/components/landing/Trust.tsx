@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useInView } from "@/lib/landing/useInView";
 
-const ITEM_COUNT = 4;
+const ITEM_COUNT = 3;
 
 export function Trust() {
   const t = useTranslations("landing.trust");
@@ -63,79 +63,59 @@ export function Trust() {
                 </svg>
                 {t("ghBtn")}
               </a>
-              <a
-                href="#"
-                className="group inline-flex items-center gap-2 rounded-full border border-white/25 px-6 py-2.5 text-sm font-bold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/10"
-                style={{ fontFamily: "var(--font-header)" }}
-              >
-                {t("docsBtn")}
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                >
-                  <path d="M7 17L17 7M17 7H8M17 7v9" />
-                </svg>
-              </a>
-              <a
-                href="#"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-black transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_12px_32px_-8px_rgba(255,255,255,0.3)]"
-                style={{ fontFamily: "var(--font-header)" }}
-              >
-                {t("contractBtn")}
-              </a>
             </div>
           </div>
 
           <div className="md:col-span-7">
             <dl className="grid grid-cols-1 gap-0 sm:grid-cols-2">
-              {Array.from({ length: ITEM_COUNT }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`reveal reveal-delay-${Math.min(i + 1, 6)} ${inView ? "in-view" : ""} group relative flex flex-col py-8 transition-colors duration-400 hover:bg-white/[0.04] md:py-10`}
-                  style={{
-                    borderTop:
-                      i === 0 || i === 1
-                        ? "1px solid rgba(255,255,255,0.14)"
-                        : "none",
-                    borderLeft:
-                      i % 2 === 1
-                        ? "1px solid rgba(255,255,255,0.14)"
-                        : "none",
-                    borderBottom: "1px solid rgba(255,255,255,0.14)",
-                    paddingLeft: i % 2 === 1 ? "2rem" : 0,
-                    paddingRight: i % 2 === 0 ? "2rem" : 0,
-                  }}
-                >
-                  <dt
-                    className="text-xs font-bold tracking-[0.18em] uppercase"
+              {Array.from({ length: ITEM_COUNT }).map((_, i) => {
+                const isRight = i === 1;
+                const isFullWidth = i === 2;
+                return (
+                  <div
+                    key={i}
+                    className={`reveal reveal-delay-${Math.min(i + 1, 6)} ${inView ? "in-view" : ""} group relative flex flex-col px-6 py-8 md:px-8 md:py-10 transition-colors duration-400 hover:bg-white/[0.04] ${isFullWidth ? "sm:col-span-2" : ""}`}
                     style={{
-                      color: "rgba(255,255,255,0.7)",
-                      fontFamily: "var(--font-header)",
+                      borderTop:
+                        i === 0 || i === 1
+                          ? "1px solid rgba(255,255,255,0.14)"
+                          : "none",
+                      borderBottom: "1px solid rgba(255,255,255,0.14)",
                     }}
                   >
-                    {t(`items.${i}.label`)}
-                  </dt>
-                  <dd
-                    className="font-display mt-3 text-4xl sm:text-5xl"
-                    style={{ color: "#ffffff" }}
-                  >
-                    {t(`items.${i}.value`)}
-                  </dd>
-                  <p
-                    className="mt-4 max-w-xs text-base leading-relaxed"
-                    style={{ color: "rgba(255,255,255,0.82)" }}
-                  >
-                    {t(`items.${i}.detail`)}
-                  </p>
-                </div>
-              ))}
+                    {isRight && (
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-y-0 left-0 hidden sm:block"
+                        style={{
+                          borderLeft: "1px solid rgba(255,255,255,0.14)",
+                        }}
+                      />
+                    )}
+                    <dt
+                      className="text-xs font-bold tracking-[0.18em] uppercase"
+                      style={{
+                        color: "rgba(255,255,255,0.7)",
+                        fontFamily: "var(--font-header)",
+                      }}
+                    >
+                      {t(`items.${i}.label`)}
+                    </dt>
+                    <dd
+                      className="font-display mt-3 text-4xl sm:text-5xl"
+                      style={{ color: "#ffffff" }}
+                    >
+                      {t(`items.${i}.value`)}
+                    </dd>
+                    <p
+                      className="mt-4 max-w-xs text-base leading-relaxed"
+                      style={{ color: "rgba(255,255,255,0.82)" }}
+                    >
+                      {t(`items.${i}.detail`)}
+                    </p>
+                  </div>
+                );
+              })}
             </dl>
 
             <div

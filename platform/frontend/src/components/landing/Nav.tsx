@@ -8,13 +8,7 @@ import { LandingLogo } from "./LandingLogo";
 
 export function Nav() {
   const t = useTranslations("landing.nav");
-
-  const MENU: { labelKey: "home" | "how" | "campaigns" | "trust"; href: string }[] = [
-    { labelKey: "home", href: "#home" },
-    { labelKey: "how", href: "#how" },
-    { labelKey: "campaigns", href: "#campaigns" },
-    { labelKey: "trust", href: "#trust" },
-  ];
+  const tNav = useTranslations("nav");
 
   return (
     <nav className="relative z-20 w-full">
@@ -26,23 +20,27 @@ export function Nav() {
           <LandingLogo />
         </a>
 
-        <div className="hidden items-center gap-7 md:flex">
-          {MENU.map((item) => (
-            <a
-              key={item.labelKey}
-              href={item.href}
-              className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
-              style={{ fontFamily: "var(--font-header)" }}
-            >
-              {t(item.labelKey)}
-            </a>
-          ))}
+        <div className="hidden items-center gap-8 md:flex">
+          <a
+            href="#campaigns"
+            className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
+            style={{ fontFamily: "var(--font-header)" }}
+          >
+            {tNav("explore")}
+          </a>
+          <Link
+            href="/create"
+            className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
+            style={{ fontFamily: "var(--font-header)" }}
+          >
+            {tNav("create")}
+          </Link>
           <Link
             href="/portfolio"
             className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
             style={{ fontFamily: "var(--font-header)" }}
           >
-            {t("portfolio")}
+            {tNav("portfolio")}
           </Link>
         </div>
 
