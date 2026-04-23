@@ -88,6 +88,7 @@ templates:
         - Campaign
         - AcceptedToken
         - Purchase
+        - FundingFeeByTx
         - SellBackOrder
         - User
       abis:
@@ -96,6 +97,8 @@ templates:
       eventHandlers:
         - event: TokensPurchased(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handleTokensPurchased
+        - event: FundingFeeCollected(indexed address,indexed address,uint256)
+          handler: handleFundingFeeCollected
         - event: AcceptedTokenAdded(indexed address,string,uint8,uint256,address)
           handler: handleAcceptedTokenAdded
         - event: AcceptedTokenRemoved(indexed address)

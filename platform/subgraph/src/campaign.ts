@@ -1,6 +1,7 @@
 import { BigInt, Bytes, log, store } from "@graphprotocol/graph-ts";
 import {
   TokensPurchased as TokensPurchasedEvent,
+  FundingFeeCollected as FundingFeeCollectedEvent,
   AcceptedTokenAdded as AcceptedTokenAddedEvent,
   AcceptedTokenRemoved as AcceptedTokenRemovedEvent,
   CampaignStateChanged as CampaignStateChangedEvent,
@@ -19,6 +20,7 @@ import {
   Campaign,
   AcceptedToken,
   Purchase,
+  FundingFeeByTx,
   SellBackOrder,
   User,
   GlobalStats,
@@ -55,13 +57,12 @@ export function handleTokensPurchased(event: TokensPurchasedEvent): void {
   const campaign = Campaign.load(campaignAddress);
   if (campaign == null) return;
 
-  // Purchase entity. `fundingFee` is derived from the contract's constant
-  // FUNDING_FEE_BPS = 300 (3%) — same integer-division math the contract uses,
-  // so the subgraph stays aligned with on-chain skim amounts without an extra
-  // eth_call per event. Revisit if FUNDING_FEE_BPS ever becomes tunable.
-  const FUNDING_FEE_BPS = BigInt.fromI32(300);
-  const BPS_DENOM = BigInt.fromI32(10_000);
-  const fundingFee = event.params.paymentAmount.times(FUNDING_FEE_BPS).div(BPS_DENOM);
+  // Purchase entity. `fundingFee` comes from the sibling `FundingFeeCollected`
+  // event emitted earlier in the same tx (v2 Campaign only). Pre-v2 purchases
+  // never emit that event, so the lookup returns null and we store 0 —
+  // historically accurate.
+  const feeEntity = FundingFeeByTx.load(event.transaction.hash);
+  const fundingFee = feeEntity != null ? feeEntity.fee : BigInt.zero();
 
   const purchase = new Purchase(eventId(event.transaction.hash, event.logIndex));
   purchase.campaign = campaignAddress;
@@ -100,6 +101,17 @@ export function handleTokensPurchased(event: TokensPurchasedEvent): void {
     stats.totalRaised = stats.totalRaised.plus(usdValue);
     stats.save();
   }
+}
+
+export function handleFundingFeeCollected(event: FundingFeeCollectedEvent): void {
+  // Writes the per-tx aux entity used by handleTokensPurchased to join the
+  // fee amount onto the Purchase. FundingFeeCollected fires BEFORE
+  // TokensPurchased in the same `buy()` tx, so the lookup is always populated
+  // for v2 buys.
+  const fee = new FundingFeeByTx(event.transaction.hash);
+  fee.paymentToken = event.params.paymentToken;
+  fee.fee = event.params.fee;
+  fee.save();
 }
 
 export function handleAcceptedTokenAdded(event: AcceptedTokenAddedEvent): void {

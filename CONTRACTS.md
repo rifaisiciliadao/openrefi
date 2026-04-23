@@ -2,14 +2,23 @@
 
 ## Base Sepolia (chain 84532)
 
-**Deployed:** 2026-04-20 (v2 — setters) · **Deployer/owner:** `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33`
+**Last upgrade:** 2026-04-23 (v2 — 3% funding fee) · **Deployer/owner:** `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33`
 
-> Fresh redeploy that ships Campaign.sol with two additions vs the prior
-> iteration: (1) sell-back queue reachable at maxCap (fix from earlier
-> 2026-04-20 deploy) and (2) new onlyProducer setters — `setFundingDeadline`,
-> `setMinCap`, `setMaxCap` — so a producer can retune their campaign without
-> the impl-redeploy dance. See `test/SellBackAtMaxCap.t.sol` and
-> `test/ParamUpdates.t.sol` for the regression suites.
+> Factory-proxy + default Campaign impl upgraded in place (same factory
+> address, new impls). `Campaign.buy()` now skims 3% off the gross inflow
+> and forwards it to `protocolFeeRecipient` — non-refundable on buyback.
+> `FUNDING_FEE_BPS = 300`. The yield-side 2% at `HarvestManager.depositUSDC`
+> is unchanged. Factory storage is untouched; Campaign storage keeps the
+> old `protocolFeeBps` slot as a deprecated zombie for layout safety and
+> appends `fundingFeeBps` at the end. Existing campaign proxies deployed
+> pre-upgrade are NOT auto-migrated — their producer must call
+> `ProxyAdmin.upgradeAndCall(campaignProxy, newImpl, initializeV2(300))` to
+> opt in. Future campaigns created via the factory pick up the new impl
+> automatically.
+>
+> Prior layers: 2026-04-20 added sell-back-at-maxCap fix + producer
+> setters (`setFundingDeadline`, `setMinCap`, `setMaxCap`); regression
+> suites live in `test/SellBackAtMaxCap.t.sol` and `test/ParamUpdates.t.sol`.
 
 ### Entry points (user-facing)
 
@@ -24,12 +33,16 @@
 
 | Contract | Address |
 |---|---|
-| Campaign impl (sell-back @ maxCap + producer setters) | [`0xD523683685D1e4d93A0Aa7d077a47F56848bc0D8`](https://sepolia.basescan.org/address/0xD523683685D1e4d93A0Aa7d077a47F56848bc0D8) |
+| Campaign impl (v2 — 3% funding fee) | [`0xfb80BC2bCEd8cc7a97C5DD52e718981ef647ECa2`](https://sepolia.basescan.org/address/0xfb80BC2bCEd8cc7a97C5DD52e718981ef647ECa2) |
 | CampaignToken impl | [`0xBa2A6c2bc09bf1F213Bb67692E2af672B6c45524`](https://sepolia.basescan.org/address/0xBa2A6c2bc09bf1F213Bb67692E2af672B6c45524) |
 | StakingVault impl | [`0x5B5CCE7aab1Eaf8fBD9d3376C4a1fcE76E94ACC1`](https://sepolia.basescan.org/address/0x5B5CCE7aab1Eaf8fBD9d3376C4a1fcE76E94ACC1) |
 | YieldToken impl | [`0xbD10E5870Bb026d1b5fA7eDeEfafd913d183697d`](https://sepolia.basescan.org/address/0xbD10E5870Bb026d1b5fA7eDeEfafd913d183697d) |
 | HarvestManager impl (2-step redeem) | [`0xFA92130195a1A593b06180c73e33F4448ff639B3`](https://sepolia.basescan.org/address/0xFA92130195a1A593b06180c73e33F4448ff639B3) |
-| Factory impl | [`0xad06176c9BC2fc9B78e4500937B4779Efe03f06c`](https://sepolia.basescan.org/address/0xad06176c9BC2fc9B78e4500937B4779Efe03f06c) |
+| Factory impl (v2 — passes funding fee to new campaigns) | [`0x3Fc470071F1e5DE4571BcaB46501416A8a2B89eD`](https://sepolia.basescan.org/address/0x3Fc470071F1e5DE4571BcaB46501416A8a2B89eD) |
+
+Prior Campaign/Factory impls (archived, no longer the factory default):
+- Campaign v1 (sell-back @ maxCap + setters): `0xD523683685D1e4d93A0Aa7d077a47F56848bc0D8`
+- Factory v1: `0xad06176c9BC2fc9B78e4500937B4779Efe03f06c`
 
 ### Configuration
 
@@ -37,7 +50,8 @@
 |---|---|
 | Factory owner | `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33` |
 | Protocol fee recipient | `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33` |
-| Protocol fee (bps) | 200 (= 2%) |
+| Funding-side fee (bps) | 300 (= 3% skimmed off every `buy()` gross inflow, non-refundable on buyback) |
+| Yield-side fee (bps) | 200 (= 2% skimmed off every `HarvestManager.depositUSDC`) |
 | Sequencer uptime feed | `0x0000…0000` (testnet, no sequencer guard) |
 | USDC | MockUSDC (see above) |
 | `minSeasonDuration` | 30 days (factory default, not yet lowered) |

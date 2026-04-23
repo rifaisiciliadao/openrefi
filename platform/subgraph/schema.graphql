@@ -55,13 +55,25 @@ type Purchase @entity(immutable: true) {
   buyer: Bytes!
   paymentToken: Bytes!
   paymentAmount: BigInt!                  # GROSS amount pulled from the buyer
-  fundingFee: BigInt!                     # Portion skimmed to the protocol at buy time (3% bps)
+  fundingFee: BigInt!                     # Portion skimmed to the protocol at buy time (0 for pre-v2 purchases)
   campaignTokensOut: BigInt!
   oraclePriceUsed: BigInt!
   newCurrentSupply: BigInt!
   timestamp: BigInt!
   block: BigInt!
   transactionHash: Bytes!
+}
+
+# Auxiliary: the FundingFeeCollected event fires immediately before
+# TokensPurchased in v2 `Campaign.buy()`. Handler writes this aux entity so
+# handleTokensPurchased can join on tx hash without guessing. Pre-v2 buys
+# never emit FundingFeeCollected, so the join returns null and Purchase.fundingFee
+# defaults to 0 — historically-correct.
+# Assumes one buy() per tx (no multicall-style batching in the UI today).
+type FundingFeeByTx @entity(immutable: true) {
+  id: Bytes!                              # tx hash
+  paymentToken: Bytes!
+  fee: BigInt!
 }
 
 type SellBackOrder @entity(immutable: false) {
