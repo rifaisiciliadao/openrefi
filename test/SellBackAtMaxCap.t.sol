@@ -101,8 +101,15 @@ contract SellBackAtMaxCapTest is Test {
 
         // Bob got 100 OLIVE from the queue.
         assertEq(campaignToken.balanceOf(bob) - bobBalBefore, 100e18, "bob receives 100 OLIVE from queue");
-        // Alice received the USDC proportionally.
-        assertEq(usdc.balanceOf(alice) - aliceUsdcBefore, bobSpend, "alice paid out from queue fill");
+        // Alice received the USDC proportionally — NET of the 3% funding fee.
+        // The seller paid the same fee on her original entry, so this evens out
+        // in USDC terms across the full entry/exit cycle.
+        uint256 bobFee = bobSpend * 300 / 10_000;
+        assertEq(
+            usdc.balanceOf(alice) - aliceUsdcBefore,
+            bobSpend - bobFee,
+            "alice paid out from queue fill (net of funding fee)"
+        );
         // Supply stayed at cap — no new mint.
         assertEq(campaign.currentSupply(), MAX_CAP, "supply unchanged (burn+mint)");
         // Queue drained.

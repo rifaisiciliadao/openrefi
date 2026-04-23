@@ -180,8 +180,10 @@ contract IntegrationTest is Test {
         vm.prank(alice);
         campaign.buyback(address(usdc));
 
+        // Refund is net of the 3% funding fee (non-refundable by design).
+        uint256 fundingFee = payment * 300 / 10_000;
         assertEq(campaignToken.balanceOf(alice), 0);
-        assertEq(usdc.balanceOf(alice), aliceUsdcBefore + payment);
+        assertEq(usdc.balanceOf(alice), aliceUsdcBefore + payment - fundingFee);
     }
 
     // --- Sell-Back Queue Test ---

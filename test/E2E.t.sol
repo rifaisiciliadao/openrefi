@@ -159,8 +159,13 @@ contract E2ETest is Test {
         uint256 davePay = 10_000 * USDC_FIXED_RATE;
         vm.prank(dave);
         campaign.buy(address(usdc), davePay);
-        // Post-activation funds go directly to producer (no fee, no escrow)
-        assertEq(usdc.balanceOf(producer) - producerUsdcBefore, davePay, "dave funds to producer");
+        // Post-activation funds go to producer net of the funding fee (3%).
+        uint256 daveFeeExpected = davePay * 300 / 10_000;
+        assertEq(
+            usdc.balanceOf(producer) - producerUsdcBefore,
+            davePay - daveFeeExpected,
+            "dave funds to producer net of fee"
+        );
         assertEq(campaignToken.balanceOf(dave), 10_000e18);
 
         // ========================================================
@@ -205,7 +210,13 @@ contract E2ETest is Test {
         vm.prank(eve);
         campaign.buy(address(usdc), evePay);
         assertEq(campaignToken.balanceOf(eve), 5_000e18, "eve gets 5k");
-        assertEq(usdc.balanceOf(bob) - bobUsdcBefore, evePay, "bob receives eve payment");
+        // Bob receives the queue-fill payment NET of the 3% funding fee.
+        uint256 eveFee = evePay * 300 / 10_000;
+        assertEq(
+            usdc.balanceOf(bob) - bobUsdcBefore,
+            evePay - eveFee,
+            "bob receives eve payment (net of funding fee)"
+        );
         assertEq(campaign.getSellBackQueueDepth(), 5_000e18, "5k left in queue");
         assertEq(campaign.currentSupply(), 70_000e18, "supply unchanged (burn+mint net zero)");
 

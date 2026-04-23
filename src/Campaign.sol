@@ -78,8 +78,14 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     uint256 public maxCap; // maximum tokens mintable
     uint256 public fundingDeadline;
     uint256 public seasonDuration;
-    uint256 public protocolFeeBps; // basis points (e.g., 200 = 2%)
+    /// @notice Sink for the per-`buy()` funding fee. Also used as the sink for any
+    ///         future Campaign-level fees. Snapshotted from the factory at init.
     address public protocolFeeRecipient;
+    /// @notice Funding-side fee in basis points, applied on every `buy()` gross inflow.
+    ///         Non-refundable on buyback — this is the protocol's "ticket fee" for
+    ///         hosting the campaign regardless of outcome. The yield-side 2% lives
+    ///         separately in `HarvestManager.protocolFeeBps`.
+    uint256 public fundingFeeBps;
     /// @notice Chainlink L2 sequencer-uptime feed address; `address(0)` on L1.
     AggregatorV3Interface public sequencerUptimeFeed;
 
@@ -114,6 +120,12 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
         uint256 campaignTokensOut,
         uint256 oraclePriceUsed,
         uint256 newCurrentSupply
+    );
+
+    event FundingFeeCollected(
+        address indexed buyer,
+        address indexed paymentToken,
+        uint256 fee
     );
 
     event AcceptedTokenAdded(
@@ -202,7 +214,7 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
         uint256 maxCap_,
         uint256 fundingDeadline_,
         uint256 seasonDuration_,
-        uint256 protocolFeeBps_,
+        uint256 fundingFeeBps_,
         address protocolFeeRecipient_,
         address sequencerUptimeFeed_
     ) external initializer {
@@ -214,7 +226,7 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
         maxCap = maxCap_;
         fundingDeadline = fundingDeadline_;
         seasonDuration = seasonDuration_;
-        protocolFeeBps = protocolFeeBps_;
+        fundingFeeBps = fundingFeeBps_;
         protocolFeeRecipient = protocolFeeRecipient_;
         sequencerUptimeFeed = AggregatorV3Interface(sequencerUptimeFeed_);
         state = State.Funding;
@@ -393,16 +405,29 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
             paymentAmount = _calculatePaymentNeeded(paymentToken, tokensOut, oraclePrice);
         }
 
-        // Transfer payment from buyer
+        // Transfer payment from buyer (GROSS)
         IERC20(paymentToken).safeTransferFrom(msg.sender, address(this), paymentAmount);
 
-        // Track purchase for buyback refunds (only in Funding state where buyback is possible)
+        // Skim the funding fee off the top and forward to the protocol recipient.
+        // Everything downstream (queue fills, mint path, buyback refunds) operates
+        // on the NET amount. Fee is non-refundable on buyback by design — the
+        // protocol is paid for hosting the campaign regardless of outcome.
+        uint256 fundingFee = paymentAmount * fundingFeeBps / 10_000;
+        uint256 netPayment = paymentAmount - fundingFee;
+        if (fundingFee > 0 && protocolFeeRecipient != address(0)) {
+            IERC20(paymentToken).safeTransfer(protocolFeeRecipient, fundingFee);
+            emit FundingFeeCollected(msg.sender, paymentToken, fundingFee);
+        }
+
+        // Track purchase for buyback refunds (only in Funding state where buyback is possible).
+        // Record NET so `buyback()` refunds exactly what's in escrow; the fee is
+        // already in the protocol recipient's wallet and stays there.
         if (state == State.Funding) {
-            purchases[msg.sender][paymentToken] += paymentAmount;
+            purchases[msg.sender][paymentToken] += netPayment;
             purchasedTokens[msg.sender][paymentToken] += tokensOut;
         }
 
-        uint256 paymentRemaining = paymentAmount;
+        uint256 paymentRemaining = netPayment;
         uint256 tokensToMint = tokensOut;
 
         // Fill sell-back queue first (only in Active state). Return the exact
@@ -568,10 +593,14 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     /// @dev    Does NOT simulate sell-back queue fills — the net tokens received
     ///         by the buyer is identical either way (queue fill burns+mints 1:1);
     ///         the breakdown matters only for gas accounting, not for UX pricing.
+    /// @return tokensOut        $CAMPAIGN minted to the buyer for this payment.
+    /// @return effectivePayment GROSS amount that will be pulled from the wallet (pre-fee).
+    /// @return oraclePrice      Oracle price used (0 for fixed-rate tokens).
+    /// @return fundingFee       Portion of `effectivePayment` that will be skimmed to the protocol.
     function previewBuy(address paymentToken, uint256 paymentAmount)
         external
         view
-        returns (uint256 tokensOut, uint256 effectivePayment, uint256 oraclePrice)
+        returns (uint256 tokensOut, uint256 effectivePayment, uint256 oraclePrice, uint256 fundingFee)
     {
         if (paymentAmount == 0) revert ZeroAmount();
         if (!tokenConfigs[paymentToken].active) revert TokenNotAccepted();
@@ -585,6 +614,7 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
             tokensOut = rawOut;
             effectivePayment = paymentAmount;
         }
+        fundingFee = effectivePayment * fundingFeeBps / 10_000;
     }
 
     function getSellBackQueueDepth() external view returns (uint256) {
@@ -601,22 +631,17 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
         State oldState = state;
         state = State.Active;
 
-        // Release escrowed funds to producer. Skip inactive tokens (producer
-        // removed them; nobody should have deposited after, but guard anyway).
+        // Release escrowed funds to producer. Fees were already skimmed at buy()
+        // time, so the escrow balance is already net — no further split here.
+        // Skip inactive tokens (producer removed them; nobody should have
+        // deposited after, but guard anyway).
         uint256 len = acceptedTokenList.length;
         for (uint256 i = 0; i < len; i++) {
             address token = acceptedTokenList[i];
             if (!tokenConfigs[token].active) continue;
             uint256 balance = IERC20(token).balanceOf(address(this));
             if (balance > 0) {
-                uint256 fee = balance * protocolFeeBps / 10_000;
-                if (fee > 0) {
-                    IERC20(token).safeTransfer(protocolFeeRecipient, fee);
-                }
-                uint256 toProducer = balance - fee;
-                if (toProducer > 0) {
-                    IERC20(token).safeTransfer(producer, toProducer);
-                }
+                IERC20(token).safeTransfer(producer, balance);
             }
         }
 

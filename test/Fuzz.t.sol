@@ -92,8 +92,10 @@ contract FuzzTest is Test {
         vm.prank(alice);
         campaign.buyback(address(usdc));
 
-        // Refund must be exactly paid; zero slippage, zero rounding
-        assertEq(usdc.balanceOf(alice) - aliceUsdcBefore, paid, "refund != paid");
+        // Refund is exactly `paid - fundingFee`; the 3% is non-refundable on buyback
+        // by design (protocol got paid for hosting, regardless of outcome).
+        uint256 fundingFee = paid * 300 / 10_000;
+        assertEq(usdc.balanceOf(alice) - aliceUsdcBefore, paid - fundingFee, "refund != paid - fee");
         assertEq(campaignToken.balanceOf(alice), 0, "tokens not fully burned");
     }
 

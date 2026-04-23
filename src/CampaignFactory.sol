@@ -23,7 +23,8 @@ import {HarvestManager} from "./HarvestManager.sol";
 contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
     // --- Constants ---
 
-    uint256 public constant PROTOCOL_FEE_BPS = 200; // 2%
+    uint256 public constant PROTOCOL_FEE_BPS = 200; // 2% on depositUSDC (yield-side)
+    uint256 public constant FUNDING_FEE_BPS = 300; // 3% on buy() gross inflow (funding-side)
 
     // --- Structs ---
 
@@ -164,7 +165,7 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
                         params.maxCap,
                         params.fundingDeadline,
                         params.seasonDuration,
-                        PROTOCOL_FEE_BPS,
+                        FUNDING_FEE_BPS,
                         protocolFeeRecipient,
                         sequencerUptimeFeed
                     )

@@ -134,15 +134,17 @@ contract SecurityTest is Test {
         uint256 aliceUsdcBefore = usdc.balanceOf(alice);
         uint256 aliceWethBefore = weth.balanceOf(alice);
 
-        // Buyback USDC
+        // Buyback USDC — refund is net of the 3% funding fee (non-refundable).
+        uint256 usdcFee = 2_880_000_000 * 300 / 10_000;
         vm.prank(alice);
         campaign.buyback(address(usdc));
-        assertEq(usdc.balanceOf(alice), aliceUsdcBefore + 2_880_000_000);
+        assertEq(usdc.balanceOf(alice), aliceUsdcBefore + 2_880_000_000 - usdcFee);
 
-        // Buyback WETH — should still work and burn only WETH-purchased tokens
+        // Buyback WETH — same treatment.
+        uint256 wethFee = 10e18 * 300 / 10_000;
         vm.prank(alice);
         campaign.buyback(address(weth));
-        assertEq(weth.balanceOf(alice), aliceWethBefore + 10e18);
+        assertEq(weth.balanceOf(alice), aliceWethBefore + 10e18 - wethFee);
 
         // All tokens should be burned
         assertEq(campaignToken.balanceOf(alice), 0);

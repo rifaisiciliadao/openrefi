@@ -583,9 +583,10 @@ contract AuditFixesTest is Test {
         vm.prank(producer);
         campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
 
-        (uint256 tokensOut, uint256 effPay,) = campaign.previewBuy(address(usdc), 144e6);
+        (uint256 tokensOut, uint256 effPay, , uint256 fee) = campaign.previewBuy(address(usdc), 144e6);
         assertEq(tokensOut, 1000e18, "previewBuy fixed-mode wrong tokensOut");
         assertEq(effPay, 144e6, "previewBuy unexpected payment crop");
+        assertEq(fee, 144e6 * 300 / 10_000, "previewBuy fee mismatch");
 
         usdc.mint(alice, 144e6);
         vm.prank(alice);
@@ -600,9 +601,10 @@ contract AuditFixesTest is Test {
         campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
         // overshoot: try to buy more than maxCap (1M @ 0.144 = 144k USDC)
         uint256 huge = 200_000e6;
-        (uint256 tokensOut, uint256 effPay,) = campaign.previewBuy(address(usdc), huge);
+        (uint256 tokensOut, uint256 effPay, , uint256 fee) = campaign.previewBuy(address(usdc), huge);
         assertEq(tokensOut, 1_000_000e18, "preview did not cap at maxCap");
         assertLt(effPay, huge, "preview did not reduce payment");
+        assertEq(fee, effPay * 300 / 10_000, "preview fee not derived from cropped effPay");
     }
 
     // ===================================================================

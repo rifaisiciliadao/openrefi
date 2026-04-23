@@ -607,13 +607,15 @@ contract RedTeamTest is Test {
     // ATTACK 31 — Producer drains escrow via wrong state (cannot in Funding)
     // =========================================================================
     function test_attack_producerDrainsFundingEscrow() public {
-        // Alice buys in funding (funds stay in Campaign contract until activation)
+        // Alice buys in funding (funds stay in Campaign contract until activation,
+        // minus the 3% funding fee skimmed at buy time → the rest escrows).
         uint256 pay = 20_000 * USDC_FIXED_RATE;
         vm.prank(alice);
         campaign.buy(address(usdc), pay);
 
+        uint256 fee = pay * 300 / 10_000;
         uint256 escrowed = usdc.balanceOf(address(campaign));
-        assertEq(escrowed, pay);
+        assertEq(escrowed, pay - fee, "escrow holds gross minus funding fee");
 
         // Producer cannot pull the USDC — no admin function on Campaign for that
         // Only path to release is _activate() or buyback(). Attacker calls whatever is callable.
