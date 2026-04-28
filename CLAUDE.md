@@ -205,13 +205,13 @@ File constraints (5 MB, `image/{jpeg,png,webp,avif,gif}`) enforced in-route.
 
 ### Subgraph (`platform/subgraph/`)
 
-Live on Goldsky — **team: turinglabs · project: growfi · chain: base-sepolia**. Current version: `growfi/2.3.0`, tagged as `prod` (deployed 2026-04-28).
+Live on Goldsky — **team: turinglabs · project: growfi · chain: base-sepolia**. Current version: `growfi/2.4.0`, tagged as `prod` (deployed 2026-04-28; tracks the v3.1 redeploy with the single $50k test campaign).
 
 Indexed contracts (see `CONTRACTS.md` for authoritative deploy refs):
-- `CampaignFactory` @ `0x91fD5C9D274C519a152Af14223BD10Ed0b446BDD` from block `40795602`
-- `CampaignRegistry` @ `0x45AB8513a042f3C3A6A0E02f3641b10C6bd05eE8` from block `40795624`
-- `ProducerRegistry` @ `0x4910C1580C30Eb1c6C12C2136f3eA598c55d77C2` from block `40795638`
-- Pre-v3 factory `0x5178A4AB4…FF64` is abandoned; campaigns deployed there are not migrated.
+- `CampaignFactory` @ `0xDE26BD22B4dC048B57ab258347d0000F5641bF9f` from block `40798870`
+- `CampaignRegistry` @ `0x73910DCC8E41E5480C43C902e26a2e24B4a26b97` from block `40798883`
+- `ProducerRegistry` @ `0x4921f38F3D0de21057Ef202629D501E8b99d8616` from block `40798889`
+- Earlier v3 factory `0x91fD5C9D…6BDD` and pre-v3 `0x5178A4AB4…FF64` are both abandoned; campaigns deployed there are not migrated. Single seeded test campaign at `0x1a96BFcF98a7d2f8d84433e568F30B37aC6600F7` ($50,400 max raise, 10%/yr commitment, $15k collateral pre-funding 3 harvests).
 
 Endpoints:
 - **Prod tag**: `https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn`
@@ -236,7 +236,7 @@ Full guide: `platform/subgraph/DEPLOY.md`.
 
 ### Platform gotchas
 
-- **Factory is live** on Base Sepolia at `0x91fD5C9D274C519a152Af14223BD10Ed0b446BDD` (v3, see `CONTRACTS.md` for the full address set). Discovery reads exclusively from the Goldsky subgraph — no more mock fallback. Empty subgraph → empty state CTA.
+- **Factory is live** on Base Sepolia at `0xDE26BD22B4dC048B57ab258347d0000F5641bF9f` (v3.1, see `CONTRACTS.md` for the full address set). Discovery reads exclusively from the Goldsky subgraph — no more mock fallback. Empty subgraph → empty state CTA.
 - **Imperative tx flow everywhere** — never use `useWaitForTransactionReceipt` + useEffect for progress state (race-prone: a receipt from the previous tx can briefly match while a new tx is in flight and show wrong success). Always use `waitForTx(hash)` from `@/lib/waitForTx` inside the async handler — it wraps `waitForTransactionReceipt` with `confirmations: 2`, `timeout: 90s`, and a `minVisibleMs` floor (default 1200ms) so the "confirming on-chain…" state is visible even when the receipt is cached. Silence `user rejected/denied` errors; surface everything else. The shared `config` is exported from `src/app/providers.tsx`.
 - **RPC fallback** — `providers.tsx` uses a viem `fallback` transport across `sepolia.base.org`, `base-sepolia-rpc.publicnode.com`, and `base-sepolia.blockpi.network` (each with 3 retries @ 500ms, 10s timeout). The primary public endpoint was returning "block not found" mid-call often enough to break `activateCampaign` simulations — a single-endpoint config is brittle.
 - **Season struct index**. `StakingVault.Season` layout is `(startTime, endTime, totalYieldMinted, rewardPerTokenAtEnd, totalYieldOwed, active, existed)`. Read `active` as index `5`, NOT index `3` — the original frontend hit `[3]` and false-read `rewardPerTokenAtEnd` (uint256, usually 0n, coerces to `false`), so `hasActiveSeason` stayed `false` right after `startSeason`. Both `LifecycleSection` and `StakingPanel` now use the correct indices with typed tuples + inline layout comments.
