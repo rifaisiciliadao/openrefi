@@ -10,6 +10,7 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Pau
 import {AggregatorV3Interface} from "./interfaces/AggregatorV3Interface.sol";
 import {CampaignToken} from "./CampaignToken.sol";
 import {StakingVault} from "./StakingVault.sol";
+import {HarvestManager} from "./HarvestManager.sol";
 
 /// @title Campaign — Token Sales, Escrow, Sell-Back Queue, Buyback
 /// @notice Handles $CAMPAIGN token sales with multi-token support.
@@ -122,6 +123,45 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     ///         seeded by `initializeV2` during the upgrade dance.
     uint256 public fundingFeeBps;
 
+    // --- Appended storage (v3 — productive-asset metadata + collateral) ---
+
+    /// @notice Producer's commitment: yearly yield rate in bps (1000 = 10%/year).
+    ///         Drives the UI's `harvestsToRepay = 10_000 / expectedYearlyReturnBps`
+    ///         and the recommended `requiredCollateral` sizing. Immutable after
+    ///         init for fresh campaigns; pre-v3 campaigns seed it via
+    ///         `initializeV3` and the upgrade dance.
+    uint256 public expectedYearlyReturnBps;
+
+    /// @notice Producer's commitment: first-year harvest in product units (1e18).
+    ///         Calibrates the UI's ROI calculator and seeds the proportional
+    ///         baseline shown to investors. Immutable after init.
+    uint256 public expectedFirstYearHarvest;
+
+    /// @notice Number of upcoming harvests pre-funded by `collateralLocked`.
+    ///         Bounds `settleSeasonShortfall(seasonId)` to `seasonId ≤ coverageHarvests`.
+    ///         Immutable after init.
+    uint256 public coverageHarvests;
+
+    /// @notice Cached USDC token used for collateral & shortfall settlement.
+    ///         Snapshotted from `factory.usdc()` at init.
+    IERC20 public usdc;
+
+    /// @notice Owning HarvestManager. Wired post-deploy via `setHarvestManager`.
+    HarvestManager public harvestManager;
+    bool private _harvestManagerSet;
+
+    /// @notice Total USDC the producer has locked as a pre-paid yield reserve.
+    ///         Cumulative; producer can `lockCollateral(amount)` repeatedly during
+    ///         Active state but never withdraw early — the lock is one-way.
+    uint256 public collateralLocked;
+
+    /// @notice Total USDC drawn from the reserve to cover holder shortfalls.
+    ///         Always ≤ `collateralLocked`.
+    uint256 public collateralDrawn;
+
+    /// @notice Once-only guard so each covered season's shortfall settles at most once.
+    mapping(uint256 => bool) public seasonShortfallSettled;
+
     // --- Events ---
 
     event TokensPurchased(
@@ -137,6 +177,21 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
         address indexed buyer,
         address indexed paymentToken,
         uint256 fee
+    );
+
+    /// @notice Producer locked additional USDC into the pre-paid yield reserve.
+    event CollateralLocked(
+        address indexed producer,
+        uint256 amount,
+        uint256 newCollateralLocked
+    );
+
+    /// @notice `settleSeasonShortfall` covered the gap between producer's
+    ///         depositUSDC and the season's `usdcOwed` for `seasonId`.
+    event CollateralShortfallSettled(
+        uint256 indexed seasonId,
+        uint256 amountDrawn,
+        uint256 newCollateralDrawn
     );
 
     event AcceptedTokenAdded(
@@ -192,6 +247,13 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     error DeadlineInPast();
     error NewMinCapBelowSupply();
     error NewMaxCapBelowCommitted();
+    error InvalidCoverageHarvests();
+    error InvalidYearlyReturn();
+    error OutOfCoverage();
+    error AlreadySettled();
+    error SeasonNotReported();
+    error DeadlineNotReached();
+    error NoCollateralAvailable();
 
     // --- Modifiers ---
 
@@ -217,36 +279,49 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
         _disableInitializers();
     }
 
-    /// @param protocolFeeBps_ Legacy param — value is written into the zombie
-    ///                        `protocolFeeBps` slot for layout compatibility.
-    ///                        No code path reads it after the v2 upgrade.
-    /// @param fundingFeeBps_  Per-`buy()` fee skimmed off the gross inflow and
-    ///                        forwarded to `protocolFeeRecipient_`. 3% = 300.
-    function initialize(
-        address producer_,
-        address factory_,
-        uint256 pricePerToken_,
-        uint256 minCap_,
-        uint256 maxCap_,
-        uint256 fundingDeadline_,
-        uint256 seasonDuration_,
-        uint256 protocolFeeBps_,
-        uint256 fundingFeeBps_,
-        address protocolFeeRecipient_,
-        address sequencerUptimeFeed_
-    ) external initializer {
+    /// @notice Per-campaign init params, packed into a struct because the flat
+    ///         signature crossed the Solidity stack limit at 12 params.
+    struct InitParams {
+        address producer;
+        address factory;
+        uint256 pricePerToken;
+        uint256 minCap;
+        uint256 maxCap;
+        uint256 fundingDeadline;
+        uint256 seasonDuration;
+        // Legacy zombie — written for layout compat, never read.
+        uint256 protocolFeeBps;
+        // 3% per `buy()` gross inflow, forwarded to `protocolFeeRecipient`.
+        uint256 fundingFeeBps;
+        // Producer's yearly yield commitment, in bps (e.g. 1000 = 10%/year).
+        uint256 expectedYearlyReturnBps;
+        // Producer's first-year harvest in product units (1e18 internal scale).
+        uint256 expectedFirstYearHarvest;
+        // Number of upcoming harvests pre-funded via `lockCollateral`.
+        uint256 coverageHarvests;
+        address protocolFeeRecipient;
+        address sequencerUptimeFeed;
+        // USDC token (used for collateral lock + shortfall settlement).
+        address usdc;
+    }
+
+    function initialize(InitParams calldata p) external initializer {
         __Pausable_init();
-        producer = producer_;
-        factory = factory_;
-        pricePerToken = pricePerToken_;
-        minCap = minCap_;
-        maxCap = maxCap_;
-        fundingDeadline = fundingDeadline_;
-        seasonDuration = seasonDuration_;
-        protocolFeeBps = protocolFeeBps_;
-        fundingFeeBps = fundingFeeBps_;
-        protocolFeeRecipient = protocolFeeRecipient_;
-        sequencerUptimeFeed = AggregatorV3Interface(sequencerUptimeFeed_);
+        producer = p.producer;
+        factory = p.factory;
+        pricePerToken = p.pricePerToken;
+        minCap = p.minCap;
+        maxCap = p.maxCap;
+        fundingDeadline = p.fundingDeadline;
+        seasonDuration = p.seasonDuration;
+        protocolFeeBps = p.protocolFeeBps;
+        fundingFeeBps = p.fundingFeeBps;
+        expectedYearlyReturnBps = p.expectedYearlyReturnBps;
+        expectedFirstYearHarvest = p.expectedFirstYearHarvest;
+        coverageHarvests = p.coverageHarvests;
+        protocolFeeRecipient = p.protocolFeeRecipient;
+        sequencerUptimeFeed = AggregatorV3Interface(p.sequencerUptimeFeed);
+        usdc = IERC20(p.usdc);
         state = State.Funding;
     }
 
@@ -256,6 +331,22 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     ///         upgrade via `ProxyAdmin.upgradeAndCall(proxy, newImpl, initData)`.
     function initializeV2(uint256 fundingFeeBps_) external reinitializer(2) {
         fundingFeeBps = fundingFeeBps_;
+    }
+
+    /// @notice One-shot reinitializer for campaigns deployed before v3 (no
+    ///         expected-yearly-return, no first-year-harvest, no coverage,
+    ///         no collateral). Seeds the new immutable v3 slots. Called via
+    ///         `ProxyAdmin.upgradeAndCall(proxy, newImpl, initializeV3(...))`.
+    function initializeV3(
+        uint256 expectedYearlyReturnBps_,
+        uint256 expectedFirstYearHarvest_,
+        uint256 coverageHarvests_,
+        address usdc_
+    ) external reinitializer(3) {
+        expectedYearlyReturnBps = expectedYearlyReturnBps_;
+        expectedFirstYearHarvest = expectedFirstYearHarvest_;
+        coverageHarvests = coverageHarvests_;
+        usdc = IERC20(usdc_);
     }
 
     /// @notice Set the CampaignToken address. Can only be called once by the factory.
@@ -277,6 +368,97 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     function setYieldToken(address yieldToken_) external onlyFactory {
         stakingVault.setYieldToken(yieldToken_);
     }
+
+    /// @notice Wire the owning HarvestManager. Called once by the factory after
+    ///         the HarvestManager proxy is deployed. Required for
+    ///         `settleSeasonShortfall` to top up holder claims out of collateral.
+    function setHarvestManager(address harvestManager_) external onlyFactory {
+        if (_harvestManagerSet) revert AlreadySet();
+        harvestManager = HarvestManager(harvestManager_);
+        _harvestManagerSet = true;
+    }
+
+    // --- Producer Collateral (Pre-Paid Yield Reserve) ---
+
+    /// @notice Lock additional USDC into the campaign's pre-paid yield reserve.
+    ///         Cumulative; producer can call this multiple times. There is NO
+    ///         early-withdrawal path — the lock is one-way until the
+    ///         `coverageHarvests` window's settlements run their course (and
+    ///         even then, residuals stay in the contract per the v3 commitment
+    ///         model). State guard: Funding (so collateral is visible to buyers
+    ///         pre-activation) or Active. Disallowed in Buyback / Ended.
+    /// @param amount Native-decimals USDC (6-dec on mainnet; 6-dec MockUSDC).
+    function lockCollateral(uint256 amount) external onlyProducer nonReentrant whenNotPaused {
+        if (amount == 0) revert ZeroAmount();
+        if (state != State.Funding && state != State.Active) revert InvalidState(State.Active, state);
+        if (address(usdc) == address(0)) revert AlreadySet(); // pre-v3 campaign — must reinitialize first
+
+        usdc.safeTransferFrom(msg.sender, address(this), amount);
+        collateralLocked += amount;
+
+        emit CollateralLocked(msg.sender, amount, collateralLocked);
+    }
+
+    /// @notice Permissionless settlement of a covered season's shortfall.
+    ///         For `seasonId ∈ [1..coverageHarvests]`, after the season's
+    ///         `usdcDeadline` has passed: if the producer's `depositUSDC`
+    ///         left a gap (`remainingDepositGross > 0`), this function pulls
+    ///         up to that gap from `collateralLocked` and forwards it to the
+    ///         HarvestManager so holders can `claimUSDC` normally. Marks the
+    ///         season settled so the draw cannot run twice.
+    ///
+    /// @dev    Intentionally NOT `whenNotPaused`: holder protection path must
+    ///         remain available even during an emergency pause (mirrors the
+    ///         policy on `unstake` and `buyback`).
+    function settleSeasonShortfall(uint256 seasonId) external nonReentrant {
+        if (seasonId == 0 || seasonId > coverageHarvests) revert OutOfCoverage();
+        if (seasonShortfallSettled[seasonId]) revert AlreadySettled();
+        if (address(harvestManager) == address(0)) revert AlreadySet();
+
+        // Read season state from HM. The auto-getter for SeasonHarvest returns
+        // a tuple in struct-declaration order:
+        //   (merkleRoot, totalHarvestValueUSD, totalYieldSupply, totalProductUnits,
+        //    claimStart, claimEnd, usdcDeadline, usdcDeposited, usdcOwed,
+        //    protocolFeeCollected, protocolFeeTransferred, reported)
+        (
+            ,                          // merkleRoot
+            ,                          // totalHarvestValueUSD
+            ,                          // totalYieldSupply
+            ,                          // totalProductUnits
+            ,                          // claimStart
+            ,                          // claimEnd
+            uint256 deadline,          // usdcDeadline
+            ,                          // usdcDeposited
+            ,                          // usdcOwed
+            ,                          // protocolFeeCollected
+            ,                          // protocolFeeTransferred
+            bool reported              // reported flag
+        ) = harvestManager.seasonHarvests(seasonId);
+        if (!reported) revert SeasonNotReported();
+        if (block.timestamp <= deadline) revert DeadlineNotReached();
+
+        uint256 remaining = harvestManager.remainingDepositGross(seasonId);
+        uint256 available = collateralLocked - collateralDrawn;
+
+        // Idempotent flag set BEFORE any external transfer: re-entrancy hardening.
+        seasonShortfallSettled[seasonId] = true;
+
+        if (remaining == 0 || available == 0) {
+            // Nothing to draw; emit a zero-amount event so the subgraph
+            // can mark the season as "settlement attempted" and stop polling.
+            emit CollateralShortfallSettled(seasonId, 0, collateralDrawn);
+            return;
+        }
+
+        uint256 draw = remaining < available ? remaining : available;
+        collateralDrawn += draw;
+
+        usdc.safeIncreaseAllowance(address(harvestManager), draw);
+        harvestManager.depositFromCollateral(seasonId, draw);
+
+        emit CollateralShortfallSettled(seasonId, draw, collateralDrawn);
+    }
+
 
     // --- Season Management ---
 

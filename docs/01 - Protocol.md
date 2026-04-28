@@ -23,7 +23,7 @@ Registry and deployer for new campaigns.
 #### 2. `Campaign`
 Handles token sales with multi-token support, escrow, and cap management.
 
-**State:**
+**State (core):**
 - `pricePerToken` — base price denominated in USD (e.g., $0.144)
 - `minCap` — minimum tokens that must be sold for campaign to proceed
 - `maxCap` — maximum tokens mintable (= maxSupply)
@@ -33,7 +33,18 @@ Handles token sales with multi-token support, escrow, and cap management.
 - `state` — enum: Funding, Active, Buyback, Ended
 - `acceptedTokens[]` — list of accepted ERC20 tokens for payment
 - `tokenConfig[address]` — per-token config: pricing mode (fixed or oracle), fixed rate, oracle feed address
-- `purchases[user][token]` — tracks each user's payment amounts per token (for buyback refunds)
+- `purchases[user][token]` — tracks each user's payment amounts per token (for buyback refunds; recorded NET of the funding fee)
+- `fundingFeeBps` — protocol fee skimmed off every `buy()` gross inflow (e.g. 300 = 3%); non-refundable on buyback. Snapshotted from the factory at creation. See `03 - Tokenomics.md` for distribution.
+
+**State (productive-asset metadata, set at creation, immutable):**
+- `expectedYearlyReturnBps` — producer's commitment to a yearly yield rate, in basis points (e.g. 1000 = 10%). Used by holders to derive `harvestsToRepay = 10_000 / expectedYearlyReturnBps` (i.e. how many harvests until the original investment has been returned in yield) and to size the producer's `requiredCollateral` for the chosen `coverageHarvests`.
+- `expectedFirstYearHarvest` — physical product the producer expects to deliver in year one, in product units (1e18 internal scale). Sets the proportional baseline for `reportHarvest` (subsequent seasons can deviate; this is the up-front commitment used by the calculator).
+- `coverageHarvests` — number of upcoming harvests the producer pre-funds with `collateralLocked`. Strong trust signal: holders see "guaranteed for X harvests" and can compare to `harvestsToRepay`. Tail = `harvestsToRepay − coverageHarvests` is the period where holders carry residual delivery risk.
+
+**State (collateral, mutable):**
+- `collateralLocked` — total USDC the producer has locked as pre-paid yield reserve. Cumulative; producer can `lockCollateral(amount)` repeatedly during Active state but never withdraw early.
+- `collateralDrawn` — total USDC already drawn from the reserve to settle holder shortfalls.
+- `seasonShortfallSettled[seasonId]` — guard so each covered season's shortfall draw runs at most once.
 
 **Multi-Token Payment:**
 ```
@@ -97,12 +108,14 @@ After activation, the producer has withdrawn the funds. Users who want to exit f
 **Functions:**
 - `addAcceptedToken(tokenAddress, pricingMode, fixedRate, oracleFeed)` — producer adds a payment token
 - `removeAcceptedToken(tokenAddress)` — producer removes a payment token
-- `buy(tokenAddress, amount)` — pay with any accepted ERC20. During Funding: held in escrow. During Active: fills sell-back queue first, then mints new tokens (up to maxCap)
+- `buy(tokenAddress, amount)` — pay with any accepted ERC20. During Funding: held in escrow (NET of `fundingFeeBps`). During Active: fills sell-back queue first (NET), then mints new tokens (up to maxCap). The `fundingFeeBps` skim is forwarded to `protocolFeeRecipient` immediately and emitted as `FundingFeeCollected`.
 - `sellBack(amount)` — deposit $CAMPAIGN into sell-back queue. Receives payment tokens when a new buyer fills the order
 - `cancelSellBack()` — cancel pending sell-back, get $CAMPAIGN back (unfilled portion)
-- `buyback()` — refund at original purchase price if campaign is in Buyback state (failed funding). Burns $CAMPAIGN, returns payment tokens
-- `activateCampaign()` — called when min cap reached (can be automatic or manual). Releases funds to producer, enables staking
+- `buyback()` — refund at original purchase price if campaign is in Buyback state (failed funding). Burns $CAMPAIGN, returns payment tokens NET of `fundingFeeBps` (the funding fee is non-refundable by design — see `03 - Tokenomics.md`)
+- `activateCampaign()` — called when min cap reached (can be automatic or manual). Releases escrow to producer, enables staking
 - `triggerBuyback()` — callable by anyone after funding deadline if min cap not reached. Transitions to Buyback state
+- `lockCollateral(uint256 amount)` — producer-only, Active state. Pulls `amount` USDC from the producer into `collateralLocked`. Cumulative; emits `CollateralLocked`. **No early withdrawal path** — the lock is one-way until `coverageHarvests` settle (or campaign Ended).
+- `settleSeasonShortfall(uint256 seasonId)` — permissionless, callable once per `seasonId ∈ [1..coverageHarvests]` after that season's `usdcDeadline` has passed. Computes the holder pool's missing USDC (`remainingDepositGross`), draws up to that amount from `collateralLocked`, forwards to `HarvestManager.depositUSDC` so the existing claim path delivers to holders pro-rata, increments `collateralDrawn`, sets `seasonShortfallSettled[seasonId] = true`, emits `CollateralShortfallSettled`. Does nothing if no shortfall.
 - `getPrice(tokenAddress, campaignAmount)` — view: returns cost in the specified token for X $CAMPAIGN
 - `getSellBackQueue()` — view: returns queue depth and positions
 - `emergencyPause()` — pause all operations
@@ -129,6 +142,51 @@ at the SAME amount (not recalculated via oracle).
 ```
 
 **Note:** $CAMPAIGN is only minted during initial sales. No new minting after that. Supply is strictly deflationary.
+
+**Producer Collateral (Pre-Paid Yield Reserve):**
+
+The producer can pre-fund the first `coverageHarvests` seasons of holder yield by locking USDC into the campaign at activation. This converts an explicit promise (`expectedYearlyReturnBps`) into an on-chain guarantee for the duration of the lock.
+
+```
+Sizing (recommended, enforced off-chain in the UI):
+  expectedYearlyUsdc  = totalRaised × expectedYearlyReturnBps / 10_000
+  requiredCollateral  = coverageHarvests × expectedYearlyUsdc
+  harvestsToRepay     = 10_000 / expectedYearlyReturnBps
+  uncoveredTail       = harvestsToRepay − coverageHarvests
+```
+
+Lifecycle:
+```
+1. Campaign reaches Active state → `totalRaised` is final.
+2. Producer calls `lockCollateral(USDC)` (any amount, additive, no withdraw).
+   The UI displays the implied "covers X harvests at this expectedYearlyReturn".
+
+3. For each season s ∈ [1..coverageHarvests]:
+   - Producer calls `reportHarvest(s, ...)` → sets `usdcOwed[s]` and starts the
+     `usdcDeadline[s]` window for producer's own depositUSDC.
+   - Holders call `redeemUSDC(s, yieldAmount)` → registers their claim.
+   - Producer (ideally) calls `depositUSDC(s, amount)` from harvest income.
+   - When `block.timestamp > usdcDeadline[s]`:
+     - If `remainingDepositGross[s] == 0` → fully funded by producer; nothing to do.
+     - Else → anyone calls `settleSeasonShortfall(s)`:
+       * draws min(remainingDepositGross, collateralLocked − collateralDrawn) USDC
+         from the locked reserve
+       * forwards to HarvestManager via the existing depositUSDC path
+       * holders' claimUSDC now succeeds for that season
+       * `collateralDrawn` advances, `seasonShortfallSettled[s] = true`
+
+4. After season `coverageHarvests` settles → coverage period ends.
+   Future seasons rely entirely on the producer's own deposits (no automatic
+   draw). Any residual `collateralLocked − collateralDrawn` STAYS LOCKED in
+   the contract; per the protocol's commitment model the collateral does not
+   return to the producer. Distribution of residuals back to holders is a
+   future enhancement (see TODO in `Math & Formulas.md §15`).
+```
+
+Trust signal & risk indicator (UI-side, derived):
+- "Coperto X raccolti" — direct from `coverageHarvests`.
+- "Tail di Y raccolti" — `harvestsToRepay − coverageHarvests`. Higher tail = more years where the holder carries delivery risk.
+- Risk score: roughly `tail / harvestsToRepay`. Smaller is better.
 
 #### 3. `CampaignToken` (ERC20)
 Per-campaign staking token — "the seat."
@@ -264,6 +322,34 @@ CampaignFactory
               └── receives → USDC from producer
 ```
 
+### Standalone Registries
+
+Two single-instance registries live outside the per-campaign proxy graph and
+are not upgradeable. They carry off-chain pointers and trust signals that the
+core contracts can verify on-chain.
+
+#### `CampaignRegistry`
+- `metadataURI[campaign] → string` plus a monotonic `version[campaign]`.
+- Producer-only write, gated by `factory.isCampaign(campaign)` so only
+  legitimate campaigns can publish metadata.
+- Emits `MetadataSet(campaign, producer, version, uri)` indexed by the subgraph
+  into `Campaign.metadataURI` / `Campaign.metadataVersion`.
+
+#### `ProducerRegistry`
+- `profileURI[producer] → string` plus a monotonic `version[producer]`.
+- Anyone writes their own row (keys on `msg.sender`); zero admin in the public
+  surface — preserves the permissionless pitch for the producer profile.
+- KYC bit (additive, role-gated): a `kyced[producer] → bool` flag flipped by
+  `setKyc(address producer, bool kyced)`, which is gated to `KYC_ADMIN_ROLE`
+  (single-slot role; the contract owner grants/revokes via
+  `grantKycAdmin(address) / revokeKycAdmin(address)`). Emits
+  `KycSet(producer, kyced, by)` indexed into `Producer.kyced`.
+- Trust model: the producer cannot self-attest the KYC bit (preventing
+  spoofing); the role is centralized and assumes the protocol operator runs
+  KYC off-chain (e.g. via a third-party verifier) and reflects the result
+  on-chain. Off-the-shelf `Ownable2Step` for role transfer; explicit
+  events on every flip.
+
 ## Multi-Season Lifecycle
 
 ```
@@ -317,10 +403,33 @@ event CampaignCreated(
 event TokensPurchased(
     address indexed buyer,
     address indexed paymentToken,
-    uint256 paymentAmount,
+    uint256 paymentAmount,        // GROSS (pre-fundingFee)
     uint256 campaignTokensOut,
     uint256 oraclePriceUsed,     // 0 if fixed mode
     uint256 newCurrentSupply
+);
+
+// Emitted alongside TokensPurchased; the `fee` was forwarded to
+// `protocolFeeRecipient` and is non-refundable on buyback.
+event FundingFeeCollected(
+    address indexed buyer,
+    address indexed paymentToken,
+    uint256 fee
+);
+
+// Producer locked additional USDC into the pre-paid yield reserve
+event CollateralLocked(
+    address indexed producer,
+    uint256 amount,
+    uint256 newCollateralLocked  // running total
+);
+
+// Anyone called settleSeasonShortfall(seasonId) and the reserve covered
+// the gap between producer's depositUSDC and the season's usdcOwed.
+event CollateralShortfallSettled(
+    uint256 indexed seasonId,
+    uint256 amountDrawn,
+    uint256 newCollateralDrawn   // running total
 );
 
 // Emitted when a payment token is added

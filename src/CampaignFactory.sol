@@ -77,7 +77,10 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
         uint256 fundingDeadline,
         uint256 seasonDuration,
         uint256 minProductClaim,
-        uint256 createdAt
+        uint256 createdAt,
+        uint256 expectedYearlyReturnBps,
+        uint256 expectedFirstYearHarvest,
+        uint256 coverageHarvests
     );
 
     event ProtocolFeeRecipientUpdated(address oldRecipient, address newRecipient);
@@ -98,6 +101,11 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
         uint256 fundingDeadline;
         uint256 seasonDuration;
         uint256 minProductClaim;
+        // v3 — productive-asset metadata + collateral coverage commitment.
+        // Set once at creation; immutable for the life of the campaign.
+        uint256 expectedYearlyReturnBps;     // 1..10_000 (bps)
+        uint256 expectedFirstYearHarvest;    // product units, 1e18 internal scale
+        uint256 coverageHarvests;            // 0 ≤ n; recommended ≤ harvestsToRepay
     }
 
     // --- Init ---
@@ -149,6 +157,14 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
         require(params.minCap <= params.maxCap, "minCap > maxCap");
         require(params.fundingDeadline > block.timestamp, "Deadline in past");
         require(params.seasonDuration >= minSeasonDuration, "Season too short");
+        require(
+            params.expectedYearlyReturnBps > 0 && params.expectedYearlyReturnBps <= 10_000,
+            "expectedYearlyReturnBps out of range"
+        );
+        require(params.expectedFirstYearHarvest > 0, "Zero first-year harvest");
+        // coverageHarvests is allowed to be 0 (= producer publishes targets but
+        // doesn't pre-fund any seasons). Upper bound is harvestsToRepay; we don't
+        // enforce on-chain (frontend warns) — over-coverage just over-locks USDC.
 
         // 1. Campaign (no cross-contract deps at init).
         address campaignAddr = address(
@@ -158,17 +174,23 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
                 abi.encodeCall(
                     Campaign.initialize,
                     (
-                        params.producer,
-                        address(this),
-                        params.pricePerToken,
-                        params.minCap,
-                        params.maxCap,
-                        params.fundingDeadline,
-                        params.seasonDuration,
-                        PROTOCOL_FEE_BPS,
-                        FUNDING_FEE_BPS,
-                        protocolFeeRecipient,
-                        sequencerUptimeFeed
+                        Campaign.InitParams({
+                            producer: params.producer,
+                            factory: address(this),
+                            pricePerToken: params.pricePerToken,
+                            minCap: params.minCap,
+                            maxCap: params.maxCap,
+                            fundingDeadline: params.fundingDeadline,
+                            seasonDuration: params.seasonDuration,
+                            protocolFeeBps: PROTOCOL_FEE_BPS,
+                            fundingFeeBps: FUNDING_FEE_BPS,
+                            expectedYearlyReturnBps: params.expectedYearlyReturnBps,
+                            expectedFirstYearHarvest: params.expectedFirstYearHarvest,
+                            coverageHarvests: params.coverageHarvests,
+                            protocolFeeRecipient: protocolFeeRecipient,
+                            sequencerUptimeFeed: sequencerUptimeFeed,
+                            usdc: usdc
+                        })
                     )
                 )
             )
@@ -228,8 +250,10 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
         // 6. Wire cross-references via the existing onlyFactory setters.
         Campaign(campaignAddr).setCampaignToken(campaignTokenAddr);
         Campaign(campaignAddr).setStakingVault(stakingVaultAddr); // delegates to CampaignToken.setStakingVault
+        Campaign(campaignAddr).setHarvestManager(harvestManagerAddr); // for shortfall draws
         HarvestManager(harvestManagerAddr).setYieldToken(yieldTokenAddr);
         HarvestManager(harvestManagerAddr).setStakingVault(stakingVaultAddr);
+        HarvestManager(harvestManagerAddr).setCampaign(campaignAddr); // depositFromCollateral access
         Campaign(campaignAddr).setYieldToken(yieldTokenAddr); // delegates to StakingVault.setYieldToken
 
         // 4. Register
@@ -259,7 +283,10 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
             params.fundingDeadline,
             params.seasonDuration,
             params.minProductClaim,
-            block.timestamp
+            block.timestamp,
+            params.expectedYearlyReturnBps,
+            params.expectedFirstYearHarvest,
+            params.coverageHarvests
         );
 
         return campaignAddr;

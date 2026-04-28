@@ -26,7 +26,7 @@ dataSources:
         - name: Campaign
           file: ./abis/Campaign.json
       eventHandlers:
-        - event: CampaignCreated(indexed address,indexed address,address,address,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+        - event: CampaignCreated(indexed address,indexed address,address,address,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleCampaignCreated
         - event: ProtocolFeeRecipientUpdated(address,address)
           handler: handleProtocolFeeRecipientUpdated
@@ -72,6 +72,8 @@ dataSources:
       eventHandlers:
         - event: ProfileUpdated(indexed address,indexed uint256,string)
           handler: handleProfileUpdated
+        - event: KycSet(indexed address,indexed bool,indexed address)
+          handler: handleKycSet
 
 templates:
   - kind: ethereum/contract
@@ -99,6 +101,10 @@ templates:
           handler: handleTokensPurchased
         - event: FundingFeeCollected(indexed address,indexed address,uint256)
           handler: handleFundingFeeCollected
+        - event: CollateralLocked(indexed address,uint256,uint256)
+          handler: handleCollateralLocked
+        - event: CollateralShortfallSettled(indexed uint256,uint256,uint256)
+          handler: handleCollateralShortfallSettled
         - event: AcceptedTokenAdded(indexed address,string,uint8,uint256,address)
           handler: handleAcceptedTokenAdded
         - event: AcceptedTokenRemoved(indexed address)

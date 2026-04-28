@@ -101,7 +101,13 @@
       "maxCapHint": "= {total} tokens (1 arbre = 1 000 tokens)",
       "deadline": "Échéance Funding",
       "minProduct": "Min Product Claim",
-      "minProductHint": "Unités minimum pour retrait physique (ex. litres)"
+      "minProductHint": "Unités minimum pour retrait physique (ex. litres)",
+      "expectedYearlyReturn": "Rendement Annuel Attendu",
+      "expectedYearlyReturnHint": "Votre engagement de rendement annuel, en %. Sert à calculer l'horizon de remboursement.",
+      "expectedFirstYearHarvest": "Récolte Première Année",
+      "expectedFirstYearHarvestHint": "Cible produit année un (ex. litres d'huile)",
+      "coverageHarvests": "Récoltes Couvertes",
+      "coverageHarvestsHint": "Récoltes préfinancées en garantie. Remboursement ≈ {payback} récoltes à ce rendement."
     },
     "step3": {
       "title": "Tokens Acceptés",

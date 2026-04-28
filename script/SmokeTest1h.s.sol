@@ -47,7 +47,10 @@ contract SmokeTest1h is Script {
                 maxCap: 1_000e18,
                 fundingDeadline: block.timestamp + 1 days,
                 seasonDuration: 1 hours,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
         console.log("campaign         :", campaignAddr);

@@ -49,7 +49,10 @@ contract ParamUpdatesTest is Test {
                 maxCap: MAX_CAP,
                 fundingDeadline: initialDeadline,
                 seasonDuration: 365 days,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
         (address c, address ct,,,,,) = factory.campaigns(0);

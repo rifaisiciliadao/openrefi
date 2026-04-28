@@ -61,7 +61,10 @@ contract RedTeamTest is Test {
                 maxCap: MAX_CAP,
                 fundingDeadline: block.timestamp + 90 days,
                 seasonDuration: SEASON_DURATION,
-                minProductClaim: 5e18
+                minProductClaim: 5e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
 

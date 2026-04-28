@@ -63,7 +63,10 @@ contract IntegrationTest is Test {
                 maxCap: MAX_CAP,
                 fundingDeadline: deadline,
                 seasonDuration: SEASON_DURATION,
-                minProductClaim: MIN_PRODUCT_CLAIM
+                minProductClaim: MIN_PRODUCT_CLAIM,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
 

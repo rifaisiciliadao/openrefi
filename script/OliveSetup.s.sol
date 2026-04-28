@@ -55,7 +55,10 @@ contract OliveSetup is Script {
                 maxCap: 2_000e18,
                 fundingDeadline: block.timestamp + 1 days,
                 seasonDuration: 30 minutes,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
         Campaign campaign = Campaign(campaignAddr);

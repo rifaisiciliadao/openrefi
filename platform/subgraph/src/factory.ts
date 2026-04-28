@@ -39,6 +39,11 @@ export function handleCampaignCreated(event: CampaignCreatedEvent): void {
   campaign.fundingDeadline = event.params.fundingDeadline;
   campaign.seasonDuration = event.params.seasonDuration;
   campaign.minProductClaim = event.params.minProductClaim;
+  campaign.expectedYearlyReturnBps = event.params.expectedYearlyReturnBps;
+  campaign.expectedFirstYearHarvest = event.params.expectedFirstYearHarvest;
+  campaign.coverageHarvests = event.params.coverageHarvests;
+  campaign.collateralLocked = BigInt.zero();
+  campaign.collateralDrawn = BigInt.zero();
   campaign.currentSupply = BigInt.zero();
   campaign.totalStaked = BigInt.zero();
   campaign.totalRaised = BigInt.zero();

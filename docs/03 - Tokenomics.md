@@ -51,23 +51,55 @@ Each tree/asset is divided into **1,000 tokens**:
 
 ## Revenue Split
 
+There are **two** protocol fees, applied at different lifecycle moments and
+with different sinks. Both go to `protocolFeeRecipient`.
+
 ```
-GROSS HARVEST (physical, off-chain)
-│
-├─ 30% PRODUCER (at origin, off-chain)
-│  → Taken before reporting to platform
-│  → Covers labor, maintenance, operations
-│
-└─ 70% REPORTED TO PLATFORM (on-chain)
+1) FUNDING-SIDE — `Campaign.buy()` skim, applied per purchase
+   ┌──────────────────────────────────────────────────────────────┐
+   │ Buyer pays X (gross)                                         │
+   │ ├─  3% FUNDING FEE  →  protocolFeeRecipient (non-refundable) │
+   │ └─ 97% NET          →  escrow (Funding) or producer (Active) │
+   │                        Sell-back queue & buyback work on NET │
+   └──────────────────────────────────────────────────────────────┘
+
+2) HARVEST-SIDE — applied at every `HarvestManager.depositUSDC`
+   GROSS HARVEST (physical, off-chain)
    │
-   ├─ 2% PROTOCOL FEE
-   │  → Goes to protocol treasury
+   ├─ 30% PRODUCER (at origin, off-chain — labor/ops)
    │
-   └─ 98% TO TOKEN HOLDERS
-      → Claimable via $YIELD burn (product or USDC)
+   └─ 70% REPORTED TO PLATFORM (on-chain)
+      │
+      ├─  2% PROTOCOL FEE     → protocolFeeRecipient
+      │
+      └─ 98% TO TOKEN HOLDERS → claimable via $YIELD burn (product or USDC)
 ```
 
-**Effective holder share**: 70% × 98% = **68.6% of gross harvest value**
+**Effective holder share** (harvest only): 70% × 98% = **68.6% of gross harvest value**.
+
+The 3% funding-side fee is **non-refundable on buyback**: a failed campaign
+returns the NET (97%) to buyers. Rationale — the protocol incurs hosting +
+indexing cost regardless of outcome, and the fee acts as a small "skin in
+the game" filter against spam campaigns.
+
+## Producer Collateral (Pre-Paid Yield Reserve)
+
+Distinct from the two fees above. Producer-locked USDC sits in the campaign as
+a reserve pool that automatically covers holder yield shortfalls for the
+first `coverageHarvests` seasons. See `01 - Protocol.md §Producer Collateral`
+for the lifecycle and `05 - Math & Formulas.md §15` for the formulas. Three
+concrete numbers visible in UI:
+
+- `harvestsToRepay = 10_000 / expectedYearlyReturnBps` — how many harvests of
+  yield equal the original investment.
+- `coverageHarvests` — how many of those the producer pre-funds.
+- `tail = harvestsToRepay − coverageHarvests` — the residual delivery risk
+  the holder carries.
+
+The collateral is **one-way**: once locked, it can be drawn down by holder
+shortfalls or stay locked forever, but never returns to the producer. This
+asymmetry is intentional — it converts "expected yield" from a soft promise
+into an enforceable on-chain commitment.
 
 ## Campaign Parameters
 
@@ -78,12 +110,16 @@ GROSS HARVEST (physical, off-chain)
 - **Funding deadline** — deadline to reach min cap
 - **Season duration** — minimum 1 year (365 days)
 - **Minimum product claim** — e.g., 5 liters for olive oil
+- **Expected yearly return (bps)** — producer's commitment, e.g. 1000 = 10%/year. Drives `harvestsToRepay` and the recommended collateral sizing. Immutable once campaign is created.
+- **Expected first-year harvest** — physical product target for year one (in product units). Calibrates the ROI calculator and seeds the proportional baseline shown to investors.
+- **Coverage harvests** — number of upcoming harvests the producer commits to pre-fund through `lockCollateral`. Higher = stronger trust signal, more capital required up front.
 
 ### Protocol Constants (Fixed for All Campaigns)
 - **Yield rate**: dynamic, decays linearly from 5→1 as campaign fills
 - **Penalty curve**: linear (earlier unstake = higher penalty)
 - **Producer share**: 30% of harvest (off-chain)
-- **Protocol fee**: 2% of reported harvest value
+- **Funding fee**: 3% of every `buy()` gross inflow (non-refundable on buyback)
+- **Harvest fee**: 2% of every `depositUSDC` (yield-side)
 - **USDC deposit window**: 90 days
 - **Fractionalization**: 1,000 tokens per asset
 - **Shipping**: paid separately by product redeemers

@@ -101,7 +101,13 @@
       "maxCapHint": "= {total} tokens (1 tree = 1,000 tokens)",
       "deadline": "Funding Deadline",
       "minProduct": "Min Product Claim",
-      "minProductHint": "Minimum units for physical pickup (e.g. liters)"
+      "minProductHint": "Minimum units for physical pickup (e.g. liters)",
+      "expectedYearlyReturn": "Expected Yearly Return",
+      "expectedYearlyReturnHint": "Your commitment in % per year. Investors use it to compute the payback horizon.",
+      "expectedFirstYearHarvest": "First-Year Harvest",
+      "expectedFirstYearHarvestHint": "Product units expected in year one (e.g. liters of oil)",
+      "coverageHarvests": "Coverage Harvests",
+      "coverageHarvestsHint": "Number of harvests you pre-fund as a guarantee. Payback ≈ {payback} harvests at this yield."
     },
     "step3": {
       "title": "Accepted Tokens",

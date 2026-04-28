@@ -66,6 +66,14 @@ contract HarvestManager is Initializable, ReentrancyGuard, PausableUpgradeable {
     mapping(uint256 => SeasonHarvest) public seasonHarvests;
     mapping(uint256 => mapping(address => Claim)) public claims;
 
+    // --- Appended storage v3 ---
+
+    /// @notice Owning Campaign proxy. Set once by the factory; needed so the
+    ///         Campaign can deposit on behalf of holders out of its
+    ///         pre-paid yield reserve when the producer falls short.
+    address public campaign;
+    bool private _campaignSet;
+
     // --- Events ---
 
     event HarvestReported(
@@ -106,6 +114,7 @@ contract HarvestManager is Initializable, ReentrancyGuard, PausableUpgradeable {
 
     error OnlyProducer();
     error OnlyFactory();
+    error OnlyCampaign();
     error AlreadyReported();
     error NotReported();
     error ClaimWindowClosed();
@@ -129,6 +138,11 @@ contract HarvestManager is Initializable, ReentrancyGuard, PausableUpgradeable {
 
     modifier onlyFactory() {
         if (msg.sender != factory) revert OnlyFactory();
+        _;
+    }
+
+    modifier onlyCampaign() {
+        if (msg.sender != campaign) revert OnlyCampaign();
         _;
     }
 
@@ -169,6 +183,15 @@ contract HarvestManager is Initializable, ReentrancyGuard, PausableUpgradeable {
         if (_stakingVaultSet) revert AlreadySet();
         stakingVault = StakingVault(stakingVault_);
         _stakingVaultSet = true;
+    }
+
+    /// @notice Set the owning Campaign proxy. Called once by the factory after
+    ///         the Campaign proxy has been deployed. Required for
+    ///         `depositFromCollateral` to be callable by the Campaign.
+    function setCampaign(address campaign_) external onlyFactory {
+        if (_campaignSet) revert AlreadySet();
+        campaign = campaign_;
+        _campaignSet = true;
     }
 
     // --- Harvest Reporting ---
@@ -317,16 +340,43 @@ contract HarvestManager is Initializable, ReentrancyGuard, PausableUpgradeable {
     ///         Producer therefore must deposit `usdcOwed/1e12 * 10000/(10000-feeBps)`
     ///         native USDC to fully cover claims.
     function depositUSDC(uint256 seasonId, uint256 amount) external onlyProducer nonReentrant whenNotPaused {
+        // Producer's deposit must happen INSIDE the 90-day window.
+        if (block.timestamp > seasonHarvests[seasonId].usdcDeadline) revert DepositWindowClosed();
+        _doDeposit(seasonId, amount);
+    }
+
+    /// @notice Out-of-collateral top-up entry point. Called by the owning
+    ///         Campaign during `settleSeasonShortfall` to cover holder claims
+    ///         when the producer's deposit falls short of `usdcOwed`. Same
+    ///         98/2 split as the producer's own `depositUSDC`.
+    /// @dev    Intentionally NOT `whenNotPaused` — holder-protection path
+    ///         must remain available even if the protocol pauses the
+    ///         contract for an unrelated emergency.
+    /// @dev    Intentionally does NOT enforce the producer's `usdcDeadline`
+    ///         window: the Campaign only ever calls this AFTER the deadline
+    ///         has lapsed (that's what `Campaign.settleSeasonShortfall`
+    ///         requires before it draws from collateral).
+    function depositFromCollateral(uint256 seasonId, uint256 amount) external onlyCampaign nonReentrant {
+        _doDeposit(seasonId, amount);
+    }
+
+    /// @dev    Shared deposit logic for both producer-funded
+    ///         (`depositUSDC`) and Campaign-funded (`depositFromCollateral`)
+    ///         paths. Pulls `amount` USDC from `msg.sender` and splits it
+    ///         98/2 into the season pool and the protocol fee. The
+    ///         `usdcDeadline` check is enforced by the producer-facing
+    ///         entry point only — the collateral path is post-deadline by
+    ///         construction.
+    function _doDeposit(uint256 seasonId, uint256 amount) internal {
         SeasonHarvest storage harvest = seasonHarvests[seasonId];
         if (!harvest.reported) revert NotReported();
-        if (block.timestamp > harvest.usdcDeadline) revert DepositWindowClosed();
         if (amount == 0) revert ZeroAmount();
 
         uint256 feePortion = amount * protocolFeeBps / 10_000;
         uint256 poolPortion = amount - feePortion;
 
         // Prevent over-deposit: refuse if the resulting pool would exceed usdcOwed.
-        // Producer should call `remainingDepositGross` to size their transfer.
+        // Caller should call `remainingDepositGross` to size their transfer.
         uint256 newPool18 = harvest.usdcDeposited + poolPortion * 1e12;
         if (newPool18 > harvest.usdcOwed) revert DepositExceedsOwed();
 

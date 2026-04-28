@@ -337,6 +337,9 @@ sustainableYears = initialCapital / max(0, annualCosts - annualRevenue)
 | `fundingDeadline` | any | 90 days from launch |
 | `seasonDuration` | ≥ 365 days | 365 days |
 | `minProductClaim` | any (in product units) | 5 liters |
+| `expectedYearlyReturnBps` | 1 ≤ bps ≤ 10_000 | 1000 (= 10%/year) |
+| `expectedFirstYearHarvest` | > 0 product units | 5_000 L olive oil |
+| `coverageHarvests` | 0 ≤ n ≤ harvestsToRepay | 3 (= 3 harvests pre-funded) |
 
 ### Protocol Constants (Fixed)
 
@@ -347,6 +350,91 @@ sustainableYears = initialCapital / max(0, annualCosts - annualRevenue)
 | `yieldDecay` | linear: `max - (max - min) × fill%` |
 | `penaltyCurve` | linear: `1 - elapsed/duration` |
 | `producerShare` | 30% (off-chain) |
-| `protocolFee` | 2% of reported harvest |
+| `fundingFee` | 3% of every `buy()` gross inflow (non-refundable on buyback) |
+| `harvestFee` | 2% of every `depositUSDC` (yield-side) |
 | `usdcDepositWindow` | 90 days |
 | `fractionalization` | 1,000 tokens per asset |
+
+---
+
+## 15. Producer Collateral (Pre-Paid Yield Reserve)
+
+The producer's commitment to a yearly return is converted into an enforceable
+on-chain guarantee by locking USDC in advance and letting the contract
+auto-cover holder yield shortfalls for the first `coverageHarvests` seasons.
+
+### Sizing
+
+```
+expectedYearlyUsdc   = totalRaised × expectedYearlyReturnBps / 10_000
+harvestsToRepay      = ⌈10_000 / expectedYearlyReturnBps⌉              // ceiling
+requiredCollateral   = coverageHarvests × expectedYearlyUsdc           // recommended floor
+uncoveredTail        = max(0, harvestsToRepay − coverageHarvests)
+riskScore (UI)       = uncoveredTail / harvestsToRepay                 // 0 = fully covered, 1 = no coverage
+```
+
+`totalRaised` is only finalized at activation; sizing is calculated against
+`maxCap × pricePerToken` at creation time (worst-case) and re-anchored to
+actual `totalRaised` once the campaign is Active. The producer can call
+`lockCollateral` multiple times; the recommended target updates as the UI
+re-derives `requiredCollateral` from current `totalRaised`.
+
+### Shortfall Draw
+
+For each season `s ∈ [1..coverageHarvests]`, after `usdcDeadline[s]` passes,
+anyone may call `settleSeasonShortfall(s)`:
+
+```
+remainingDepositGross[s] = HarvestManager.remainingDepositGross(s)
+                         = max(0, usdcOwed[s] - producer's deposits + 2% fee buffer)
+
+availableCollateral      = collateralLocked − collateralDrawn
+
+drawAmount               = min(remainingDepositGross[s], availableCollateral)
+
+if drawAmount > 0:
+   approve and call HarvestManager.depositUSDC(s, drawAmount) from the campaign
+   collateralDrawn += drawAmount
+   emit CollateralShortfallSettled(s, drawAmount, collateralDrawn)
+
+mark seasonShortfallSettled[s] = true
+```
+
+The path is deterministic and permissionless. Edge cases:
+
+- `remainingDepositGross[s] == 0` → no draw, only flag set. Idempotent.
+- `availableCollateral == 0` → no draw, only flag set. Holders carry the gap.
+- `availableCollateral < remainingDepositGross[s]` → partial draw, holders
+  carry the remainder.
+- `seasonId > coverageHarvests` → revert `OutOfCoverage`. The draw is only
+  active for the committed window.
+- `seasonId` already settled → revert `AlreadySettled`. Each season's shortfall
+  draws at most once.
+
+### Residual
+
+After `coverageHarvests` seasons settle, any positive
+`collateralLocked − collateralDrawn` stays in the contract. It does not
+return to the producer (one-way commitment, see Tokenomics §Producer
+Collateral). Distribution of the residual to current $CAMPAIGN holders is
+deferred (TODO v3.1 — pro-rata bonus injected as a synthetic harvest through
+HarvestManager). The locked-forever option is accepted as the conservative
+default until the distribution mechanic is audited.
+
+### Attack-surface notes (covered in `test/CollateralAttacks.t.sol`)
+
+- **Fee-on-transfer collateral**: collateral is hard-coded to `factory.usdc()`,
+  so a producer cannot lock a fee-on-transfer token to under-fund the reserve.
+- **Re-entrancy on settlement**: `settleSeasonShortfall` is `nonReentrant`; the
+  internal `depositUSDC` call is to `HarvestManager` only and does not
+  invoke external callbacks.
+- **Double-draw**: `seasonShortfallSettled[seasonId]` flag flips before any
+  external transfer.
+- **Premature settlement**: `block.timestamp > usdcDeadline[seasonId]` gate.
+- **Out-of-coverage settlement**: `seasonId > 0 && seasonId ≤ coverageHarvests`.
+- **Pause does not block holder protection**: `settleSeasonShortfall` is
+  intentionally NOT `whenNotPaused` (consistent with `unstake` and `buyback`).
+- **Producer rage-quit (never reports)**: `usdcDeadline[s]` is unset → settlement
+  reverts with `SeasonNotReported`. Mitigation is out-of-band for v3
+  (deferred to v3.1: deterministic `season-end + GRACE` deadline that lets
+  anyone trigger a default report).

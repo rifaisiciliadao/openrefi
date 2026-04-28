@@ -18,6 +18,15 @@ type Campaign @entity(immutable: false) {
   seasonDuration: BigInt!
   minProductClaim: BigInt!
 
+  # v3 — productive-asset commitments (set at creation, immutable).
+  expectedYearlyReturnBps: BigInt!
+  expectedFirstYearHarvest: BigInt!
+  coverageHarvests: BigInt!
+
+  # v3 — collateral state (mutated by CollateralLocked / CollateralShortfallSettled).
+  collateralLocked: BigInt!
+  collateralDrawn: BigInt!
+
   currentSupply: BigInt!
   totalStaked: BigInt!
   totalRaised: BigInt!
@@ -164,6 +173,10 @@ type Producer @entity(immutable: false) {
   profileURI: String
   version: BigInt!
   updatedAt: BigInt
+
+  # v3 — KYC verdict from a KYC_ADMIN_ROLE-holder. Defaults to false.
+  kyced: Boolean!
+  kycSetAt: BigInt
 }
 
 type GlobalStats @entity(immutable: false) {

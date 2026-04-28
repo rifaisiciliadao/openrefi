@@ -175,6 +175,21 @@
             "name": "minProductClaim",
             "type": "uint256",
             "internalType": "uint256"
+          },
+          {
+            "name": "expectedYearlyReturnBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "expectedFirstYearHarvest",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "coverageHarvests",
+            "type": "uint256",
+            "internalType": "uint256"
           }
         ]
       }
@@ -605,6 +620,24 @@
       },
       {
         "name": "createdAt",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "expectedYearlyReturnBps",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "expectedFirstYearHarvest",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "coverageHarvests",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

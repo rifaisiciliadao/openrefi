@@ -44,7 +44,10 @@ contract SecurityTest is Test {
                 maxCap: 100_000e18,
                 fundingDeadline: block.timestamp + 90 days,
                 seasonDuration: 365 days,
-                minProductClaim: 5e18
+                minProductClaim: 5e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
 
@@ -194,7 +197,10 @@ contract SecurityTest is Test {
                 maxCap: 10000e18,
                 fundingDeadline: block.timestamp + 30 days,
                 seasonDuration: 365 days,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
     }
@@ -214,7 +220,10 @@ contract SecurityTest is Test {
                 maxCap: 1000e18,
                 fundingDeadline: block.timestamp + 30 days,
                 seasonDuration: 365 days,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
     }
@@ -234,7 +243,10 @@ contract SecurityTest is Test {
                 maxCap: 10000e18,
                 fundingDeadline: block.timestamp - 1,
                 seasonDuration: 365 days,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
     }
@@ -254,7 +266,10 @@ contract SecurityTest is Test {
                 maxCap: 10000e18,
                 fundingDeadline: block.timestamp + 30 days,
                 seasonDuration: 1 days,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
     }

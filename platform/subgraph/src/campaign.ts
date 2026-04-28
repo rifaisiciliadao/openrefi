@@ -15,6 +15,8 @@ import {
   FundingDeadlineUpdated as FundingDeadlineUpdatedEvent,
   MinCapUpdated as MinCapUpdatedEvent,
   MaxCapUpdated as MaxCapUpdatedEvent,
+  CollateralLocked as CollateralLockedEvent,
+  CollateralShortfallSettled as CollateralShortfallSettledEvent,
 } from "../generated/templates/Campaign/Campaign";
 import {
   Campaign,
@@ -112,6 +114,22 @@ export function handleFundingFeeCollected(event: FundingFeeCollectedEvent): void
   fee.paymentToken = event.params.paymentToken;
   fee.fee = event.params.fee;
   fee.save();
+}
+
+export function handleCollateralLocked(event: CollateralLockedEvent): void {
+  const c = Campaign.load(event.address);
+  if (c == null) return;
+  c.collateralLocked = event.params.newCollateralLocked;
+  c.save();
+}
+
+export function handleCollateralShortfallSettled(
+  event: CollateralShortfallSettledEvent,
+): void {
+  const c = Campaign.load(event.address);
+  if (c == null) return;
+  c.collateralDrawn = event.params.newCollateralDrawn;
+  c.save();
 }
 
 export function handleAcceptedTokenAdded(event: AcceptedTokenAddedEvent): void {

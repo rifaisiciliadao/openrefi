@@ -44,7 +44,10 @@ contract AuditTest is Test {
                 maxCap: 100_000e18,
                 fundingDeadline: block.timestamp + 90 days,
                 seasonDuration: 365 days,
-                minProductClaim: 5e18
+                minProductClaim: 5e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
 

@@ -150,6 +150,45 @@
   },
   {
     "type": "function",
+    "name": "collateralDrawn",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "collateralLocked",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "coverageHarvests",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "currentSupply",
     "inputs": [],
     "outputs": [
@@ -188,6 +227,32 @@
     "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "expectedFirstYearHarvest",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "expectedYearlyReturnBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -280,62 +345,102 @@
   },
   {
     "type": "function",
+    "name": "harvestManager",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract HarvestManager"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "initialize",
     "inputs": [
       {
-        "name": "producer_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "factory_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "pricePerToken_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minCap_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "maxCap_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "fundingDeadline_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "seasonDuration_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "protocolFeeBps_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "fundingFeeBps_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "protocolFeeRecipient_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "sequencerUptimeFeed_",
-        "type": "address",
-        "internalType": "address"
+        "name": "p",
+        "type": "tuple",
+        "internalType": "struct Campaign.InitParams",
+        "components": [
+          {
+            "name": "producer",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "factory",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "pricePerToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minCap",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxCap",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fundingDeadline",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "seasonDuration",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "protocolFeeBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fundingFeeBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "expectedYearlyReturnBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "expectedFirstYearHarvest",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "coverageHarvests",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "protocolFeeRecipient",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "sequencerUptimeFeed",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "usdc",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
       }
     ],
     "outputs": [],
@@ -347,6 +452,47 @@
     "inputs": [
       {
         "name": "fundingFeeBps_",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "initializeV3",
+    "inputs": [
+      {
+        "name": "expectedYearlyReturnBps_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "expectedFirstYearHarvest_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "coverageHarvests_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "usdc_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "lockCollateral",
+    "inputs": [
+      {
+        "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -598,6 +744,25 @@
   },
   {
     "type": "function",
+    "name": "seasonShortfallSettled",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "sellBack",
     "inputs": [
       {
@@ -687,6 +852,19 @@
   },
   {
     "type": "function",
+    "name": "setHarvestManager",
+    "inputs": [
+      {
+        "name": "harvestManager_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setMaxCap",
     "inputs": [
       {
@@ -732,6 +910,19 @@
         "name": "yieldToken_",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "settleSeasonShortfall",
+    "inputs": [
+      {
+        "name": "seasonId",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -821,6 +1012,19 @@
     "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "usdc",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -999,6 +1203,56 @@
         "type": "uint8",
         "indexed": false,
         "internalType": "uint8"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CollateralLocked",
+    "inputs": [
+      {
+        "name": "producer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newCollateralLocked",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CollateralShortfallSettled",
+    "inputs": [
+      {
+        "name": "seasonId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountDrawn",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newCollateralDrawn",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1261,12 +1515,22 @@
   },
   {
     "type": "error",
+    "name": "AlreadySettled",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "DeadlineInPast",
     "inputs": []
   },
   {
     "type": "error",
     "name": "DeadlineNotExtended",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DeadlineNotReached",
     "inputs": []
   },
   {
@@ -1282,6 +1546,11 @@
   {
     "type": "error",
     "name": "FundingNotExpired",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidCoverageHarvests",
     "inputs": []
   },
   {
@@ -1304,6 +1573,11 @@
         "internalType": "enum Campaign.State"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "InvalidYearlyReturn",
+    "inputs": []
   },
   {
     "type": "error",
@@ -1337,6 +1611,11 @@
   },
   {
     "type": "error",
+    "name": "NoCollateralAvailable",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NoSellBackPending",
     "inputs": []
   },
@@ -1362,6 +1641,11 @@
   },
   {
     "type": "error",
+    "name": "OutOfCoverage",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "PaymentDecimalsTooHigh",
     "inputs": []
   },
@@ -1380,6 +1664,11 @@
         "internalType": "address"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "SeasonNotReported",
+    "inputs": []
   },
   {
     "type": "error",

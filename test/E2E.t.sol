@@ -71,7 +71,10 @@ contract E2ETest is Test {
                 maxCap: MAX_CAP,
                 fundingDeadline: block.timestamp + 90 days,
                 seasonDuration: SEASON_DURATION,
-                minProductClaim: MIN_PRODUCT_CLAIM
+                minProductClaim: MIN_PRODUCT_CLAIM,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
 

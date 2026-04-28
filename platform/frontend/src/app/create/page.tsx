@@ -28,6 +28,12 @@ type FormData = {
   fundingDeadline: string;
   seasonDuration: string;
   minProductClaim: string;
+  /** Producer's commitment, in % (whole or decimal). UI converts to bps. */
+  expectedYearlyReturnPct: string;
+  /** Year-one harvest in product units (e.g. "5000" for 5000 liters). */
+  expectedFirstYearHarvest: string;
+  /** Number of harvests the producer pre-funds via lockCollateral. 0 = no commitment. */
+  coverageHarvests: string;
   tokenSymbol: string;
   yieldName: string;
   yieldSymbol: string;
@@ -69,6 +75,9 @@ export default function CreateCampaign() {
     fundingDeadline: "",
     seasonDuration: "365",
     minProductClaim: "5",
+    expectedYearlyReturnPct: "10",
+    expectedFirstYearHarvest: "1000",
+    coverageHarvests: "0",
     tokenSymbol: "OLIVE",
     yieldName: "Olive Oil",
     yieldSymbol: "OIL",
@@ -183,6 +192,16 @@ export default function CreateCampaign() {
       const deadline = Math.floor(
         new Date(form.fundingDeadline).getTime() / 1000,
       );
+      // % → bps. Math.round ensures clean integer; UI validation upstream
+      // bounds 0 < pct ≤ 100. Floor to non-negative.
+      const yearlyReturnBps = Math.max(
+        1,
+        Math.min(10_000, Math.round(Number(form.expectedYearlyReturnPct) * 100)),
+      );
+      const firstYearHarvest =
+        BigInt(form.expectedFirstYearHarvest || "0") * 10n ** 18n;
+      const coverage = BigInt(form.coverageHarvests || "0");
+
       const createHash = await writeContractAsync({
         address: factory,
         abi: abis.CampaignFactory as never,
@@ -200,6 +219,9 @@ export default function CreateCampaign() {
             fundingDeadline: BigInt(deadline),
             seasonDuration: BigInt(Number(form.seasonDuration) * 86400),
             minProductClaim: BigInt(form.minProductClaim) * 10n ** 18n,
+            expectedYearlyReturnBps: BigInt(yearlyReturnBps),
+            expectedFirstYearHarvest: firstYearHarvest,
+            coverageHarvests: coverage,
           },
         ],
       });
@@ -615,6 +637,63 @@ export default function CreateCampaign() {
                   />
                 </Field>
               </div>
+
+              {/* v3 — yearly return + harvest commitment + collateral coverage */}
+              <div className="grid grid-cols-2 gap-6">
+                <Field
+                  label={t("step2.expectedYearlyReturn")}
+                  hint={t("step2.expectedYearlyReturnHint")}
+                >
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.01"
+                      max="100"
+                      value={form.expectedYearlyReturnPct}
+                      onChange={(e) =>
+                        update("expectedYearlyReturnPct", e.target.value)
+                      }
+                      className="input pr-10"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-on-surface-variant">
+                      %
+                    </span>
+                  </div>
+                </Field>
+                <Field
+                  label={t("step2.expectedFirstYearHarvest")}
+                  hint={t("step2.expectedFirstYearHarvestHint")}
+                >
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.expectedFirstYearHarvest}
+                    onChange={(e) =>
+                      update("expectedFirstYearHarvest", e.target.value)
+                    }
+                    className="input"
+                  />
+                </Field>
+              </div>
+
+              <Field
+                label={t("step2.coverageHarvests")}
+                hint={t("step2.coverageHarvestsHint", {
+                  payback: form.expectedYearlyReturnPct
+                    ? Math.ceil(100 / Number(form.expectedYearlyReturnPct))
+                    : "—",
+                })}
+              >
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.coverageHarvests}
+                  onChange={(e) => update("coverageHarvests", e.target.value)}
+                  className="input"
+                />
+              </Field>
             </div>
           </>
         )}

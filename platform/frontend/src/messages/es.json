@@ -101,7 +101,13 @@
       "maxCapHint": "= {total} tokens (1 árbol = 1.000 tokens)",
       "deadline": "Plazo de Financiación",
       "minProduct": "Min Product Claim",
-      "minProductHint": "Unidades mínimas para retiro físico (ej. litros)"
+      "minProductHint": "Unidades mínimas para retiro físico (ej. litros)",
+      "expectedYearlyReturn": "Rendimiento Anual Esperado",
+      "expectedYearlyReturnHint": "Tu compromiso de rendimiento anual, en %. Los inversores lo usan para el horizonte de repago.",
+      "expectedFirstYearHarvest": "Cosecha Primer Año",
+      "expectedFirstYearHarvestHint": "Objetivo de producto año uno (ej. litros de aceite)",
+      "coverageHarvests": "Cosechas Cubiertas",
+      "coverageHarvestsHint": "Cosechas pre-financiadas como garantía. Repago ≈ {payback} cosechas a este rendimiento."
     },
     "step3": {
       "title": "Tokens Aceptados",

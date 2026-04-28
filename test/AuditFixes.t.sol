@@ -59,7 +59,10 @@ contract AuditFixesTest is Test {
                 maxCap: 1_000_000e18,
                 fundingDeadline: block.timestamp + 90 days,
                 seasonDuration: 365 days,
-                minProductClaim: 5e18
+                minProductClaim: 5e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
 
@@ -168,7 +171,10 @@ contract AuditFixesTest is Test {
                 maxCap: 10_000e18,
                 fundingDeadline: block.timestamp + 30 days,
                 seasonDuration: 180 days,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
         assertEq(factory.getCampaignCount(), 2);
@@ -321,7 +327,10 @@ contract AuditFixesTest is Test {
                 maxCap: 10_000e18,
                 fundingDeadline: block.timestamp + 30 days,
                 seasonDuration: 180 days,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
     }
@@ -347,7 +356,10 @@ contract AuditFixesTest is Test {
                 maxCap: 100_000e18,
                 fundingDeadline: block.timestamp + 30 days,
                 seasonDuration: 180 days,
-                minProductClaim: 1e18
+                minProductClaim: 1e18,
+                expectedYearlyReturnBps: 1000,
+                expectedFirstYearHarvest: 1e18,
+                coverageHarvests: 0
             })
         );
         (address c,,,,,,) = f.campaigns(0);
