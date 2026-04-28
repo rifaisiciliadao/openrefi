@@ -62,6 +62,16 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
     /// @dev    Added in V2 — appended to preserve storage layout.
     uint256 public minSeasonDuration;
 
+    /// @notice Set of taken `tokenName` slugs, keccak-keyed.
+    ///         Populated on every successful `createCampaign` and checked on entry —
+    ///         prevents duplicate campaign names cluttering the discovery list.
+    ///         Strict-equal hash (no normalisation) so producers can still pick
+    ///         "Olive Sicily" and "olive sicily" as distinct, but they obviously
+    ///         shouldn't. The frontend trims + case-folds for UX symmetry; the
+    ///         contract is the hard guarantee.
+    /// @dev    Appended to preserve storage layout.
+    mapping(bytes32 => bool) public nameTaken;
+
     // --- Events ---
 
     event CampaignCreated(
@@ -162,9 +172,19 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
         require(params.expectedAnnualHarvestUsd > 0, "Zero expected annual harvest USD");
         require(params.expectedAnnualHarvest > 0, "Zero expected annual harvest qty");
         require(params.firstHarvestYear > 0, "Zero firstHarvestYear");
+        require(bytes(params.tokenName).length > 0, "Empty tokenName");
         // coverageHarvests is allowed to be 0 (= producer publishes targets but
         // doesn't pre-fund any seasons). Upper bound is harvestsToRepay; we don't
         // enforce on-chain (frontend warns) — over-coverage just over-locks USDC.
+
+        // Hard-block duplicate campaign names. Frontend has its own
+        // pre-flight against the subgraph for instant feedback (no wasted
+        // signature) but the contract is the source of truth — direct
+        // factory.createCampaign callers and stuck-popup multi-fire bugs
+        // both bounce here.
+        bytes32 nameHash = keccak256(bytes(params.tokenName));
+        require(!nameTaken[nameHash], "tokenName already taken");
+        nameTaken[nameHash] = true;
 
         // 1. Campaign (no cross-contract deps at init).
         address campaignAddr = address(

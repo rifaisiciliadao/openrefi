@@ -182,6 +182,80 @@ contract AuditFixesTest is Test {
         assertEq(factory.getCampaignCount(), 2);
     }
 
+    function test_duplicateName_reverts() public {
+        // setUp() already deployed one campaign with tokenName "Olive".
+        // A second factory.createCampaign with the same name from any caller
+        // (same producer or different) must revert. Discovery-list hygiene.
+        vm.prank(bob);
+        vm.expectRevert(bytes("tokenName already taken"));
+        factory.createCampaign(
+            CampaignFactory.CreateCampaignParams({
+                producer: bob,
+                tokenName: "Olive",
+                tokenSymbol: "OLIVE2",
+                yieldName: "Olive Yield",
+                yieldSymbol: "oY2",
+                pricePerToken: 0.1e18,
+                minCap: 1_000e18,
+                maxCap: 10_000e18,
+                fundingDeadline: block.timestamp + 30 days,
+                seasonDuration: 180 days,
+                minProductClaim: 1e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                expectedAnnualHarvest: 1_000e18,
+                firstHarvestYear: 2030,
+                coverageHarvests: 0
+            })
+        );
+
+        // A different name from the same producer goes through.
+        vm.prank(producer);
+        factory.createCampaign(
+            CampaignFactory.CreateCampaignParams({
+                producer: producer,
+                tokenName: "Olive Phase 2",
+                tokenSymbol: "OLIVE2",
+                yieldName: "Olive Yield",
+                yieldSymbol: "oY2",
+                pricePerToken: 0.1e18,
+                minCap: 1_000e18,
+                maxCap: 10_000e18,
+                fundingDeadline: block.timestamp + 30 days,
+                seasonDuration: 180 days,
+                minProductClaim: 1e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                expectedAnnualHarvest: 1_000e18,
+                firstHarvestYear: 2030,
+                coverageHarvests: 0
+            })
+        );
+        assertEq(factory.getCampaignCount(), 2);
+    }
+
+    function test_emptyName_reverts() public {
+        vm.prank(producer);
+        vm.expectRevert(bytes("Empty tokenName"));
+        factory.createCampaign(
+            CampaignFactory.CreateCampaignParams({
+                producer: producer,
+                tokenName: "",
+                tokenSymbol: "X",
+                yieldName: "x",
+                yieldSymbol: "x",
+                pricePerToken: 0.1e18,
+                minCap: 1_000e18,
+                maxCap: 10_000e18,
+                fundingDeadline: block.timestamp + 30 days,
+                seasonDuration: 180 days,
+                minProductClaim: 1e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                expectedAnnualHarvest: 1_000e18,
+                firstHarvestYear: 2030,
+                coverageHarvests: 0
+            })
+        );
+    }
+
     // ===================================================================
     // M-07: cap per-user open sell-back orders.
     // ===================================================================
