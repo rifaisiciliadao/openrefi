@@ -200,6 +200,7 @@
       "errorImage": "Sube una imagen de portada",
       "errorDeadline": "Configura el plazo de financiación",
       "errorInsufficientBalance": "No hay suficientes mUSDC en tu wallet para bloquear {required} USDC de collateral (tienes {actual}). Minta más desde el faucet, baja el importe en el paso 5 o salta el bloqueo y añádelo después desde la pestaña Gestión.",
+      "errorDuplicateName": "Ya existe una campaña llamada \"{name}\". Elige otro nombre en el paso 1 — los duplicados hacen confusa la lista de discovery.",
       "collateralApproveSig": "Firma la aprobación de USDC para el bloqueo de collateral…",
       "collateralApproveChain": "Confirmando aprobación USDC en cadena…",
       "collateralLockSig": "Firma la transacción lockCollateral…",

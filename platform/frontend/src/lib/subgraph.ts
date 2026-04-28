@@ -660,3 +660,41 @@ export function useSubgraphMeta() {
     refetchInterval: 30_000,
   });
 }
+
+/**
+ * Imperative pre-deploy guard for /create. Returns the address of an
+ * existing campaign whose off-chain metadata.name (case-insensitive,
+ * whitespace-trimmed) matches the candidate, or `null` if the slot is
+ * free. Walks every campaign with a metadataURI; off-chain JSON fetches
+ * run in parallel. Designed to be cheap on the demo (1–10 campaigns)
+ * without requiring a subgraph schema change to index `tokenName`.
+ *
+ * Note: campaigns without metadataURI (LinkMetadataBanner state) are
+ * ignored — there's no name to compare against. They'll claim their
+ * name once the producer signs setMetadata; a same-name attempt during
+ * that window will succeed, but that's a vanishingly small race.
+ */
+export async function findCampaignByName(
+  candidate: string,
+): Promise<string | null> {
+  const target = candidate.trim().toLowerCase();
+  if (!target) return null;
+  const data = await gql<{
+    campaigns: Array<{ id: string; metadataURI: string | null }>;
+  }>("{ campaigns { id metadataURI } }");
+  const withMeta = data.campaigns.filter((c) => !!c.metadataURI);
+  const matches = await Promise.all(
+    withMeta.map(async (c) => {
+      try {
+        const res = await fetch(c.metadataURI!, { cache: "no-store" });
+        if (!res.ok) return null;
+        const j = (await res.json()) as { name?: string };
+        const name = (j.name ?? "").trim().toLowerCase();
+        return name === target ? c.id : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return matches.find((m) => m !== null) ?? null;
+}

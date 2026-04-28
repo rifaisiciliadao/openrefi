@@ -20,6 +20,7 @@ import {
   resolveTokenAddress,
 } from "@/contracts/tokens";
 import { uploadImage, uploadMetadata } from "@/lib/api";
+import { findCampaignByName } from "@/lib/subgraph";
 import { waitForTx } from "@/lib/waitForTx";
 import { productUnitLabel } from "@/lib/productUnit";
 import { useTxNotify } from "@/lib/useTxNotify";
@@ -277,6 +278,30 @@ export default function CreateCampaign() {
     if (!form.fundingDeadline) {
       setStatus({ kind: "error", error: t("status.errorDeadline") });
       return;
+    }
+
+    // Pre-flight name uniqueness — kill duplicate-name campaigns before
+    // we burn any signatures. We had a regression where a producer
+    // double-clicked through a stuck wallet popup and ended up with 3
+    // identical "Olive IGP Sicily" campaigns; the discovery list became
+    // useless. Off-chain check (subgraph + metadata JSON), so this is
+    // best-effort — bypassable by raw factory.createCampaign callers,
+    // but the demo flow goes through /create so it's enough.
+    try {
+      const collision = await findCampaignByName(form.name);
+      if (collision) {
+        setStatus({
+          kind: "error",
+          error: t("status.errorDuplicateName", { name: form.name }),
+        });
+        return;
+      }
+    } catch (err) {
+      // If the subgraph is briefly unreachable we don't want to block a
+      // legitimate first deploy. Log + continue rather than hard-fail —
+      // worst case the producer races with the empty-state and we get
+      // one duplicate, vs. nothing-deployable when the subgraph hiccups.
+      console.warn("findCampaignByName failed, continuing:", err);
     }
 
     // Pre-flight: if the producer asked to lock collateral right after

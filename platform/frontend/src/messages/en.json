@@ -200,6 +200,7 @@
       "errorImage": "Upload a cover image",
       "errorDeadline": "Set the funding deadline",
       "errorInsufficientBalance": "Not enough mUSDC in your wallet to lock {required} USDC of collateral (you have {actual}). Mint more from the faucet, lower the collateral amount on step 5, or skip the lock and add it later from the campaign manage tab.",
+      "errorDuplicateName": "A campaign called \"{name}\" already exists. Pick a different name on step 1 — duplicates make the discovery list confusing.",
       "collateralApproveSig": "Sign USDC approval for collateral lock…",
       "collateralApproveChain": "Confirming USDC approval on-chain…",
       "collateralLockSig": "Sign lockCollateral transaction…",

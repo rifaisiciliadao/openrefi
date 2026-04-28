@@ -200,6 +200,7 @@
       "errorImage": "Carica un'immagine di copertina",
       "errorDeadline": "Imposta la scadenza di funding",
       "errorInsufficientBalance": "mUSDC nel wallet insufficienti per bloccare {required} USDC di collateral (hai {actual}). Minta altri token dal faucet, abbassa l'importo nello step 5, o salta il lock e aggiungilo dopo dalla tab Gestione della campagna.",
+      "errorDuplicateName": "Esiste già una campagna chiamata \"{name}\". Scegli un nome diverso nello step 1 — i duplicati rendono confusa la lista di discovery.",
       "collateralApproveSig": "Firma l'approvazione USDC per il lock del collateral…",
       "collateralApproveChain": "Conferma approvazione USDC on-chain…",
       "collateralLockSig": "Firma la transazione lockCollateral…",

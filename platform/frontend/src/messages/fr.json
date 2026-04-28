@@ -200,6 +200,7 @@
       "errorImage": "Charge une image de couverture",
       "errorDeadline": "Configure l'échéance de funding",
       "errorInsufficientBalance": "mUSDC insuffisants dans le wallet pour verrouiller {required} USDC de collateral (tu as {actual}). Minte d'autres tokens depuis le faucet, baisse le montant à l'étape 5, ou passe le verrouillage et ajoute-le plus tard depuis l'onglet Gestion.",
+      "errorDuplicateName": "Une campagne nommée \"{name}\" existe déjà. Choisis un autre nom à l'étape 1 — les doublons rendent la liste de discovery confuse.",
       "collateralApproveSig": "Signe l'approbation USDC pour le verrouillage du collateral…",
       "collateralApproveChain": "Confirmation de l'approbation USDC on-chain…",
       "collateralLockSig": "Signe la transaction lockCollateral…",
