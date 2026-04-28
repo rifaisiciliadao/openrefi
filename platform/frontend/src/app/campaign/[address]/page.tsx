@@ -23,6 +23,7 @@ import { BuyPanel } from "@/components/BuyPanel";
 import { StakingPanel } from "@/components/StakingPanel";
 import { HarvestPanel } from "@/components/HarvestPanel";
 import { ProducerManagePanel } from "@/components/ProducerManagePanel";
+import { ProductiveAssetCard } from "@/components/ProductiveAssetCard";
 import { RefundPanel, TriggerBuybackCta } from "@/components/RefundPanel";
 import { SellBackPanel } from "@/components/SellBackPanel";
 import { InvestorList } from "@/components/InvestorList";
@@ -322,6 +323,16 @@ export default function CampaignDetail({
               sgCampaign ? BigInt(sgCampaign.currentYieldRate) : 0n
             }
           />
+          {sgCampaign && (
+            <ProductiveAssetCard
+              yearlyReturnBps={BigInt(sgCampaign.expectedYearlyReturnBps ?? "0")}
+              firstYearHarvest18={BigInt(sgCampaign.expectedFirstYearHarvest ?? "0")}
+              coverageHarvests={BigInt(sgCampaign.coverageHarvests ?? "0")}
+              collateralLocked6={BigInt(sgCampaign.collateralLocked ?? "0")}
+              collateralDrawn6={BigInt(sgCampaign.collateralDrawn ?? "0")}
+              productSymbol="units"
+            />
+          )}
           <TokensAcceptedCard
             campaignAddress={isValidAddress ? campaignAddress : undefined}
           />

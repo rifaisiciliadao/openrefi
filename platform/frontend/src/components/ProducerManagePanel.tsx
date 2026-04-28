@@ -117,6 +117,16 @@ export function ProducerManagePanel({
 
       <section className="mt-8">
         <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-4">
+          Producer Collateral
+        </h3>
+        <CollateralSection
+          campaignAddress={campaignAddress}
+          currentState={currentState}
+        />
+      </section>
+
+      <section className="mt-8">
+        <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-4">
           {t("acceptedTokensTitle")}
         </h3>
         <AcceptedTokensManager campaignAddress={campaignAddress} />
@@ -1610,6 +1620,188 @@ function ParamField({
       </div>
       {children}
       <p className="text-[11px] text-on-surface-variant mt-2">{hint}</p>
+    </div>
+  );
+}
+
+/**
+ * CollateralSection — producer-only widget to lock USDC into the pre-paid
+ * yield reserve. State guards mirror Campaign.lockCollateral: Funding or
+ * Active only; never Buyback / Ended. There is no withdraw path on chain.
+ */
+function CollateralSection({
+  campaignAddress,
+  currentState,
+}: {
+  campaignAddress: Address;
+  currentState: number;
+}) {
+  const usdcAddress = getAddresses(CHAIN_ID).usdc as Address;
+  const { writeContractAsync } = useWriteContract();
+  const notify = useTxNotify();
+  const [amount, setAmount] = useState("");
+  const [phase, setPhase] = useState<
+    "idle" | "approving-sig" | "approving-chain" | "locking-sig" | "locking-chain"
+  >("idle");
+
+  const { data: campaignReads, refetch: refetchCampaign } = useReadContracts({
+    contracts: [
+      {
+        address: campaignAddress,
+        abi: campaignAbi,
+        functionName: "collateralLocked",
+      },
+      {
+        address: campaignAddress,
+        abi: campaignAbi,
+        functionName: "collateralDrawn",
+      },
+      {
+        address: campaignAddress,
+        abi: campaignAbi,
+        functionName: "coverageHarvests",
+      },
+      {
+        address: campaignAddress,
+        abi: campaignAbi,
+        functionName: "expectedYearlyReturnBps",
+      },
+    ],
+  });
+
+  const locked6 = (campaignReads?.[0]?.result as bigint | undefined) ?? 0n;
+  const drawn6 = (campaignReads?.[1]?.result as bigint | undefined) ?? 0n;
+  const coverage = (campaignReads?.[2]?.result as bigint | undefined) ?? 0n;
+  const yearlyBps = (campaignReads?.[3]?.result as bigint | undefined) ?? 0n;
+
+  const lockAllowed = currentState === 0 || currentState === 1; // Funding | Active
+  const parsed = (() => {
+    if (!amount) return 0n;
+    try {
+      return parseUnits(amount, USDC_DECIMALS);
+    } catch {
+      return 0n;
+    }
+  })();
+
+  const handleLock = async () => {
+    if (!lockAllowed || parsed === 0n) return;
+    try {
+      // Approve full amount to the campaign so safeTransferFrom inside lockCollateral works.
+      setPhase("approving-sig");
+      const approveHash = await writeContractAsync({
+        address: usdcAddress,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [campaignAddress, parsed],
+      });
+      setPhase("approving-chain");
+      const r1 = await waitForTx(approveHash);
+      if (r1.status !== "success") throw new Error("approve reverted");
+
+      setPhase("locking-sig");
+      const lockHash = await writeContractAsync({
+        address: campaignAddress,
+        abi: campaignAbi,
+        functionName: "lockCollateral",
+        args: [parsed],
+      });
+      setPhase("locking-chain");
+      const r2 = await waitForTx(lockHash);
+      if (r2.status !== "success") throw new Error("lockCollateral reverted");
+
+      notify.success("Collateral locked", lockHash);
+      setAmount("");
+      await refetchCampaign();
+      setPhase("idle");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!/user (rejected|denied)/i.test(msg)) {
+        notify.error("Lock collateral failed", err);
+      }
+      setPhase("idle");
+    }
+  };
+
+  const lockedNum = Number(locked6) / 1e6;
+  const drawnNum = Number(drawn6) / 1e6;
+  const freeNum = Math.max(0, lockedNum - drawnNum);
+  const harvestsToRepay =
+    yearlyBps > 0n ? Math.ceil(10_000 / Number(yearlyBps)) : null;
+
+  const inFlight = phase !== "idle";
+
+  return (
+    <div className="rounded-xl border border-outline-variant/15 p-4 space-y-4 bg-surface-container-lowest">
+      <p className="text-xs text-on-surface-variant">
+        Pre-fund the first {coverage.toString()}{" "}
+        {Number(coverage) === 1 ? "harvest" : "harvests"} of holder yield as a
+        guarantee. The lock is one-way — there is no withdrawal path on chain.
+        Anyone can call <code>settleSeasonShortfall(seasonId)</code> after each
+        season's <code>usdcDeadline</code> to draw from the reserve.
+        {harvestsToRepay !== null && (
+          <>
+            {" "}Investor-side payback at this yield ≈ {harvestsToRepay} harvests.
+          </>
+        )}
+      </p>
+
+      <div className="grid grid-cols-3 gap-3">
+        <CollateralStat label="Locked" value={`$${lockedNum.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
+        <CollateralStat label="Drawn" value={`$${drawnNum.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
+        <CollateralStat label="Free" value={`$${freeNum.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
+      </div>
+
+      <div className="flex gap-3 items-end">
+        <label className="flex-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
+            Add USDC
+          </span>
+          <div className="relative mt-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-on-surface-variant">
+              $
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="100"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              disabled={!lockAllowed || inFlight}
+              className="input pl-7"
+              placeholder="0"
+            />
+          </div>
+        </label>
+        <button
+          onClick={handleLock}
+          disabled={!lockAllowed || inFlight || parsed === 0n}
+          className="bg-primary text-on-primary rounded-xl h-12 px-6 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {inFlight && <Spinner size={14} />}
+          {phase === "approving-sig" || phase === "approving-chain"
+            ? "Approving…"
+            : phase === "locking-sig" || phase === "locking-chain"
+              ? "Locking…"
+              : "Lock"}
+        </button>
+      </div>
+      {!lockAllowed && (
+        <p className="text-[11px] text-error">
+          Collateral can only be locked while the campaign is Funding or Active.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function CollateralStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
+        {label}
+      </div>
+      <div className="text-sm font-bold text-on-surface">{value}</div>
     </div>
   );
 }

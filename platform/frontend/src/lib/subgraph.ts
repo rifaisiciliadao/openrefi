@@ -32,6 +32,11 @@ export interface SubgraphCampaign {
   fundingDeadline: string;
   seasonDuration: string;
   minProductClaim: string;
+  expectedYearlyReturnBps: string;
+  expectedFirstYearHarvest: string;
+  coverageHarvests: string;
+  collateralLocked: string;
+  collateralDrawn: string;
   currentSupply: string;
   totalStaked: string;
   totalRaised: string;
@@ -58,6 +63,11 @@ const CAMPAIGN_FIELDS = `
   fundingDeadline
   seasonDuration
   minProductClaim
+  expectedYearlyReturnBps
+  expectedFirstYearHarvest
+  coverageHarvests
+  collateralLocked
+  collateralDrawn
   currentSupply
   totalStaked
   totalRaised
