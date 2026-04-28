@@ -20,6 +20,9 @@ docs/
 # Local planning docs (not for upstream)
 PLAN.md
 
+# Graphics scratchpad (decks, social kit, design canvases — never upstream)
+graphics/
+
 # Platform subgraph build outputs
 platform/subgraph/build/
 platform/subgraph/generated/

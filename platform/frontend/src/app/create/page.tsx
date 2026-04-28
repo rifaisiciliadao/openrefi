@@ -14,8 +14,25 @@ import {
 import { uploadImage, uploadMetadata } from "@/lib/api";
 import { waitForTx } from "@/lib/waitForTx";
 import { productUnitLabel } from "@/lib/productUnit";
+import { useTxNotify } from "@/lib/useTxNotify";
+import { Spinner } from "@/components/Spinner";
 
 const USDC_DECIMALS = 6;
+const MOCK_USDC_MINT_AMOUNT = 10_000n * 10n ** BigInt(USDC_DECIMALS); // 10,000 mUSDC
+
+/** MockUSDC exposes a permissionless mint for testers — testnet faucet. */
+const mockUsdcMintAbi = [
+  {
+    type: "function",
+    name: "mint",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+] as const;
 import Link from "next/link";
 import { txUrl } from "@/lib/explorer";
 
@@ -751,8 +768,11 @@ export default function CreateCampaign() {
                   hint={t("step2.expectedAnnualHarvestUsdHint")}
                 >
                   <div className="relative">
-                    {/* Left-side $ adornment — same height as input, neat separator */}
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-4 pr-3 border-r border-outline-variant/15 text-sm font-bold text-on-surface-variant pointer-events-none">
+                    {/* Fixed-width adornment box keeps the divider line at a
+                        predictable x-coord regardless of font/zoom — was
+                        content-driven before and started crowding the digits
+                        on some renderings. */}
+                    <span className="absolute inset-y-0 left-0 w-12 flex items-center justify-center border-r border-outline-variant/15 text-sm font-bold text-on-surface-variant pointer-events-none">
                       $
                     </span>
                     <input
@@ -774,10 +794,10 @@ export default function CreateCampaign() {
                         update("expectedAnnualHarvestUsd", raw);
                       }}
                       placeholder="5,000"
-                      className="input pl-12 pr-14 font-semibold tabular-nums"
+                      className="input pl-16 pr-16 font-semibold tabular-nums"
                     />
-                    {/* Right-side /yr suffix */}
-                    <span className="absolute inset-y-0 right-0 flex items-center pr-4 pl-3 border-l border-outline-variant/15 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant pointer-events-none">
+                    {/* Right-side /yr suffix — also fixed-width for symmetry. */}
+                    <span className="absolute inset-y-0 right-0 w-14 flex items-center justify-center border-l border-outline-variant/15 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant pointer-events-none">
                       / yr
                     </span>
                   </div>
@@ -1598,6 +1618,8 @@ function CollateralStep({
   onChange: (v: string) => void;
 }) {
   const t = useTranslations("create.step4");
+  const tBuy = useTranslations("detail.buy");
+  const tTx = useTranslations("tx");
   const annual = Number(annualHarvestUsd || "0");
   const cov = Number(coverageHarvests || "0");
   const recommended = annual * cov;
@@ -1606,6 +1628,35 @@ function CollateralStep({
   const maxRaise =
     Number(maxCapTrees || "0") * 1000 * Number(pricePerToken || "0");
   const yieldPct = annual > 0 && maxRaise > 0 ? (annual / maxRaise) * 100 : 0;
+
+  const { address: user } = useAccount();
+  const { writeContractAsync } = useWriteContract();
+  const notify = useTxNotify();
+  const [minting, setMinting] = useState(false);
+
+  const handleMint = async () => {
+    if (!user) return;
+    try {
+      setMinting(true);
+      const { usdc } = getAddresses();
+      const hash = await writeContractAsync({
+        address: usdc,
+        abi: mockUsdcMintAbi,
+        functionName: "mint",
+        args: [user, MOCK_USDC_MINT_AMOUNT],
+      });
+      const r = await waitForTx(hash);
+      if (r.status !== "success") throw new Error("mint reverted");
+      notify.success(tTx("mintConfirmed"), hash);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!/user (rejected|denied)/i.test(msg)) {
+        notify.error(tTx("mintFailed"), err);
+      }
+    } finally {
+      setMinting(false);
+    }
+  };
 
   const fmt$ = (n: number) =>
     `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
@@ -1639,22 +1690,34 @@ function CollateralStep({
         </div>
       )}
 
-      <Field
-        label={t("amount")}
-        hint={
-          recommended > 0
-            ? t("amountHint", {
-                recommended: fmt$(recommended),
-                annual: annual.toLocaleString(),
-                coverage: cov.toString(),
-              })
-            : t("amountHintNoCoverage")
-        }
-      >
+      <div>
+        <div className="flex justify-between items-center mb-2 gap-2">
+          <label className="block text-sm font-semibold text-on-surface">
+            {t("amount")}
+          </label>
+          {/* Testnet faucet — mints 10k mUSDC directly from this step so the
+              producer can fund the lockCollateral tx without leaving /create.
+              On mainnet getAddresses().usdc is the real USDC and the call
+              would revert (no public mint), so the button surfaces only when
+              the chain is the Sepolia mock. */}
+          {user && CHAIN_ID === 84532 && (
+            <button
+              type="button"
+              onClick={handleMint}
+              disabled={minting}
+              title={tBuy("mintHint")}
+              className="text-xs font-semibold text-primary hover:bg-primary-fixed/30 px-2 py-1 rounded-full transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              {minting ? <Spinner size={12} /> : <span>+</span>}
+              {tBuy("mint", { amount: "10,000" })}
+            </button>
+          )}
+        </div>
         <div className="relative">
-          {/* $ adornment + USDC suffix mirrors the styled currency input
-              from step 2 — full-height with border-rule dividers. */}
-          <span className="absolute inset-y-0 left-0 flex items-center pl-4 pr-3 border-r border-outline-variant/15 text-sm font-bold text-on-surface-variant pointer-events-none">
+          {/* Fixed-width adornments mirror the harvest USD input on step 2;
+              avoids the overlap that the content-driven span had on some
+              renderings. */}
+          <span className="absolute inset-y-0 left-0 w-12 flex items-center justify-center border-r border-outline-variant/15 text-sm font-bold text-on-surface-variant pointer-events-none">
             $
           </span>
           <input
@@ -1671,13 +1734,22 @@ function CollateralStep({
               onChange(raw || "0");
             }}
             placeholder="0"
-            className="input pl-12 pr-20 font-semibold tabular-nums"
+            className="input pl-16 pr-20 font-semibold tabular-nums"
           />
-          <span className="absolute inset-y-0 right-0 flex items-center pr-4 pl-3 border-l border-outline-variant/15 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant pointer-events-none">
+          <span className="absolute inset-y-0 right-0 w-16 flex items-center justify-center border-l border-outline-variant/15 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant pointer-events-none">
             USDC
           </span>
         </div>
-      </Field>
+        <p className="text-xs text-on-surface-variant mt-1.5">
+          {recommended > 0
+            ? t("amountHint", {
+                recommended: fmt$(recommended),
+                annual: annual.toLocaleString(),
+                coverage: cov.toString(),
+              })
+            : t("amountHintNoCoverage")}
+        </p>
+      </div>
 
       {/* Quick-pick chip for the recommended amount — one-click commitment. */}
       {recommended > 0 && (
