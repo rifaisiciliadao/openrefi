@@ -64,8 +64,8 @@ contract CollateralHardeningTest is Test {
                 fundingDeadline: block.timestamp + 90 days,
                 seasonDuration: SEASON_DURATION,
                 minProductClaim: 5e18,
-                expectedYearlyReturnBps: 1000,
-                expectedFirstYearHarvest: 5_000e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                firstHarvestYear: 2030,
                 coverageHarvests: COVERAGE
             })
         );
@@ -270,8 +270,8 @@ contract CollateralHardeningTest is Test {
         assertEq(campaign.fundingFeeBps(), 300, "v2: fundingFeeBps appended slot stable");
 
         // v3 fields (appended)
-        assertEq(campaign.expectedYearlyReturnBps(), 1000, "v3: yearlyReturnBps slot");
-        assertEq(campaign.expectedFirstYearHarvest(), 5_000e18, "v3: firstYearHarvest slot");
+        assertEq(campaign.expectedAnnualHarvestUsd(), 5_000e18, "v3: expectedAnnualHarvestUsd slot");
+        assertEq(campaign.firstHarvestYear(), 2030, "v3: firstHarvestYear slot");
         assertEq(campaign.coverageHarvests(), COVERAGE, "v3: coverageHarvests slot");
         assertEq(address(campaign.usdc()), address(usdc), "v3: usdc slot");
         assertEq(campaign.collateralLocked(), 0, "v3: collateralLocked initial 0");

@@ -246,9 +246,14 @@ export default function CampaignDetail({
                     }
                     maxCap={(cd?.[3]?.result as bigint | undefined) ?? 0n}
                     currentState={stateIdx}
-                    expectedYearlyReturnBps={
+                    annualHarvestUsd18={
                       sgCampaign
-                        ? BigInt(sgCampaign.expectedYearlyReturnBps ?? "0")
+                        ? BigInt(sgCampaign.expectedAnnualHarvestUsd ?? "0")
+                        : 0n
+                    }
+                    firstHarvestYear={
+                      sgCampaign
+                        ? BigInt(sgCampaign.firstHarvestYear ?? "0")
                         : 0n
                     }
                   />
@@ -330,12 +335,13 @@ export default function CampaignDetail({
           />
           {sgCampaign && (
             <ProductiveAssetCard
-              yearlyReturnBps={BigInt(sgCampaign.expectedYearlyReturnBps ?? "0")}
-              firstYearHarvest18={BigInt(sgCampaign.expectedFirstYearHarvest ?? "0")}
+              annualHarvestUsd18={BigInt(sgCampaign.expectedAnnualHarvestUsd ?? "0")}
+              firstHarvestYear={BigInt(sgCampaign.firstHarvestYear ?? "0")}
               coverageHarvests={BigInt(sgCampaign.coverageHarvests ?? "0")}
+              maxCap18={(cd?.[3]?.result as bigint | undefined) ?? 0n}
+              pricePerToken18={pricePerToken}
               collateralLocked6={BigInt(sgCampaign.collateralLocked ?? "0")}
               collateralDrawn6={BigInt(sgCampaign.collateralDrawn ?? "0")}
-              productSymbol="units"
             />
           )}
           <TokensAcceptedCard

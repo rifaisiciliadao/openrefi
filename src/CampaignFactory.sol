@@ -78,8 +78,8 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
         uint256 seasonDuration,
         uint256 minProductClaim,
         uint256 createdAt,
-        uint256 expectedYearlyReturnBps,
-        uint256 expectedFirstYearHarvest,
+        uint256 expectedAnnualHarvestUsd,
+        uint256 firstHarvestYear,
         uint256 coverageHarvests
     );
 
@@ -103,8 +103,8 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
         uint256 minProductClaim;
         // v3 — productive-asset metadata + collateral coverage commitment.
         // Set once at creation; immutable for the life of the campaign.
-        uint256 expectedYearlyReturnBps;     // 1..10_000 (bps)
-        uint256 expectedFirstYearHarvest;    // product units, 1e18 internal scale
+        uint256 expectedAnnualHarvestUsd;    // USD/yr, 1e18 (e.g. 5_000e18 = $5,000/yr)
+        uint256 firstHarvestYear;            // calendar year (e.g. 2030)
         uint256 coverageHarvests;            // 0 ≤ n; recommended ≤ harvestsToRepay
     }
 
@@ -157,11 +157,8 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
         require(params.minCap <= params.maxCap, "minCap > maxCap");
         require(params.fundingDeadline > block.timestamp, "Deadline in past");
         require(params.seasonDuration >= minSeasonDuration, "Season too short");
-        require(
-            params.expectedYearlyReturnBps > 0 && params.expectedYearlyReturnBps <= 10_000,
-            "expectedYearlyReturnBps out of range"
-        );
-        require(params.expectedFirstYearHarvest > 0, "Zero first-year harvest");
+        require(params.expectedAnnualHarvestUsd > 0, "Zero expected annual harvest");
+        require(params.firstHarvestYear > 0, "Zero firstHarvestYear");
         // coverageHarvests is allowed to be 0 (= producer publishes targets but
         // doesn't pre-fund any seasons). Upper bound is harvestsToRepay; we don't
         // enforce on-chain (frontend warns) — over-coverage just over-locks USDC.
@@ -184,8 +181,8 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
                             seasonDuration: params.seasonDuration,
                             protocolFeeBps: PROTOCOL_FEE_BPS,
                             fundingFeeBps: FUNDING_FEE_BPS,
-                            expectedYearlyReturnBps: params.expectedYearlyReturnBps,
-                            expectedFirstYearHarvest: params.expectedFirstYearHarvest,
+                            expectedAnnualHarvestUsd: params.expectedAnnualHarvestUsd,
+                            firstHarvestYear: params.firstHarvestYear,
                             coverageHarvests: params.coverageHarvests,
                             protocolFeeRecipient: protocolFeeRecipient,
                             sequencerUptimeFeed: sequencerUptimeFeed,
@@ -284,8 +281,8 @@ contract CampaignFactory is Initializable, Ownable2StepUpgradeable {
             params.seasonDuration,
             params.minProductClaim,
             block.timestamp,
-            params.expectedYearlyReturnBps,
-            params.expectedFirstYearHarvest,
+            params.expectedAnnualHarvestUsd,
+            params.firstHarvestYear,
             params.coverageHarvests
         );
 

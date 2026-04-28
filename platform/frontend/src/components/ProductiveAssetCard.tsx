@@ -3,55 +3,68 @@
 /**
  * ProductiveAssetCard — surfaces the v3 producer commitments + collateral state.
  *
- * The numbers come from the on-chain immutable fields the producer set at
- * `createCampaign`:
- *   - `expectedYearlyReturnBps` (e.g. 1000 = 10%/year)
- *   - `expectedFirstYearHarvest` (product units)
- *   - `coverageHarvests` (number of pre-funded harvests)
- *   - plus mutable `collateralLocked` / `collateralDrawn` (USDC, 6-dec)
+ * On-chain primitives (passed in from the page):
+ *   - `annualHarvestUsd18`   : USD/yr commitment, 18-dec.
+ *   - `firstHarvestYear`     : calendar year of harvest 1 (e.g. 2027).
+ *   - `coverageHarvests`     : N pre-funded harvests via lockCollateral.
+ *   - `maxCap18` × `pricePerToken18` : maximum raise (USD), used to derive
+ *     payback horizon and implied yield.
+ *   - `collateralLocked6` / `collateralDrawn6` : USDC reserve state (6-dec).
  *
- * Derived figures:
- *   - harvestsToRepay = ceil(10_000 / yearlyBps)
- *   - tail            = max(0, harvestsToRepay - coverage)
- *   - collateralFree  = collateralLocked - collateralDrawn
+ * Derived in UI:
+ *   - maxRaiseUsd        = maxCap × price                 (full-raise potential)
+ *   - impliedYieldPct    = annual / maxRaiseUsd × 100
+ *   - harvestsToRepay    = ⌈maxRaiseUsd / annual⌉         (years to recover principal)
+ *   - paybackEndYear     = firstHarvestYear + harvestsToRepay - 1
+ *   - coverageEndYear    = firstHarvestYear + coverageHarvests - 1 (when cov > 0)
  *
- * The ROI calculator lives in `BuyPanel` so it reacts to the actual amount
- * the buyer is about to pay — see `BuyPanel.tsx`.
+ * The producer commits an ABSOLUTE annual USD return (not a %) because each
+ * agricultural product has its own price/unit dynamics — derivable from raise
+ * size + commitment, not the other way around.
  */
 export function ProductiveAssetCard({
-  yearlyReturnBps,
-  firstYearHarvest18,
+  annualHarvestUsd18,
+  firstHarvestYear,
   coverageHarvests,
+  maxCap18,
+  pricePerToken18,
   collateralLocked6,
   collateralDrawn6,
-  productSymbol,
 }: {
-  yearlyReturnBps: bigint;
-  firstYearHarvest18: bigint;
+  annualHarvestUsd18: bigint;
+  firstHarvestYear: bigint;
   coverageHarvests: bigint;
+  maxCap18: bigint;
+  pricePerToken18: bigint;
   collateralLocked6: bigint;
   collateralDrawn6: bigint;
-  productSymbol: string;
 }) {
-  const yearlyPct = Number(yearlyReturnBps) / 100;
-  const harvestsToRepay = yearlyReturnBps > 0n
-    ? Math.ceil(10_000 / Number(yearlyReturnBps))
-    : null;
+  const annual = Number(annualHarvestUsd18) / 1e18;
+  const firstYear = Number(firstHarvestYear);
   const coverage = Number(coverageHarvests);
-  const tail = harvestsToRepay !== null ? Math.max(0, harvestsToRepay - coverage) : null;
-  const guaranteeRatio =
-    harvestsToRepay !== null && harvestsToRepay > 0
-      ? Math.min(1, coverage / harvestsToRepay)
-      : 0;
+  const maxRaise =
+    (Number(maxCap18) / 1e18) * (Number(pricePerToken18) / 1e18);
 
   const lockedNum = Number(collateralLocked6) / 1e6;
   const drawnNum = Number(collateralDrawn6) / 1e6;
   const freeNum = Math.max(0, lockedNum - drawnNum);
-  const firstYearHarvestNum = Number(firstYearHarvest18) / 1e18;
 
-  if (yearlyReturnBps === 0n && firstYearHarvest18 === 0n && coverageHarvests === 0n) {
+  if (annualHarvestUsd18 === 0n && firstHarvestYear === 0n && coverageHarvests === 0n) {
     return null; // pre-v3 campaign — no commitments published
   }
+
+  const impliedYieldPct = maxRaise > 0 && annual > 0 ? (annual / maxRaise) * 100 : 0;
+  const harvestsToRepay = annual > 0 && maxRaise > 0 ? Math.ceil(maxRaise / annual) : null;
+  const paybackEnd = harvestsToRepay !== null && firstYear > 0 ? firstYear + harvestsToRepay - 1 : null;
+  const coverageEnd = coverage > 0 && firstYear > 0 ? firstYear + coverage - 1 : null;
+  const guaranteeRatio =
+    harvestsToRepay !== null && harvestsToRepay > 0
+      ? Math.min(1, coverage / harvestsToRepay)
+      : 0;
+  const tail = harvestsToRepay !== null ? Math.max(0, harvestsToRepay - coverage) : null;
+
+  const fmt$ = (n: number) =>
+    `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
   return (
     <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/15 space-y-5">
@@ -59,22 +72,18 @@ export function ProductiveAssetCard({
         Producer commitment
       </h3>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
+        <Tile label="Annual harvest" value={annual > 0 ? `${fmt$(annual)}/yr` : "—"} />
+        <Tile label="Implied yield" value={impliedYieldPct > 0 ? `${impliedYieldPct.toFixed(impliedYieldPct < 1 ? 2 : 1)}%/yr` : "—"} />
         <Tile
-          label="Yearly return"
-          value={yearlyPct > 0 ? `${yearlyPct.toFixed(yearlyPct % 1 === 0 ? 0 : 1)}%` : "—"}
+          label="First harvest"
+          value={firstYear > 0 ? String(firstYear) : "—"}
         />
         <Tile
           label="Payback"
-          value={harvestsToRepay !== null ? `${harvestsToRepay} harvests` : "—"}
-        />
-        <Tile
-          label="Year-1 harvest"
           value={
-            firstYearHarvestNum > 0
-              ? `${firstYearHarvestNum.toLocaleString(undefined, {
-                  maximumFractionDigits: 0,
-                })} ${productSymbol}`
+            harvestsToRepay !== null && paybackEnd !== null
+              ? `${harvestsToRepay} yrs (→ ${paybackEnd})`
               : "—"
           }
         />
@@ -91,7 +100,6 @@ export function ProductiveAssetCard({
           </span>
         </div>
 
-        {/* Bar: green = covered, neutral = uncovered tail */}
         <div className="h-2 rounded-full bg-surface-container-high overflow-hidden flex">
           <div
             className="bg-primary"
@@ -99,14 +107,15 @@ export function ProductiveAssetCard({
           />
         </div>
         <p className="text-[11px] text-on-surface-variant">
-          {coverage > 0 ? (
+          {coverage > 0 && coverageEnd !== null ? (
             <>
-              Producer pre-funded the first <b>{coverage}</b> harvests with
-              USDC collateral. {tail !== null && tail > 0 && (
+              Producer pre-funded harvests <b>{firstYear}–{coverageEnd}</b> with
+              USDC collateral.{" "}
+              {tail !== null && tail > 0 && paybackEnd !== null && (
                 <>
-                  Remaining tail of <b>{tail}</b>{" "}
-                  {tail === 1 ? "harvest" : "harvests"} carries normal delivery
-                  risk.
+                  Tail of <b>{tail}</b>{" "}
+                  {tail === 1 ? "year" : "years"} ({coverageEnd + 1}–{paybackEnd}) carries
+                  normal delivery risk.
                 </>
               )}
             </>
@@ -138,9 +147,6 @@ export function ProductiveAssetCard({
           </div>
         )}
       </div>
-
-      {/* ROI calculator moved into BuyPanel — driven by the actual amount the
-          buyer is about to pay. Keeping commitment + collateral here only. */}
     </div>
   );
 }

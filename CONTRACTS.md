@@ -2,14 +2,29 @@
 
 ## Base Sepolia (chain 84532)
 
-**Deployed:** 2026-04-28 (v3.1 — single $50k campaign with collateral) · **Deployer/owner:** `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33`
+**Deployed:** 2026-04-28 (v3.2 — annualHarvestUsd + firstHarvestYear) · **Deployer/owner:** `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33`
 
-> Second fresh redeploy on the same day. Ships the v3 mechanic with a
-> single seeded test campaign sized to the spec the user asked for: $50,400
-> max raise (350k OLIVE × $0.144) committing 10%/yr → $5,040/yr at full
-> raise, with $15,000 USDC of collateral pre-funding the first 3 harvests.
-> The previous v3 deploy at `0x91fD…6BDD` is abandoned along with its two
-> orphaned test campaigns (`0xcB4Eb2…F6b8b` and `0x66aa3c…5063D`).
+> Third fresh redeploy. Replaces the bps-based commitment with two explicit
+> producer fields:
+> - `expectedAnnualHarvestUsd` — absolute USD commitment per year (e.g.
+>   $5,000/yr). Different products = different unit prices, so deriving
+>   from the funding side alone wasn't accurate; the producer commits the
+>   exact value.
+> - `firstHarvestYear` — calendar year of harvest 1 (e.g. 2030). Year
+>   counters in the UI (Year 1 → 2030, payback ends in 2039, etc.) start
+>   from this anchor.
+>
+> The implied bps + payback horizon are derived in the UI from
+> `expectedAnnualHarvestUsd / (maxCap × pricePerToken)`. The /create form
+> shows a Feasibility summary live so the producer sees "asking $50k that
+> returns $5k/yr → 10 years to payback" before deploying.
+>
+> Single seeded test campaign at `0x8714B91…86F7B`: $50,400 max raise,
+> $5,000/yr commitment from year 2030, 3 harvests covered by $15,000
+> USDC of collateral.
+>
+> Earlier deploys abandoned: `0x91fD…6BDD` (v3.0), `0xDE26…bF9f` (v3.1),
+> and `0x5178…FF64` (pre-v3).
 >
 > All v3 mechanics carry forward unchanged: `expectedYearlyReturnBps`,
 > `expectedFirstYearHarvest`, `coverageHarvests` immutable per-campaign;
@@ -33,22 +48,22 @@
 
 | Contract | Address | Purpose |
 |---|---|---|
-| **CampaignFactory** (proxy) | [`0xDE26BD22B4dC048B57ab258347d0000F5641bF9f`](https://sepolia.basescan.org/address/0xDE26BD22B4dC048B57ab258347d0000F5641bF9f) | v3 — permissionless campaign creation. Deploy block `40798870`. |
-| **CampaignRegistry** | [`0x73910DCC8E41E5480C43C902e26a2e24B4a26b97`](https://sepolia.basescan.org/address/0x73910DCC8E41E5480C43C902e26a2e24B4a26b97) | Onchain map `campaign → metadataURI` + monotonic `version`. Deploy block `40798883`. |
-| **ProducerRegistry** | [`0x4921f38F3D0de21057Ef202629D501E8b99d8616`](https://sepolia.basescan.org/address/0x4921f38F3D0de21057Ef202629D501E8b99d8616) | v3 — owner-controlled KYC role + producer-self-served profile. Deploy block `40798889`. |
-| **MockUSDC** | [`0x12a159519C63A1844710Bb1aB85a41E8a58C1aAA`](https://sepolia.basescan.org/address/0x12a159519C63A1844710Bb1aB85a41E8a58C1aAA) | 6-dec testnet USDC. Public `mint(to, amount)`. Pre-v3.1 mUSDCs abandoned. |
+| **CampaignFactory** (proxy) | [`0x0D8be3Da6232a51Ea9218eF47c6Ab085B8940684`](https://sepolia.basescan.org/address/0x0D8be3Da6232a51Ea9218eF47c6Ab085B8940684) | v3.2 — permissionless campaign creation. Deploy block `40801000`. |
+| **CampaignRegistry** | [`0xc3B052EA719b8BAe6AFb32bfe6b8D2B8fc2580D6`](https://sepolia.basescan.org/address/0xc3B052EA719b8BAe6AFb32bfe6b8D2B8fc2580D6) | Onchain map `campaign → metadataURI` + monotonic `version`. Deploy block `40801014`. |
+| **ProducerRegistry** | [`0xf4c03758F2912EB6D6777cADff678CEa0FDD63Fb`](https://sepolia.basescan.org/address/0xf4c03758F2912EB6D6777cADff678CEa0FDD63Fb) | v3 — owner-controlled KYC role + producer-self-served profile. Deploy block `40801019`. |
+| **MockUSDC** | [`0xBE08bbB2B048dfB58be5E6F34A841A37f65Aedd0`](https://sepolia.basescan.org/address/0xBE08bbB2B048dfB58be5E6F34A841A37f65Aedd0) | 6-dec testnet USDC. Public `mint(to, amount)`. Pre-v3.2 mUSDCs abandoned. |
 
 ### Test campaign (single)
 
 | Field | Value |
 |---|---|
-| Campaign proxy | [`0x1a96BFcF98a7d2f8d84433e568F30B37aC6600F7`](https://sepolia.basescan.org/address/0x1a96BFcF98a7d2f8d84433e568F30B37aC6600F7) |
+| Campaign proxy | [`0x8714B91da03c8Df7C1cC26464B306d3ee6286F7B`](https://sepolia.basescan.org/address/0x8714B91da03c8Df7C1cC26464B306d3ee6286F7B) |
 | pricePerToken | $0.144 |
 | minCap | 100,000 OLIVE ($14,400) |
 | maxCap | 350,000 OLIVE ($50,400) |
-| expectedYearlyReturnBps | 1000 (10%/yr → $5,040/yr at full raise) |
-| expectedFirstYearHarvest | 35,000 liters of olive oil |
-| coverageHarvests | 3 |
+| expectedAnnualHarvestUsd | $5,000/yr (≈ 9.92% implied yield at full raise) |
+| firstHarvestYear | 2030 |
+| coverageHarvests | 3 (covers 2030–2032) |
 | collateralLocked | $15,000 USDC |
 | Initial state | Active, season 1 running (Alice+Bob staked) |
 
@@ -56,12 +71,12 @@
 
 | Contract | Address |
 |---|---|
-| Campaign impl (v3) | [`0xed255eC04030bCe9F676E920D6273Df2008c9f86`](https://sepolia.basescan.org/address/0xed255eC04030bCe9F676E920D6273Df2008c9f86) |
-| CampaignToken impl | [`0x0Ffb5a809f720F90EbCe4f8D12b448E9FF6f3e78`](https://sepolia.basescan.org/address/0x0Ffb5a809f720F90EbCe4f8D12b448E9FF6f3e78) |
-| StakingVault impl | [`0xFED3CB7218072A086827B99aE2566A23C2F1EA78`](https://sepolia.basescan.org/address/0xFED3CB7218072A086827B99aE2566A23C2F1EA78) |
-| YieldToken impl | [`0xeEF4Ee09B95C815Add284CafD34417B26693C099`](https://sepolia.basescan.org/address/0xeEF4Ee09B95C815Add284CafD34417B26693C099) |
-| HarvestManager impl (v3 — depositFromCollateral) | [`0xF12c69fe8C4C5Ae52AaE471F55184d8D74e8A8D4`](https://sepolia.basescan.org/address/0xF12c69fe8C4C5Ae52AaE471F55184d8D74e8A8D4) |
-| Factory impl (v3) | [`0x3df6E29D17F28fF2759cf2D770C4Ec008E880aa3`](https://sepolia.basescan.org/address/0x3df6E29D17F28fF2759cf2D770C4Ec008E880aa3) |
+| Campaign impl (v3.2) | [`0xFcd9cA1A50d16656283a7C5a94B8D4b6afFF5C45`](https://sepolia.basescan.org/address/0xFcd9cA1A50d16656283a7C5a94B8D4b6afFF5C45) |
+| CampaignToken impl | [`0xF7FBed13519f0A564f00f72B9575143542118e30`](https://sepolia.basescan.org/address/0xF7FBed13519f0A564f00f72B9575143542118e30) |
+| StakingVault impl | [`0x38Adf652A7ec946578FF6db8e923aF26eAAb8023`](https://sepolia.basescan.org/address/0x38Adf652A7ec946578FF6db8e923aF26eAAb8023) |
+| YieldToken impl | [`0x10A99be78f9DCCECFc8Ac6953FC5BdCD993f7f4F`](https://sepolia.basescan.org/address/0x10A99be78f9DCCECFc8Ac6953FC5BdCD993f7f4F) |
+| HarvestManager impl (v3 — depositFromCollateral) | [`0x13abbCD397F32c4b993820bb7Acf0b2f548099A1`](https://sepolia.basescan.org/address/0x13abbCD397F32c4b993820bb7Acf0b2f548099A1) |
+| Factory impl (v3.2) | [`0x1074D3906a8d1f611C8E86a2c3198F10f73F78Ae`](https://sepolia.basescan.org/address/0x1074D3906a8d1f611C8E86a2c3198F10f73F78Ae) |
 
 Prior Campaign/Factory impls (archived, on the abandoned 0x5178…FF64 factory):
 - Campaign v2 (3% funding fee): `0xfb80BC2bCEd8cc7a97C5DD52e718981ef647ECa2`

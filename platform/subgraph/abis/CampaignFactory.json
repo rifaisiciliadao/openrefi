@@ -177,12 +177,12 @@
             "internalType": "uint256"
           },
           {
-            "name": "expectedYearlyReturnBps",
+            "name": "expectedAnnualHarvestUsd",
             "type": "uint256",
             "internalType": "uint256"
           },
           {
-            "name": "expectedFirstYearHarvest",
+            "name": "firstHarvestYear",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -625,13 +625,13 @@
         "internalType": "uint256"
       },
       {
-        "name": "expectedYearlyReturnBps",
+        "name": "expectedAnnualHarvestUsd",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
       },
       {
-        "name": "expectedFirstYearHarvest",
+        "name": "firstHarvestYear",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

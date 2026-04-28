@@ -30,8 +30,10 @@ interface Props {
   currentSupply: bigint;        // 18 decimals — tokens already sold
   maxCap: bigint;               // 18 decimals — hard cap
   currentState: number;         // 0 = Funding, 1 = Active, 2 = Buyback, 3 = Ended
-  /** v3 — producer's yearly yield commitment in bps (0 if pre-v3). */
-  expectedYearlyReturnBps?: bigint;
+  /** Expected annual harvest USD (18-dec). */
+  annualHarvestUsd18: bigint;
+  /** Calendar year of the first reportable harvest (e.g. 2027). */
+  firstHarvestYear: bigint;
 }
 
 /**
@@ -82,7 +84,8 @@ export function BuyPanel({
   currentSupply,
   maxCap,
   currentState,
-  expectedYearlyReturnBps = 0n,
+  annualHarvestUsd18,
+  firstHarvestYear,
 }: Props) {
   const t = useTranslations("detail.buy");
   const { address: user, isConnected } = useAccount();
@@ -585,12 +588,13 @@ export function BuyPanel({
               payment (NOT a separate input), so the numbers update as the
               user types in the YOU PAY field above. Hidden when the campaign
               has no yearly-return commitment (pre-v3) or no input yet. */}
-          {expectedYearlyReturnBps > 0n && grossPayment > 0n && selected && (
+          {annualHarvestUsd18 > 0n && grossPayment > 0n && selected && (
             <BuyExpectedReturn
-              grossPayment={grossPayment}
-              fundingFee={fundingFee}
               netToCampaign={netToCampaign}
-              yearlyBps={expectedYearlyReturnBps}
+              annualHarvestUsd18={annualHarvestUsd18}
+              firstHarvestYear={firstHarvestYear}
+              maxCap={maxCap}
+              pricePerToken={pricePerToken}
               decimals={selected.decimals}
               symbol={selected.symbol}
             />
@@ -652,41 +656,51 @@ export function BuyPanel({
 
 /**
  * BuyExpectedReturn — inline projection of the buyer's expected per-harvest
- * yield + total return, derived from the producer's `expectedYearlyReturnBps`
- * commitment and the buyer's actual `grossPayment` (NET goes to the campaign,
- * the 3% protocol fee is excluded from the principal that earns yield).
+ * USDC yield based on their share of the maxRaise. Math:
  *
- * Math:
- *   principalNet      = grossPayment - fundingFee
- *   yieldPerHarvest   = principalNet * yearlyBps / 10_000   (assumes 1 harvest/year)
- *   harvestsToRepay   = ⌈10_000 / yearlyBps⌉
- *   totalReturn       = yieldPerHarvest * harvestsToRepay
+ *   buyerShare        = netToCampaign / maxRaise            (ratio in [0,1])
+ *   yieldPerHarvest   = buyerShare × annualHarvestUsd       (USDC/yr at full)
+ *   harvestsToRepay   = ⌈maxRaise / annualHarvestUsd⌉
+ *   paybackEnd        = firstHarvestYear + harvestsToRepay - 1
+ *
+ * The producer commits an absolute USD figure (different products = different
+ * unit prices), so the math is "your fraction of the campaign × producer's
+ * total commitment per year". The 3% funding fee is excluded from the
+ * principal — only the NET goes to the campaign and earns yield.
+ *
+ * Returns are framed as a perpetual income stream: payback at year N, every
+ * harvest after that is pure profit. We label "payback" rather than "total
+ * return after N years" to avoid the wrong impression of a fixed horizon.
  */
 function BuyExpectedReturn({
-  grossPayment,
-  fundingFee,
   netToCampaign,
-  yearlyBps,
+  annualHarvestUsd18,
+  firstHarvestYear,
+  maxCap,
+  pricePerToken,
   decimals,
   symbol,
 }: {
-  grossPayment: bigint;
-  fundingFee: bigint;
   netToCampaign: bigint;
-  yearlyBps: bigint;
+  annualHarvestUsd18: bigint;
+  firstHarvestYear: bigint;
+  maxCap: bigint;
+  pricePerToken: bigint;
   decimals: number;
   symbol: string;
 }) {
   const principalNet = Number(formatUnits(netToCampaign, decimals));
-  const yearlyReturnPct = Number(yearlyBps) / 100;
-  const yieldPerHarvest = (principalNet * Number(yearlyBps)) / 10_000;
-  const harvestsToRepay = Math.ceil(10_000 / Number(yearlyBps));
-  const totalReturn = yieldPerHarvest * harvestsToRepay;
+  const annual = Number(annualHarvestUsd18) / 1e18;
+  const maxRaise = (Number(maxCap) / 1e18) * (Number(pricePerToken) / 1e18);
+  const firstYear = Number(firstHarvestYear);
 
-  // Hide the unused params lint with a void touch — keeps the API explicit
-  // for callers and lets future iterations show "you pay X gross".
-  void grossPayment;
-  void fundingFee;
+  if (annual <= 0 || maxRaise <= 0) return null;
+
+  const buyerShare = Math.min(1, principalNet / maxRaise);
+  const yieldPerHarvest = buyerShare * annual;
+  const harvestsToRepay = Math.ceil(maxRaise / annual);
+  const paybackEnd = firstYear + harvestsToRepay - 1;
+  const impliedPct = (annual / maxRaise) * 100;
 
   const fmt = (n: number) =>
     n >= 100
@@ -694,13 +708,13 @@ function BuyExpectedReturn({
       : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
   return (
-    <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/15 mt-4">
-      <div className="flex items-baseline justify-between mb-3">
+    <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/15 mt-4 space-y-3">
+      <div className="flex items-baseline justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
           Expected return
         </span>
         <span className="text-[11px] text-on-surface-variant">
-          @ {yearlyReturnPct % 1 === 0 ? yearlyReturnPct.toFixed(0) : yearlyReturnPct.toFixed(1)}%/yr
+          @ {impliedPct.toFixed(impliedPct < 1 ? 2 : 1)}%/yr
         </span>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -711,16 +725,30 @@ function BuyExpectedReturn({
           <div className="text-2xl font-bold text-on-surface">
             {fmt(yieldPerHarvest)} {symbol}
           </div>
+          {firstYear > 0 && (
+            <div className="text-[10px] text-on-surface-variant mt-0.5">
+              first in {firstYear}
+            </div>
+          )}
         </div>
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
-            After {harvestsToRepay} harvests
+            Payback
           </div>
           <div className="text-2xl font-bold text-primary">
-            {fmt(totalReturn)} {symbol}
+            {harvestsToRepay} yrs
           </div>
+          {firstYear > 0 && (
+            <div className="text-[10px] text-on-surface-variant mt-0.5">
+              by {paybackEnd}
+            </div>
+          )}
         </div>
       </div>
+      <p className="text-[10px] text-on-surface-variant">
+        Every harvest after payback is pure profit — the campaign is a
+        perpetual income stream, not a fixed-term bond.
+      </p>
     </div>
   );
 }

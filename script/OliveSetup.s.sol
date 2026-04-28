@@ -58,8 +58,8 @@ contract OliveSetup is Script {
                 fundingDeadline: block.timestamp + 1 days,
                 seasonDuration: 30 minutes,
                 minProductClaim: 1e18,
-                expectedYearlyReturnBps: 1000,
-                expectedFirstYearHarvest: 35_000e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                firstHarvestYear: 2030,
                 coverageHarvests: 3
             })
         );

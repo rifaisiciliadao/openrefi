@@ -66,8 +66,8 @@ abstract contract ForkBase is Test {
                 fundingDeadline: block.timestamp + 90 days,
                 seasonDuration: 365 days,
                 minProductClaim: 5e18,
-                expectedYearlyReturnBps: 1000,
-                expectedFirstYearHarvest: 1e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                firstHarvestYear: 2030,
                 coverageHarvests: 0
             })
         );

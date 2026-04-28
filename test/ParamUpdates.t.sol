@@ -50,8 +50,8 @@ contract ParamUpdatesTest is Test {
                 fundingDeadline: initialDeadline,
                 seasonDuration: 365 days,
                 minProductClaim: 1e18,
-                expectedYearlyReturnBps: 1000,
-                expectedFirstYearHarvest: 1e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                firstHarvestYear: 2030,
                 coverageHarvests: 0
             })
         );

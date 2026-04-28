@@ -125,17 +125,22 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
 
     // --- Appended storage (v3 — productive-asset metadata + collateral) ---
 
-    /// @notice Producer's commitment: yearly yield rate in bps (1000 = 10%/year).
-    ///         Drives the UI's `harvestsToRepay = 10_000 / expectedYearlyReturnBps`
-    ///         and the recommended `requiredCollateral` sizing. Immutable after
-    ///         init for fresh campaigns; pre-v3 campaigns seed it via
-    ///         `initializeV3` and the upgrade dance.
-    uint256 public expectedYearlyReturnBps;
+    /// @notice Producer's commitment: expected annual harvest value in USD,
+    ///         18 decimals (e.g. 5_000e18 = $5,000/yr). The frontend derives
+    ///         every other figure from this single number:
+    ///           bps          = annual × 10_000 / (maxCap × pricePerToken)
+    ///           harvestsToRepay = (maxCap × pricePerToken) / annual
+    ///           recommendedCollateral = annual × coverageHarvests
+    ///         Immutable after init.
+    uint256 public expectedAnnualHarvestUsd;
 
-    /// @notice Producer's commitment: first-year harvest in product units (1e18).
-    ///         Calibrates the UI's ROI calculator and seeds the proportional
-    ///         baseline shown to investors. Immutable after init.
-    uint256 public expectedFirstYearHarvest;
+    /// @notice Producer's commitment: calendar year of the first reportable
+    ///         harvest (e.g. 2030). Used by the frontend to label subsequent
+    ///         harvests as Year 1 → 2030, Year 2 → 2031, etc. Stored as a
+    ///         plain integer year, NOT a timestamp — the on-chain season
+    ///         lifecycle is driven by `seasonDuration` + `startSeason` calls,
+    ///         independent of this commitment. Immutable.
+    uint256 public firstHarvestYear;
 
     /// @notice Number of upcoming harvests pre-funded by `collateralLocked`.
     ///         Bounds `settleSeasonShortfall(seasonId)` to `seasonId ≤ coverageHarvests`.
@@ -293,10 +298,10 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
         uint256 protocolFeeBps;
         // 3% per `buy()` gross inflow, forwarded to `protocolFeeRecipient`.
         uint256 fundingFeeBps;
-        // Producer's yearly yield commitment, in bps (e.g. 1000 = 10%/year).
-        uint256 expectedYearlyReturnBps;
-        // Producer's first-year harvest in product units (1e18 internal scale).
-        uint256 expectedFirstYearHarvest;
+        // Expected annual harvest value in USD, 18-dec (e.g. 5_000e18 = $5,000/yr).
+        uint256 expectedAnnualHarvestUsd;
+        // Calendar year of the first reportable harvest (e.g. 2030).
+        uint256 firstHarvestYear;
         // Number of upcoming harvests pre-funded via `lockCollateral`.
         uint256 coverageHarvests;
         address protocolFeeRecipient;
@@ -316,8 +321,8 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
         seasonDuration = p.seasonDuration;
         protocolFeeBps = p.protocolFeeBps;
         fundingFeeBps = p.fundingFeeBps;
-        expectedYearlyReturnBps = p.expectedYearlyReturnBps;
-        expectedFirstYearHarvest = p.expectedFirstYearHarvest;
+        expectedAnnualHarvestUsd = p.expectedAnnualHarvestUsd;
+        firstHarvestYear = p.firstHarvestYear;
         coverageHarvests = p.coverageHarvests;
         protocolFeeRecipient = p.protocolFeeRecipient;
         sequencerUptimeFeed = AggregatorV3Interface(p.sequencerUptimeFeed);
@@ -334,17 +339,17 @@ contract Campaign is Initializable, ReentrancyGuard, PausableUpgradeable {
     }
 
     /// @notice One-shot reinitializer for campaigns deployed before v3 (no
-    ///         expected-yearly-return, no first-year-harvest, no coverage,
+    ///         annual-harvest commitment, no first-harvest year, no coverage,
     ///         no collateral). Seeds the new immutable v3 slots. Called via
     ///         `ProxyAdmin.upgradeAndCall(proxy, newImpl, initializeV3(...))`.
     function initializeV3(
-        uint256 expectedYearlyReturnBps_,
-        uint256 expectedFirstYearHarvest_,
+        uint256 expectedAnnualHarvestUsd_,
+        uint256 firstHarvestYear_,
         uint256 coverageHarvests_,
         address usdc_
     ) external reinitializer(3) {
-        expectedYearlyReturnBps = expectedYearlyReturnBps_;
-        expectedFirstYearHarvest = expectedFirstYearHarvest_;
+        expectedAnnualHarvestUsd = expectedAnnualHarvestUsd_;
+        firstHarvestYear = firstHarvestYear_;
         coverageHarvests = coverageHarvests_;
         usdc = IERC20(usdc_);
     }

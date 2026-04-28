@@ -230,20 +230,7 @@
   },
   {
     "type": "function",
-    "name": "expectedFirstYearHarvest",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "expectedYearlyReturnBps",
+    "name": "expectedAnnualHarvestUsd",
     "inputs": [],
     "outputs": [
       {
@@ -263,6 +250,19 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "firstHarvestYear",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -411,12 +411,12 @@
             "internalType": "uint256"
           },
           {
-            "name": "expectedYearlyReturnBps",
+            "name": "expectedAnnualHarvestUsd",
             "type": "uint256",
             "internalType": "uint256"
           },
           {
-            "name": "expectedFirstYearHarvest",
+            "name": "firstHarvestYear",
             "type": "uint256",
             "internalType": "uint256"
           },
@@ -464,12 +464,12 @@
     "name": "initializeV3",
     "inputs": [
       {
-        "name": "expectedYearlyReturnBps_",
+        "name": "expectedAnnualHarvestUsd_",
         "type": "uint256",
         "internalType": "uint256"
       },
       {
-        "name": "expectedFirstYearHarvest_",
+        "name": "firstHarvestYear_",
         "type": "uint256",
         "internalType": "uint256"
       },

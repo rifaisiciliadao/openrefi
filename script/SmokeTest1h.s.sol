@@ -48,8 +48,8 @@ contract SmokeTest1h is Script {
                 fundingDeadline: block.timestamp + 1 days,
                 seasonDuration: 1 hours,
                 minProductClaim: 1e18,
-                expectedYearlyReturnBps: 1000,
-                expectedFirstYearHarvest: 1e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                firstHarvestYear: 2030,
                 coverageHarvests: 0
             })
         );

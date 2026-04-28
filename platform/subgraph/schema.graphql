@@ -19,8 +19,8 @@ type Campaign @entity(immutable: false) {
   minProductClaim: BigInt!
 
   # v3 — productive-asset commitments (set at creation, immutable).
-  expectedYearlyReturnBps: BigInt!
-  expectedFirstYearHarvest: BigInt!
+  expectedAnnualHarvestUsd: BigInt!
+  firstHarvestYear: BigInt!
   coverageHarvests: BigInt!
 
   # v3 — collateral state (mutated by CollateralLocked / CollateralShortfallSettled).

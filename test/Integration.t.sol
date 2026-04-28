@@ -64,8 +64,8 @@ contract IntegrationTest is Test {
                 fundingDeadline: deadline,
                 seasonDuration: SEASON_DURATION,
                 minProductClaim: MIN_PRODUCT_CLAIM,
-                expectedYearlyReturnBps: 1000,
-                expectedFirstYearHarvest: 1e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                firstHarvestYear: 2030,
                 coverageHarvests: 0
             })
         );

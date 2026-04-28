@@ -62,8 +62,8 @@ contract RedTeamTest is Test {
                 fundingDeadline: block.timestamp + 90 days,
                 seasonDuration: SEASON_DURATION,
                 minProductClaim: 5e18,
-                expectedYearlyReturnBps: 1000,
-                expectedFirstYearHarvest: 1e18,
+                expectedAnnualHarvestUsd: 5_000e18,
+                firstHarvestYear: 2030,
                 coverageHarvests: 0
             })
         );
