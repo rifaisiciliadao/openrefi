@@ -68,7 +68,7 @@ Invariant config: `runs = 256, depth = 128, fail_on_revert = false` → ~33k ran
 - **`Campaign.initialize` now takes a struct (`Campaign.InitParams`)** because the flat signature crossed the Solidity 16-slot stack limit at v3 (15+ params: producer, factory, price, caps, deadline, season, two zombie+real fee bps, three v3 commitments, fee recipient, sequencer feed, usdc). Existing call sites in factory + tests + scripts pass the struct as a single calldata arg. The `protocolFeeBps_` slot is the legacy zombie carried for upgrade-layout safety (see v2 entry above).
 - **`Campaign.initializeV3(annualHarvestUsd, annualHarvest, firstHarvestYear, coverageHarvests, usdc)` reinitializer** seeds the v3.3 immutable fields + the cached USDC reference on pre-v3 proxies. We don't actually run any upgrade — every redeploy is a fresh deploy — but the reinitializer stays for future flexibility.
 - **`ProducerRegistry` v3 — KYC role**. The self-served profile surface (`setProfile`, `profileURI`, `version`) is unchanged. Added: `owner` (2-step Ownable), `isKycAdmin[]`, and `setKyc(producer, bool)` gated to `KYC_ADMIN_ROLE`-holders only. Producers cannot self-attest — even the contract owner cannot flip the bit unless they grant themselves the role first. Constructor now takes `owner_` (was zero-arg). Subgraph indexes the verdict on `Producer.kyced` + `kycSetAt` via `handleKycSet`. Frontend will show a verified badge in InvestorList / producer page (TODO).
-- **Subgraph schema v2.6.0** carries `expectedAnnualHarvestUsd / expectedAnnualHarvest / firstHarvestYear / coverageHarvests / collateralLocked / collateralDrawn` on `Campaign` and `kyced / kycSetAt` on `Producer`. Handlers: `handleCollateralLocked`, `handleCollateralShortfallSettled`, `handleKycSet`. `CampaignCreated` event signature carries 17 args (4 addresses + 11 uint256 + 2 indexed addresses); `subgraph.yaml` must match exactly or the indexer rejects at validate time.
+- **Subgraph schema v2.7.0** carries `expectedAnnualHarvestUsd / expectedAnnualHarvest / firstHarvestYear / coverageHarvests / collateralLocked / collateralDrawn` on `Campaign` and `kyced / kycSetAt` on `Producer`. Handlers: `handleCollateralLocked`, `handleCollateralShortfallSettled`, `handleKycSet`. `CampaignCreated` event signature carries 17 args (4 addresses + 11 uint256 + 2 indexed addresses); `subgraph.yaml` must match exactly or the indexer rejects at validate time.
 
 ## Public views for UI / indexers
 
@@ -205,13 +205,13 @@ File constraints (5 MB, `image/{jpeg,png,webp,avif,gif}`) enforced in-route.
 
 ### Subgraph (`platform/subgraph/`)
 
-Live on Goldsky — **team: turinglabs · project: growfi · chain: base-sepolia**. Current version: `growfi/2.6.0`, tagged as `prod` (deployed 2026-04-28; tracks the v3.3 redeploy with `expectedAnnualHarvestUsd` + `expectedAnnualHarvest` + `firstHarvestYear`).
+Live on Goldsky — **team: turinglabs · project: growfi · chain: base-sepolia**. Current version: `growfi/2.7.0`, tagged as `prod` (deployed 2026-04-28; tracks the v3.3 redeploy with `expectedAnnualHarvestUsd` + `expectedAnnualHarvest` + `firstHarvestYear`).
 
 Indexed contracts (see `CONTRACTS.md` for authoritative deploy refs):
-- `CampaignFactory` @ `0xD5C6705c291743BBd9b30B08680360f96801579D` from block `40804000`
-- `CampaignRegistry` @ `0xbe1ce60CE358a70603a494dcb271A505D3C1f988` from block `40804124`
-- `ProducerRegistry` @ `0x9b41c56Cddb0d9DC6c97d8d4c5246e6d4caC329e` from block `40804129`
-- All earlier factories abandoned (v3.0/3.1/3.2 + pre-v3); campaigns deployed there are not migrated. Single seeded test campaign at `0xa97Bf4E0098B1af9509d626e1946EbD8769274Ab` (350k OLIVE × $0.144 = $50,400 max raise, $5,000/yr commitment as 250 L of olive oil/yr → $20/L, starting 2030, $15k collateral pre-funding 3 harvests).
+- `CampaignFactory` @ `0xdc8a7C3A9374Aa61FFC5618700aE8884b8F579d9` from block `40806514`
+- `CampaignRegistry` @ `0x0999cee247039a1d400198a348fd1e7679054dbe` from block `40806536`
+- `ProducerRegistry` @ `0xad075259d1eb9fafb5ae0730211be5e2cc6bacfc` from block `40806549`
+- All earlier factories abandoned (v3.0/3.1/3.2 + pre-v3); campaigns deployed there are not migrated. Single seeded test campaign at `0xcE97935f28C14d2b0B36d312a7eD67b2954CA292` (350k OLIVE × $0.144 = $50,400 max raise, $5,000/yr commitment as 250 L of olive oil/yr → $20/L, starting 2030, $15k collateral pre-funding 3 harvests).
 
 Endpoints:
 - **Prod tag**: `https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn`
@@ -236,7 +236,7 @@ Full guide: `platform/subgraph/DEPLOY.md`.
 
 ### Platform gotchas
 
-- **Factory is live** on Base Sepolia at `0xD5C6705c291743BBd9b30B08680360f96801579D` (v3.3, see `CONTRACTS.md` for the full address set). Discovery reads exclusively from the Goldsky subgraph — no more mock fallback. Empty subgraph → empty state CTA.
+- **Factory is live** on Base Sepolia at `0xdc8a7C3A9374Aa61FFC5618700aE8884b8F579d9` (v3.3, see `CONTRACTS.md` for the full address set). Discovery reads exclusively from the Goldsky subgraph — no more mock fallback. Empty subgraph → empty state CTA.
 - **Imperative tx flow everywhere** — never use `useWaitForTransactionReceipt` + useEffect for progress state (race-prone: a receipt from the previous tx can briefly match while a new tx is in flight and show wrong success). Always use `waitForTx(hash)` from `@/lib/waitForTx` inside the async handler — it wraps `waitForTransactionReceipt` with `confirmations: 2`, `timeout: 90s`, and a `minVisibleMs` floor (default 1200ms) so the "confirming on-chain…" state is visible even when the receipt is cached. Silence `user rejected/denied` errors; surface everything else. The shared `config` is exported from `src/app/providers.tsx`.
 - **RPC fallback** — `providers.tsx` uses a viem `fallback` transport across `sepolia.base.org`, `base-sepolia-rpc.publicnode.com`, and `base-sepolia.blockpi.network` (each with 3 retries @ 500ms, 10s timeout). The primary public endpoint was returning "block not found" mid-call often enough to break `activateCampaign` simulations — a single-endpoint config is brittle.
 - **Season struct index**. `StakingVault.Season` layout is `(startTime, endTime, totalYieldMinted, rewardPerTokenAtEnd, totalYieldOwed, active, existed)`. Read `active` as index `5`, NOT index `3` — the original frontend hit `[3]` and false-read `rewardPerTokenAtEnd` (uint256, usually 0n, coerces to `false`), so `hasActiveSeason` stayed `false` right after `startSeason`. Both `LifecycleSection` and `StakingPanel` now use the correct indices with typed tuples + inline layout comments.
