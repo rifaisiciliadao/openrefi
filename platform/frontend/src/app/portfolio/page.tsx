@@ -98,12 +98,14 @@ export default function Portfolio() {
                           {p.paymentToken.slice(0, 6)}…
                         </td>
                         <td className="px-6 py-3 text-right font-semibold text-on-surface">
+                          {/* Symbol omitted — table spans multiple campaigns
+                              each with its own token ticker; per-campaign
+                              symbol shows on the campaign detail page. */}
                           {Number(
                             formatUnits(BigInt(p.campaignTokensOut), 18),
                           ).toLocaleString(undefined, {
                             maximumFractionDigits: 2,
-                          })}{" "}
-                          $CAMP
+                          })}
                         </td>
                         <td className="px-6 py-3 text-right text-on-surface-variant">
                           {new Date(
@@ -294,12 +296,21 @@ function Summary({ portfolio }: { portfolio: UserPortfolio }) {
       value: `$${Number(formatUnits(totalPurchasedUSD, 18)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
     },
     {
+      // Aggregate spans multiple campaigns each with its own token symbol —
+      // show just the number; per-campaign symbol on each PositionRow below.
       label: t("summary.staked"),
-      value: `${Number(formatUnits(totalStaked, 18)).toLocaleString(undefined, { maximumFractionDigits: 2 })} $CAMP`,
+      value: Number(formatUnits(totalStaked, 18)).toLocaleString(undefined, {
+        maximumFractionDigits: 2,
+      }),
     },
     {
+      // Aggregate spans multiple campaigns each with its own yield symbol —
+      // show just the number; the symbol-correct view is per-row below.
       label: t("summary.yieldClaimed"),
-      value: `${Number(formatUnits(totalYieldClaimed, 18)).toLocaleString(undefined, { maximumFractionDigits: 2 })} $YIELD`,
+      value: Number(formatUnits(totalYieldClaimed, 18)).toLocaleString(
+        undefined,
+        { maximumFractionDigits: 2 },
+      ),
       color: "text-primary",
     },
     {
@@ -338,7 +349,10 @@ function PositionCard({
     position.campaign.metadataVersion,
   );
 
-  // Read current earned + campaignToken balance for quick totals
+  // Read current earned + campaignToken balance + yieldToken symbol.
+  // Symbol is per-campaign (each campaign mints its own e.g. OIL, WINE), so
+  // the row label has to be live — falling back to a generic "$YIELD" was
+  // misleading because no token by that ticker actually exists on chain.
   const { data: reads } = useReadContracts({
     contracts: user
       ? [
@@ -362,6 +376,11 @@ function PositionCard({
             functionName: "balanceOf",
             args: [user],
           },
+          {
+            address: position.campaign.yieldToken as Address,
+            abi: erc20Abi,
+            functionName: "symbol",
+          },
         ]
       : [],
     query: { enabled: !!user, refetchInterval: 15_000 },
@@ -369,6 +388,7 @@ function PositionCard({
 
   const earned = (reads?.[0]?.result as bigint) ?? 0n;
   const heldTokens = (reads?.[1]?.result as bigint) ?? 0n;
+  const yieldSymbol = (reads?.[2]?.result as string | undefined) ?? "YIELD";
 
   return (
     <Link
@@ -414,7 +434,7 @@ function PositionCard({
               {t("pos.earnedNow")}
             </div>
             <div className="font-semibold text-primary">
-              {Number(formatUnits(earned, 18)).toFixed(4)} $YIELD
+              {Number(formatUnits(earned, 18)).toFixed(4)} ${yieldSymbol}
             </div>
           </div>
           <div>

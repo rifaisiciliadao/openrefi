@@ -380,6 +380,7 @@ export interface UserPortfolio {
       id: string;
       stakingVault: string;
       campaignToken: string;
+      yieldToken: string;
       pricePerToken: string;
       state: string;
       metadataURI: string | null;
@@ -439,6 +440,7 @@ export function useUserPortfolio(user: string | undefined) {
               id
               stakingVault
               campaignToken
+              yieldToken
               pricePerToken
               state
               metadataURI
