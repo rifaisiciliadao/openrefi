@@ -121,6 +121,7 @@ Example reference: `script/UpgradeFactoryV2.s.sol` (adds `minSeasonDuration`, re
 - `script/OliveFinish.s.sol` — Phase 2a of the 2-actor flow (endSeason, both claimYield, reportHarvest with single-leaf Merkle root, alice redeemUSDC, bob redeemProduct). Stops before depositUSDC; pair with `finish-olive.sh` for the tail.
 - `script/finish-olive.sh` — wraps `OliveFinish.s.sol` then executes `depositUSDC` + `claimUSDC` via cast reading live `remainingDepositGross`. Avoids forge-script double-simulation drift.
 - `script/finish-single-actor.sh` — pure-cast variant for single-actor campaigns (FAST-style). One cast per step; no forge simulation involved.
+- `script/seed-demo.sh` — **idempotent post-deploy bootstrap**. Run once after `DeployTestnet` + `OliveSetup` to finish the demo platform automatically: fetches a stock olive image, uploads it via the live backend's `/api/upload`, uploads campaign metadata via `/api/metadata`, signs `CampaignRegistry.setMetadata` on the new campaign, uploads the producer profile via `/api/producer`, signs `ProducerRegistry.setProfile`, and re-asserts the producer's KYC bit. Reads the campaign address from `factory.campaigns(0)` by default; safe to re-run. Don't walk a producer through the `LinkMetadataBanner` on a fresh redeploy — run this instead.
 
 ## Deployments
 
