@@ -211,13 +211,13 @@ File constraints (5 MB, `image/{jpeg,png,webp,avif,gif}`) enforced in-route.
 
 ### Subgraph (`platform/subgraph/`)
 
-Live on Goldsky — **team: turinglabs · project: growfi · chain: base-sepolia**. Current version: `growfi/2.8.0`, tagged as `prod` (deployed 2026-04-28; tracks the v3.3 redeploy with `expectedAnnualHarvestUsd` + `expectedAnnualHarvest` + `firstHarvestYear`).
+Live on Goldsky — **team: turinglabs · project: growfi · chain: base-sepolia**. Current version: `growfi/2.9.0`, tagged as `prod` (deployed 2026-04-28; tracks the v3.3 redeploy with `expectedAnnualHarvestUsd` + `expectedAnnualHarvest` + `firstHarvestYear`).
 
 Indexed contracts (see `CONTRACTS.md` for authoritative deploy refs):
-- `CampaignFactory` @ `0x73d677db3425edee764bf47c66dbb15217eefff6` from block `40811661`
-- `CampaignRegistry` @ `0x49FEe690091F5FC0F5317d9bB7975d8bcB4A8ACb` from block `40811721`
-- `ProducerRegistry` @ `0x23e28Cbf86861D6f6f61f067c2A39f5f8f0d9fd2` from block `40811739`
-- All earlier factories abandoned (v3.0/3.1/3.2 + pre-v3); campaigns deployed there are not migrated. Single seeded test campaign at `0x97bf2400d8C6D6e2C32Fa0Bb2C87269b62D677d2` (350k OLIVE × $0.144 = $50,400 max raise, $5,000/yr commitment as 250 L of olive oil/yr → $20/L, starting 2030, $15k collateral pre-funding 3 harvests).
+- `CampaignFactory` @ `0x26dfae1d399a737708aab1f9a116eb814e98ee87` from block `40817442`
+- `CampaignRegistry` @ `0x40696756DE89c0C5DF59219e565b4a1F18e909ea` from block `40817471`
+- `ProducerRegistry` @ `0xe5ed3b78631a02EAB46477F67c2b41Ec31a97A21` from block `40817476`
+- All earlier factories abandoned (v3.0/3.1/3.2 + pre-v3); campaigns deployed there are not migrated. Single seeded test campaign at `0xEECa254825e78e995D630701D26c7356887Ec6c9` (350k OLIVE × $0.144 = $50,400 max raise, $5,000/yr commitment as 250 L of olive oil/yr → $20/L, starting 2030, $15k collateral pre-funding 3 harvests).
 
 Endpoints:
 - **Prod tag**: `https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn`
@@ -242,7 +242,7 @@ Full guide: `platform/subgraph/DEPLOY.md`.
 
 ### Platform gotchas
 
-- **Factory is live** on Base Sepolia at `0x73d677db3425edee764bf47c66dbb15217eefff6` (v3.3, see `CONTRACTS.md` for the full address set). Discovery reads exclusively from the Goldsky subgraph — no more mock fallback. Empty subgraph → empty state CTA.
+- **Factory is live** on Base Sepolia at `0x26dfae1d399a737708aab1f9a116eb814e98ee87` (v3.3, see `CONTRACTS.md` for the full address set). Discovery reads exclusively from the Goldsky subgraph — no more mock fallback. Empty subgraph → empty state CTA.
 - **Imperative tx flow everywhere** — never use `useWaitForTransactionReceipt` + useEffect for progress state (race-prone: a receipt from the previous tx can briefly match while a new tx is in flight and show wrong success). Always use `waitForTx(hash)` from `@/lib/waitForTx` inside the async handler — it wraps `waitForTransactionReceipt` with `confirmations: 2`, `timeout: 90s`, and a `minVisibleMs` floor (default 1200ms) so the "confirming on-chain…" state is visible even when the receipt is cached. Silence `user rejected/denied` errors; surface everything else. The shared `config` is exported from `src/app/providers.tsx`.
 - **RPC fallback** — `providers.tsx` uses a viem `fallback` transport across `sepolia.base.org`, `base-sepolia-rpc.publicnode.com`, and `base-sepolia.blockpi.network` (each with 3 retries @ 500ms, 10s timeout). The primary public endpoint was returning "block not found" mid-call often enough to break `activateCampaign` simulations — a single-endpoint config is brittle.
 - **Season struct index**. `StakingVault.Season` layout is `(startTime, endTime, totalYieldMinted, rewardPerTokenAtEnd, totalYieldOwed, active, existed)`. Read `active` as index `5`, NOT index `3` — the original frontend hit `[3]` and false-read `rewardPerTokenAtEnd` (uint256, usually 0n, coerces to `false`), so `hasActiveSeason` stayed `false` right after `startSeason`. Both `LifecycleSection` and `StakingPanel` now use the correct indices with typed tuples + inline layout comments.

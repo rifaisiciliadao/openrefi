@@ -10,11 +10,11 @@
 > ProducerRegistry and KYC-flagged the seed producer (Alice = deployer).
 >
 > Single seeded test campaign on the new factory at
-> `0x97bf2400d8C6D6e2C32Fa0Bb2C87269b62D677d2`: $50,400 max raise,
+> `0xEECa254825e78e995D630701D26c7356887Ec6c9`: $50,400 max raise,
 > $5,000/yr commitment from year 2030, 3 harvests covered by $15,000
 > USDC of collateral; Alice + Bob both staked, season 1 running.
 >
-> Subgraph: tag `prod` now points at `growfi/2.8.0`, indexed from the
+> Subgraph: tag `prod` now points at `growfi/2.9.0`, indexed from the
 > new factory deploy block.
 >
 > Earlier deploys abandoned: `0xD5C6…79D` (v3.3 first), `0x91fD…6BDD`
@@ -36,16 +36,16 @@
 
 | Contract | Address | Purpose |
 |---|---|---|
-| **CampaignFactory** (proxy) | [`0x73d677db3425edee764bf47c66dbb15217eefff6`](https://sepolia.basescan.org/address/0x73d677db3425edee764bf47c66dbb15217eefff6) | v3.3 — permissionless campaign creation. Deploy block `40811661`. |
-| **CampaignRegistry** | [`0x49FEe690091F5FC0F5317d9bB7975d8bcB4A8ACb`](https://sepolia.basescan.org/address/0x49FEe690091F5FC0F5317d9bB7975d8bcB4A8ACb) | Onchain map `campaign → metadataURI` + monotonic `version`. Deploy block `40811721`. |
-| **ProducerRegistry** | [`0x23e28Cbf86861D6f6f61f067c2A39f5f8f0d9fd2`](https://sepolia.basescan.org/address/0x23e28Cbf86861D6f6f61f067c2A39f5f8f0d9fd2) | v3 — owner-controlled KYC role + producer-self-served profile. Deploy block `40811739`. |
-| **MockUSDC** | [`0xA07e3dbB5Bc40f11723213E3A236B408b862C1ff`](https://sepolia.basescan.org/address/0xA07e3dbB5Bc40f11723213E3A236B408b862C1ff) | 6-dec testnet USDC. Public `mint(to, amount)`. Pre-v3.3-redeploy mUSDCs abandoned. |
+| **CampaignFactory** (proxy) | [`0x26dfae1d399a737708aab1f9a116eb814e98ee87`](https://sepolia.basescan.org/address/0x26dfae1d399a737708aab1f9a116eb814e98ee87) | v3.3 — permissionless campaign creation. Deploy block `40817442`. |
+| **CampaignRegistry** | [`0x40696756DE89c0C5DF59219e565b4a1F18e909ea`](https://sepolia.basescan.org/address/0x40696756DE89c0C5DF59219e565b4a1F18e909ea) | Onchain map `campaign → metadataURI` + monotonic `version`. Deploy block `40817471`. |
+| **ProducerRegistry** | [`0xe5ed3b78631a02EAB46477F67c2b41Ec31a97A21`](https://sepolia.basescan.org/address/0xe5ed3b78631a02EAB46477F67c2b41Ec31a97A21) | v3 — owner-controlled KYC role + producer-self-served profile. Deploy block `40817476`. |
+| **MockUSDC** | [`0x9c92c69a92173548a8e62a412e963f4b93ee2a13`](https://sepolia.basescan.org/address/0x9c92c69a92173548a8e62a412e963f4b93ee2a13) | 6-dec testnet USDC. Public `mint(to, amount)`. Pre-v3.3-redeploy mUSDCs abandoned. |
 
 ### Test campaign (single)
 
 | Field | Value |
 |---|---|
-| Campaign proxy | [`0x97bf2400d8C6D6e2C32Fa0Bb2C87269b62D677d2`](https://sepolia.basescan.org/address/0x97bf2400d8C6D6e2C32Fa0Bb2C87269b62D677d2) |
+| Campaign proxy | [`0xEECa254825e78e995D630701D26c7356887Ec6c9`](https://sepolia.basescan.org/address/0xEECa254825e78e995D630701D26c7356887Ec6c9) |
 | Producer (KYC ✓) | `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33` (alice) |
 | pricePerToken | $0.144 |
 | minCap | 100,000 OLIVE ($14,400) |
@@ -61,12 +61,12 @@
 
 | Contract | Address |
 |---|---|
-| Campaign impl (v3.3) | [`0x2cc441de7f38c34057b822dc486f3dd9061fea73`](https://sepolia.basescan.org/address/0x2cc441de7f38c34057b822dc486f3dd9061fea73) |
-| CampaignToken impl | [`0x96ee1b53a5489fc2e5f3fa31cd74a295ccbf1457`](https://sepolia.basescan.org/address/0x96ee1b53a5489fc2e5f3fa31cd74a295ccbf1457) |
-| StakingVault impl | [`0x274a2f81cd09063fe63b5e748f0c0d345d058169`](https://sepolia.basescan.org/address/0x274a2f81cd09063fe63b5e748f0c0d345d058169) |
-| YieldToken impl | [`0xccd1ff1748e3873b0e56b5cceb67f0e0b7f69f87`](https://sepolia.basescan.org/address/0xccd1ff1748e3873b0e56b5cceb67f0e0b7f69f87) |
-| HarvestManager impl (v3 — depositFromCollateral) | [`0x5ed362a99bd45db191e9b03ec7c696310db8c602`](https://sepolia.basescan.org/address/0x5ed362a99bd45db191e9b03ec7c696310db8c602) |
-| Factory impl (v3.3) | [`0x3c1ea6edd6c5667fbed45cc5ddf70d42cf4251b8`](https://sepolia.basescan.org/address/0x3c1ea6edd6c5667fbed45cc5ddf70d42cf4251b8) |
+| Campaign impl (v3.3) | [`0x7350cc5b192f9f03eaa40fafb206f15b9be5e282`](https://sepolia.basescan.org/address/0x7350cc5b192f9f03eaa40fafb206f15b9be5e282) |
+| CampaignToken impl | [`0xb21a38294fbf740d7c66054c1a288a3c68ff6f96`](https://sepolia.basescan.org/address/0xb21a38294fbf740d7c66054c1a288a3c68ff6f96) |
+| StakingVault impl | [`0x5ec4bd275d878b33a31be0d5798949033727f38d`](https://sepolia.basescan.org/address/0x5ec4bd275d878b33a31be0d5798949033727f38d) |
+| YieldToken impl | [`0xf7d9376b75ed66f16f5891b195451a80bc4cf715`](https://sepolia.basescan.org/address/0xf7d9376b75ed66f16f5891b195451a80bc4cf715) |
+| HarvestManager impl (v3 — depositFromCollateral) | [`0x4f9efaf3df08cc7090aff6a64cee1ec2c316d790`](https://sepolia.basescan.org/address/0x4f9efaf3df08cc7090aff6a64cee1ec2c316d790) |
+| Factory impl (v3.3) | [`0xef5cbe2a426cb51f4f7fbe3f4be5cbc1a0515411`](https://sepolia.basescan.org/address/0xef5cbe2a426cb51f4f7fbe3f4be5cbc1a0515411) |
 
 Prior Campaign/Factory impls (archived, on the abandoned 0x5178…FF64 factory):
 - Campaign v2 (3% funding fee): `0xfb80BC2bCEd8cc7a97C5DD52e718981ef647ECa2`
@@ -104,10 +104,10 @@ Full UX spec in `docs/REDEEM_2STEP.md`.
 
 ## Subgraph
 
-- Version `2.8.0` (tagged `prod`)
+- Version `2.9.0` (tagged `prod`)
 - Deployed: 2026-04-28
 - API: `https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn`
-- Pin version: replace `prod` with `2.8.0` (useful during schema migrations so an older frontend can stick to a previous version).
+- Pin version: replace `prod` with `2.9.0` (useful during schema migrations so an older frontend can stick to a previous version).
 
 ---
 
@@ -115,10 +115,10 @@ Full UX spec in `docs/REDEEM_2STEP.md`.
 
 ```bash
 NEXT_PUBLIC_CHAIN_ID=84532
-NEXT_PUBLIC_FACTORY_ADDRESS=0x73d677db3425edee764bf47c66dbb15217eefff6
-NEXT_PUBLIC_USDC_ADDRESS=0xA07e3dbB5Bc40f11723213E3A236B408b862C1ff
-NEXT_PUBLIC_REGISTRY_ADDRESS=0x49FEe690091F5FC0F5317d9bB7975d8bcB4A8ACb
-NEXT_PUBLIC_PRODUCER_REGISTRY_ADDRESS=0x23e28Cbf86861D6f6f61f067c2A39f5f8f0d9fd2
+NEXT_PUBLIC_FACTORY_ADDRESS=0x26dfae1d399a737708aab1f9a116eb814e98ee87
+NEXT_PUBLIC_USDC_ADDRESS=0x9c92c69a92173548a8e62a412e963f4b93ee2a13
+NEXT_PUBLIC_REGISTRY_ADDRESS=0x40696756DE89c0C5DF59219e565b4a1F18e909ea
+NEXT_PUBLIC_PRODUCER_REGISTRY_ADDRESS=0xe5ed3b78631a02EAB46477F67c2b41Ec31a97A21
 NEXT_PUBLIC_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn
 NEXT_PUBLIC_BACKEND_URL=http://localhost:4001
 ```
@@ -132,7 +132,7 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:4001
 ### Get test USDC (anyone)
 
 ```bash
-cast send 0xA07e3dbB5Bc40f11723213E3A236B408b862C1ff \
+cast send 0x9c92c69a92173548a8e62a412e963f4b93ee2a13 \
   "mint(address,uint256)" <YOUR_ADDRESS> 10000000000 \
   --rpc-url https://sepolia.base.org --private-key $YOUR_PK
 # → 10,000 mUSDC (6 decimals)
@@ -141,7 +141,7 @@ cast send 0xA07e3dbB5Bc40f11723213E3A236B408b862C1ff \
 ### Read factory state
 
 ```bash
-cast call 0x73d677db3425edee764bf47c66dbb15217eefff6 \
+cast call 0x26dfae1d399a737708aab1f9a116eb814e98ee87 \
   "getCampaignCount()(uint256)" --rpc-url https://sepolia.base.org
 ```
 
@@ -150,7 +150,7 @@ cast call 0x73d677db3425edee764bf47c66dbb15217eefff6 \
 Use the frontend at `/create`, or raw call:
 
 ```bash
-cast send 0x73d677db3425edee764bf47c66dbb15217eefff6 \
+cast send 0x26dfae1d399a737708aab1f9a116eb814e98ee87 \
   "createCampaign((address,string,string,string,string,uint256,uint256,uint256,uint256,uint256,uint256))" \
   "(<YOUR_ADDRESS>,Olive Tree,OLIVE,Olive Yield,oYIELD,144000000000000000,10000000000000000000000,100000000000000000000000,$(( $(date +%s) + 7776000 )),15552000,5000000000000000000)" \
   --rpc-url https://sepolia.base.org --private-key $YOUR_PK
@@ -160,7 +160,7 @@ cast send 0x73d677db3425edee764bf47c66dbb15217eefff6 \
 ### Set/update producer profile (any address)
 
 ```bash
-cast send 0x23e28Cbf86861D6f6f61f067c2A39f5f8f0d9fd2 \
+cast send 0xe5ed3b78631a02EAB46477F67c2b41Ec31a97A21 \
   "setProfile(string)" \
   "https://growfi-media.fra1.digitaloceanspaces.com/profiles/<cid>.json" \
   --rpc-url https://sepolia.base.org --private-key $YOUR_PK
@@ -169,7 +169,7 @@ cast send 0x23e28Cbf86861D6f6f61f067c2A39f5f8f0d9fd2 \
 ### Set/update campaign metadata URI (as producer)
 
 ```bash
-cast send 0x49FEe690091F5FC0F5317d9bB7975d8bcB4A8ACb \
+cast send 0x40696756DE89c0C5DF59219e565b4a1F18e909ea \
   "setMetadata(address,string)" \
   <CAMPAIGN_PROXY_ADDRESS> "https://growfi-media.fra1.digitaloceanspaces.com/metadata/<cid>.json" \
   --rpc-url https://sepolia.base.org --private-key $YOUR_PK

@@ -9,9 +9,9 @@ dataSources:
     name: CampaignFactory
     network: base-sepolia
     source:
-      address: "0x73d677db3425edee764bf47c66dbb15217eefff6"
+      address: "0x26dfae1d399a737708aab1f9a116eb814e98ee87"
       abi: CampaignFactory
-      startBlock: 40811661
+      startBlock: 40817442
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -35,9 +35,9 @@ dataSources:
     name: CampaignRegistry
     network: base-sepolia
     source:
-      address: "0x49FEe690091F5FC0F5317d9bB7975d8bcB4A8ACb"
+      address: "0x40696756DE89c0C5DF59219e565b4a1F18e909ea"
       abi: CampaignRegistry
-      startBlock: 40811721
+      startBlock: 40817471
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -56,9 +56,9 @@ dataSources:
     name: ProducerRegistry
     network: base-sepolia
     source:
-      address: "0x23e28Cbf86861D6f6f61f067c2A39f5f8f0d9fd2"
+      address: "0xe5ed3b78631a02EAB46477F67c2b41Ec31a97A21"
       abi: ProducerRegistry
-      startBlock: 40811739
+      startBlock: 40817476
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
