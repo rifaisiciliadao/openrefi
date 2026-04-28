@@ -87,6 +87,10 @@ const PRODUCT_KEYS = [
 export default function CreateCampaign() {
   const t = useTranslations("create");
   const [step, setStep] = useState(1);
+  // Form starts fully empty — the producer fills everything from scratch.
+  // Sensible suggestions live in the input placeholders, not in committed
+  // state, so a half-distracted user doesn't accidentally ship "OLIVE / Olive
+  // Oil / 0.144" if they don't actually mean those.
   const [form, setForm] = useState<FormData>({
     name: "",
     description: "",
@@ -94,21 +98,21 @@ export default function CreateCampaign() {
     productType: "",
     imageFile: null,
     imagePreview: null,
-    pricePerToken: "0.144",
-    minCapTrees: "50",
-    maxCapTrees: "200",
+    pricePerToken: "",
+    minCapTrees: "",
+    maxCapTrees: "",
     fundingDeadline: "",
-    seasonDuration: "365",
-    minProductClaim: "5",
-    expectedAnnualHarvestUsd: "5000",
-    expectedAnnualHarvest: "250",
-    firstHarvestYear: String(new Date().getFullYear() + 2),
-    coverageHarvests: "0",
-    initialCollateralUsd: "0",
-    tokenSymbol: "OLIVE",
-    yieldName: "Olive Oil",
-    yieldSymbol: "OIL",
-    acceptedTokens: [{ symbol: "mUSDC", humanRate: "0.144" }],
+    seasonDuration: "",
+    minProductClaim: "",
+    expectedAnnualHarvestUsd: "",
+    expectedAnnualHarvest: "",
+    firstHarvestYear: "",
+    coverageHarvests: "",
+    initialCollateralUsd: "",
+    tokenSymbol: "",
+    yieldName: "",
+    yieldSymbol: "",
+    acceptedTokens: [],
   });
 
   /**
@@ -200,12 +204,22 @@ export default function CreateCampaign() {
       );
     }
     if (step === 3) {
-      // At least one accepted token row, with a valid rate.
+      // At least one row, and each row has a usable rate. Stablecoins derive
+      // their rate from `pricePerToken` (humanRate is unused, see the JSX
+      // branch below); oracle tokens read from a Chainlink feed; only
+      // fixed-rate non-stable tokens require an explicit humanRate.
       return (
         form.acceptedTokens.length > 0 &&
-        form.acceptedTokens.every(
-          (t) => t.symbol.length > 0 && Number(t.humanRate) > 0,
-        )
+        form.acceptedTokens.every((t) => {
+          if (!t.symbol) return false;
+          const known = KNOWN_TOKENS.find((k) => k.symbol === t.symbol);
+          if (!known) return false;
+          if (known.stableUsd) return Number(form.pricePerToken) > 0;
+          if (known.defaultMode === "oracle") {
+            return !!known.oracleFeed[CHAIN_ID];
+          }
+          return Number(t.humanRate) > 0;
+        })
       );
     }
     if (step === 4) {
@@ -549,6 +563,7 @@ export default function CreateCampaign() {
                       e.target.value.toUpperCase().slice(0, 8),
                     )
                   }
+                  placeholder="OLIVE"
                   className="input uppercase"
                   maxLength={8}
                 />
@@ -584,6 +599,7 @@ export default function CreateCampaign() {
                         e.target.value.toUpperCase().slice(0, 8),
                       )
                     }
+                    placeholder="OIL"
                     className="input uppercase"
                     maxLength={8}
                   />
@@ -697,6 +713,7 @@ export default function CreateCampaign() {
                     step="0.001"
                     value={form.pricePerToken}
                     onChange={(e) => update("pricePerToken", e.target.value)}
+                    placeholder="0.144"
                     className="input"
                   />
                 </Field>
@@ -709,6 +726,7 @@ export default function CreateCampaign() {
                     min="365"
                     value={form.seasonDuration}
                     onChange={(e) => update("seasonDuration", e.target.value)}
+                    placeholder="365"
                     className="input"
                   />
                 </Field>
@@ -723,6 +741,7 @@ export default function CreateCampaign() {
                     type="number"
                     value={form.minCapTrees}
                     onChange={(e) => update("minCapTrees", e.target.value)}
+                    placeholder="50"
                     className="input"
                   />
                 </Field>
@@ -734,6 +753,7 @@ export default function CreateCampaign() {
                     type="number"
                     value={form.maxCapTrees}
                     onChange={(e) => update("maxCapTrees", e.target.value)}
+                    placeholder="200"
                     className="input"
                   />
                 </Field>
@@ -756,6 +776,7 @@ export default function CreateCampaign() {
                     type="number"
                     value={form.minProductClaim}
                     onChange={(e) => update("minProductClaim", e.target.value)}
+                    placeholder="5"
                     className="input"
                   />
                 </Field>
@@ -768,13 +789,10 @@ export default function CreateCampaign() {
                   hint={t("step2.expectedAnnualHarvestUsdHint")}
                 >
                   <div className="relative">
-                    {/* Fixed-width adornment box keeps the divider line at a
-                        predictable x-coord regardless of font/zoom — was
-                        content-driven before and started crowding the digits
-                        on some renderings. */}
-                    <span className="absolute inset-y-0 left-0 w-12 flex items-center justify-center border-r border-outline-variant/15 text-sm font-bold text-on-surface-variant pointer-events-none">
-                      $
-                    </span>
+                    {/* Single right-side adornment showing both the currency
+                        and the period — reads "$ / YR" together. Earlier the
+                        $ sat on the left as a separate adornment which felt
+                        disjointed and crowded the digits on some renderings. */}
                     <input
                       type="text"
                       inputMode="numeric"
@@ -794,11 +812,10 @@ export default function CreateCampaign() {
                         update("expectedAnnualHarvestUsd", raw);
                       }}
                       placeholder="5,000"
-                      className="input pl-16 pr-16 font-semibold tabular-nums"
+                      className="input pr-20 font-semibold tabular-nums"
                     />
-                    {/* Right-side /yr suffix — also fixed-width for symmetry. */}
-                    <span className="absolute inset-y-0 right-0 w-14 flex items-center justify-center border-l border-outline-variant/15 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant pointer-events-none">
-                      / yr
+                    <span className="absolute inset-y-0 right-0 w-20 flex items-center justify-center border-l border-outline-variant/15 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant pointer-events-none">
+                      $ / YR
                     </span>
                   </div>
                 </Field>
@@ -842,6 +859,7 @@ export default function CreateCampaign() {
                   onChange={(e) =>
                     update("firstHarvestYear", e.target.value)
                   }
+                  placeholder={String(new Date().getFullYear() + 2)}
                   className="input"
                 />
               </Field>
@@ -867,6 +885,7 @@ export default function CreateCampaign() {
                   step="1"
                   value={form.coverageHarvests}
                   onChange={(e) => update("coverageHarvests", e.target.value)}
+                  placeholder="0"
                   className="input"
                 />
               </Field>
@@ -1714,12 +1733,9 @@ function CollateralStep({
           )}
         </div>
         <div className="relative">
-          {/* Fixed-width adornments mirror the harvest USD input on step 2;
-              avoids the overlap that the content-driven span had on some
-              renderings. */}
-          <span className="absolute inset-y-0 left-0 w-12 flex items-center justify-center border-r border-outline-variant/15 text-sm font-bold text-on-surface-variant pointer-events-none">
-            $
-          </span>
+          {/* Right-side combined adornment "$ USDC" — mirrors the harvest
+              USD input pattern on step 2 ($ / YR) and removes the left $
+              that crowded the digits. */}
           <input
             type="text"
             inputMode="numeric"
@@ -1734,10 +1750,10 @@ function CollateralStep({
               onChange(raw || "0");
             }}
             placeholder="0"
-            className="input pl-16 pr-20 font-semibold tabular-nums"
+            className="input pr-24 font-semibold tabular-nums"
           />
-          <span className="absolute inset-y-0 right-0 w-16 flex items-center justify-center border-l border-outline-variant/15 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant pointer-events-none">
-            USDC
+          <span className="absolute inset-y-0 right-0 w-24 flex items-center justify-center border-l border-outline-variant/15 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant pointer-events-none">
+            $ USDC
           </span>
         </div>
         <p className="text-xs text-on-surface-variant mt-1.5">

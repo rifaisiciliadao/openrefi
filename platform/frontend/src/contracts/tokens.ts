@@ -43,8 +43,15 @@ export const KNOWN_TOKENS: KnownToken[] = [
   {
     symbol: "mUSDC",
     name: "Mock USDC (testnet)",
+    // Sourced from the same env that drives factory.usdc + getAddresses().usdc.
+    // Hardcoding here led to drift across redeploys (the KNOWN_TOKENS entry
+    // pointed at an older mock while the factory was wired to a newer one),
+    // which broke the BuyPanel "Mint mUSDC" button: selected.address ≠
+    // mockUsdcAddress so the gating condition silently failed.
     addresses: {
-      84532: "0x1b0a76431b3CfD55b3be22497F03920C71623c47",
+      84532:
+        (process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}` | undefined) ||
+        "0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E",
       8453: null,
     },
     decimals: 6,
