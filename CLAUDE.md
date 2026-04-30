@@ -144,8 +144,9 @@ Separate from the contracts, the `platform/` directory contains the user-facing 
 ```
 platform/
 ├── frontend/   Next.js 15 App Router — wallet + UI
-├── backend/    Fastify — DO Spaces upload (port 4001)
-└── subgraph/   Goldsky-deployed indexer
+├── backend/    Fastify — DO Spaces upload + invite gate (port 4001)
+├── subgraph/   Goldsky-deployed indexer
+└── admin/      Local-only Vite+React dashboard for the invite queue (port 4101)
 ```
 
 ### Frontend (`platform/frontend/`)
@@ -204,10 +205,30 @@ Fastify on **port 4001** (4000 was taken locally). Uses `@aws-sdk/client-s3` aga
 | `GET /api/snapshot/:campaign/:seasonId` | Returns `{ holders: [{user, yieldAmount}], totalYield, ... }` at season-close. Implemented in `src/snapshot.ts`: queries the subgraph for active positions at the season, then multicalls `earned(positionId)` on the StakingVault, merges with `Position.yieldClaimed` to get total per-user $YIELD. Feeds directly into `/api/merkle/generate`. Used by ProducerManagePanel's reportHarvest flow. |
 | `POST /api/merkle/generate` | Body: `{ campaign, seasonId, totalProductUnits, holders: [{ user, yieldAmount }], minProductClaim? }`. Builds a Merkle tree with leaves `keccak256(abi.encodePacked(user, seasonId, productAmount))` and `sortPairs=true` (OZ `MerkleProof.verify`-compatible). Persists tree + all proofs at `merkle/<campaign>/<seasonId>.json` on DO Spaces. Returns `{ root, url, count }`. Root is what the producer passes to `HarvestManager.reportHarvest`. |
 | `GET /api/merkle/:campaign/:seasonId/:user` | Reads the tree JSON from the public bucket and returns `{ user, productAmount, proof }` for that user — or 404 if they're not in the snapshot / below `minProductClaim`. |
+| `POST /api/invite/request` | Body `{ email, ethAddress, telegram }`. viem-validated, IP rate-limited (default 5 / hour). Writes `invites/<lowercase-address>.json` (ACL=private) on `growfi-media`, updates `invites/_index.json`, sends `request_received` to the user **and** fans out `admin_notify` to `ADMIN_NOTIFY_EMAIL` (best-effort, never fails the user response). 409 on duplicate email/address (pending or approved); allows re-application after rejection. |
+| `GET /api/invite/check?address=` | Wallet-connect access check — single GET on `invites/<address>.json`. Returns `{ status: "none"\|"pending"\|"approved"\|"rejected", address, email?, telegram? }`. The whole gate hinges on this: lowercase-keyed object name → O(1) lookup, no scan, no DB. |
+| `GET /api/admin/invites?status=` | (X-Admin-Key) reads `invites/_index.json` and lists `{ id, address, email, telegram, status, createdAt, updatedAt }`. Filters: `pending\|approved\|rejected\|all`. |
+| `POST /api/admin/invites/:address/approve` | (X-Admin-Key) flips status, sends `approved` email (no code — the wallet is the credential). Idempotent: re-approving re-sends the email. |
+| `POST /api/admin/invites/:address/reject` | (X-Admin-Key) body `{ notes?, notify? }`. `notify=false` skips the rejection email. |
+| `DELETE /api/admin/invites/:address` | (X-Admin-Key) hard-deletes the record + the index entry. |
 
-Env: `PORT`, `HOST`, `DO_SPACES_REGION`, `DO_SPACES_BUCKET`, `DO_SPACES_ENDPOINT`, `DO_SPACES_PUBLIC_BASE`, `DO_SPACES_KEY`, `DO_SPACES_SECRET`. Rotate keys with `doctl spaces keys create/delete`.
+Env: `PORT`, `HOST`, `DO_SPACES_*`, plus invite-gate envs `INVITES_OBJECT_PREFIX` (default `invites`), `APP_URL` (embedded in approval emails), `ADMIN_API_KEY` (shared with `platform/admin`), `ADMIN_NOTIFY_EMAIL` (default `hey@growfi.dev`, set to empty to disable fan-out), `RESEND_API_KEY`, `RESEND_FROM`, `INVITE_RATE_WINDOW_MS`, `INVITE_RATE_MAX`.
 
 File constraints (5 MB, `image/{jpeg,png,webp,avif,gif}`) enforced in-route.
+
+### Invite gate (`platform/admin/` + backend `src/store.ts` + frontend `src/lib/inviteGate.tsx`)
+
+Wallet-based private beta gate — **one JSON per ETH address on `growfi-media`**, the wallet *is* the credential, no codes.
+
+- **Storage**: `invites/<lowercase-address>.json` (full record: id, address, email, telegram, status, notes, ip, createdAt, updatedAt) + `invites/_index.json` (compact summaries for admin listing). Both `ACL=private`. The whole point of keying by lowercase address is so the wallet-connect lookup is one `GetObjectCommand`, no `ListObjectsV2`.
+- **Persistence on DO App Platform** — App Platform components have ephemeral filesystems, so SQLite/files in `/data` get wiped on every rebuild. We hold zero state on the instance: every read/write goes through `growfi-media`. `buildSpacesStore({ s3, bucket, prefix })` in `src/store.ts` provides the production impl, `buildInMemoryStore()` is the test variant. A single in-process write-chain (`writeChain.then(...)`) serialises mutations because DO App Platform runs `instance_count: 1`.
+- **Frontend gate** — `src/lib/inviteGate.tsx` watches wagmi `useAccount` and hits `/api/invite/check` on every address change. Five states: `loading | no-wallet | none | pending | approved | rejected`. `<InviteGate>` (mounted inside `ConditionalChrome`, NOT on `/`) redirects gated paths (`/create`, `/portfolio`, `/campaign/*`, `/producer/*`) back to `/?gated=1&reason=connect|request|pending|rejected` unless the wallet is approved. `<InviteSection>` between Hero and Campaigns on `/` is state-driven: connect-wallet CTA → request form (email + telegram, address pre-filled and locked) → pending view → approved view. The landing `<Nav>` hides Esplora/Crea/Portfolio while not approved and shows a single "Richiedi invito" anchor instead. Connect Wallet itself stays visible everywhere; the gate is purely about *whether the connected wallet is in the approved set*.
+- **Admin app** — `platform/admin/` is a Vite+React app meant to run only on `127.0.0.1:4101` (`npm run dev`). Vite proxies `/api → http://localhost:4001`. First load asks for the `ADMIN_API_KEY` (env on the backend, generate with `openssl rand -hex 24`) which it stores in `localStorage` and sends as `X-Admin-Key` on every admin call. Tabs: pending / approved / rejected / all. Approve/reject/delete buttons hit the address-keyed admin endpoints. `<meta robots noindex>`. Don't deploy.
+- **Emails** (`src/email.ts`, Resend) — 4 kinds: `request_received` to the user, `admin_notify` to `ADMIN_NOTIFY_EMAIL` (with the requester's email + wallet + clickable `t.me/<handle>` link — fan-out is fire-and-forget and never blocks the user response), `approved` (no code; tells them to "Connect Wallet with the approved address"), `rejected` (optional admin notes). Without `RESEND_API_KEY` the sender falls back to a stdout-noop so local dev still gets to exercise the path.
+- **No invite codes** — earlier draft used 16-char redeemable codes stored in localStorage. Dropped because the wallet address is already a stronger credential, and binding the gate to it removes a class of "lost / shared / phished code" footguns. Don't reintroduce the redeem flow.
+- **Gate is UX-only** — the on-chain factory stays permissionless. A determined user can still call `createCampaign` from Etherscan. The gate's job is to keep the private-beta UI focused, not to enforce on-chain access control. Keep this in mind when discussing it as "security".
+
+Tests: 72 cases across `src/store.test.ts` (in-memory store CRUD + index consistency), `src/invite.test.ts` (every endpoint × every gating branch + duplicates + rate limit + admin notify fan-out + email failure isolation), `src/email.test.ts` (template rendering for all 4 kinds + HTML escape). End-to-end smoke: `scripts/smoke-invite.sh` with `BACKEND_URL` + `ADMIN_API_KEY` envs.
 
 ### Subgraph (`platform/subgraph/`)
 
@@ -242,6 +263,9 @@ Full guide: `platform/subgraph/DEPLOY.md`.
 
 ### Platform gotchas
 
+- **Invite store keys must stay lowercase** — both the per-eth object name (`invites/<lower>.json`) and the index entries. `parseAddress()` in `invite.ts` lowercases input before validating with `viem.isAddress` (which rejects all-caps mixed-case as not-a-valid-checksum). If you ever call `getByAddress` with a mixed-case checksummed address you'll miss the object — always lowercase first.
+- **Address as credential, not a code** — the gate hangs on `GET /api/invite/check?address=…`. Anyone who can sign with the approved wallet has access. There's no second-factor and no localStorage code anywhere. Don't reintroduce a code-based redeem flow.
+- **Admin notify fan-out is fire-and-forget** — `POST /api/invite/request` returns 201 even if the `admin_notify` email throws. Surface failures in `app.log` only, never propagate to the user response.
 - **Factory is live** on Base Sepolia at `0x26dfae1d399a737708aab1f9a116eb814e98ee87` (v3.3, see `CONTRACTS.md` for the full address set). Discovery reads exclusively from the Goldsky subgraph — no more mock fallback. Empty subgraph → empty state CTA.
 - **Imperative tx flow everywhere** — never use `useWaitForTransactionReceipt` + useEffect for progress state (race-prone: a receipt from the previous tx can briefly match while a new tx is in flight and show wrong success). Always use `waitForTx(hash)` from `@/lib/waitForTx` inside the async handler — it wraps `waitForTransactionReceipt` with `confirmations: 2`, `timeout: 90s`, and a `minVisibleMs` floor (default 1200ms) so the "confirming on-chain…" state is visible even when the receipt is cached. Silence `user rejected/denied` errors; surface everything else. The shared `config` is exported from `src/app/providers.tsx`.
 - **RPC fallback** — `providers.tsx` uses a viem `fallback` transport across `sepolia.base.org`, `base-sepolia-rpc.publicnode.com`, and `base-sepolia.blockpi.network` (each with 3 retries @ 500ms, 10s timeout). The primary public endpoint was returning "block not found" mid-call often enough to break `activateCampaign` simulations — a single-endpoint config is brittle.
@@ -262,7 +286,7 @@ Three layers, all runnable in CI:
 | Layer | Command | Coverage |
 |---|---|---|
 | Contracts | `forge test --no-match-path "test/fork/*"` | 188 unit + 11 invariants + 1 full-lifecycle E2E (`test/E2E.t.sol::test_E2E_fullLifecycle`) + 10 pool-security PoCs (`test/PoolSecurity.t.sol`) for buy-path reentrancy / cross-proxy reentry / fee-on-transfer blast-radius + 18 collateral PoCs (`test/CollateralAttacks.t.sol`) covering lock/settle access control, state machine, double-settle, partial vs full draw + 22 KYC PoCs (`test/ProducerRegistryKyc.t.sol`) for role gating + 5 collateral hardening PoCs (`test/CollateralHardening.t.sol`) for FoT-as-collateral misconfig drift, reentrancy on `lockCollateral` and `settleSeasonShortfall`, and a v1/v2/v3 storage-layout regression assertion. |
-| Backend | `cd platform/backend && npm test` | 24 Node `node:test` cases: merkle packing + OZ-compatibility proof verification, and Fastify `inject()` integration for every route. Uses injected S3 / snapshot stubs — no network, no AWS. |
+| Backend | `cd platform/backend && npm test` | 72 Node `node:test` cases: merkle packing + OZ-compatibility proof verification, Fastify `inject()` integration for every upload/snapshot/merkle route, plus the full invite-gate suite (in-memory store CRUD + index, every `/api/invite/*` and `/api/admin/invites/*` branch, rate limit, admin notify fan-out, all 4 email templates). Uses injected S3 / snapshot / store / email stubs — no network, no AWS. |
 | Frontend | `cd platform/frontend && npm run build` | Type-safe build (Next.js + tsc). Manual UI smoke in Chrome for the post-harvest timeline. |
 
 Testnet smoke (manual, needs 2 funded keys):
