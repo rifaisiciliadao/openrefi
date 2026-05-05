@@ -246,11 +246,10 @@ export function InviteSection() {
               />
 
               <label className="mt-4 block text-xs font-semibold tracking-[0.06em] uppercase text-[#1a1a1a]">
-                {t("fieldTelegram")}
+                {t("fieldTelegram")} <span className="text-[#6b7d6f]">{t("optional")}</span>
               </label>
               <input
                 type="text"
-                required
                 spellCheck={false}
                 placeholder="@username"
                 value={telegram}

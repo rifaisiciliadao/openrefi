@@ -7,7 +7,8 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "NODE_ENV=test node --import tsx --test src/merkle.test.ts src/app.test.ts src/invite.test.ts src/email.test.ts src/store.test.ts"
+    "test": "NODE_ENV=test node --import tsx --test src/merkle.test.ts src/app.test.ts src/invite.test.ts src/email.test.ts src/store.test.ts",
+    "invite": "tsx scripts/invite-cli.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1031.0",

@@ -102,7 +102,8 @@ export function registerInviteRoutes(
     if (!isAddress(ethRaw)) {
       return reply.status(400).send({ error: "Indirizzo Ethereum non valido" });
     }
-    if (!TELEGRAM_RE.test(telegramRaw)) {
+    // Telegram is optional. Validate the format only if the producer filled it in.
+    if (telegramRaw && !TELEGRAM_RE.test(telegramRaw)) {
       return reply.status(400).send({
         error: "Username Telegram non valido (es. @username, 4-32 char)",
       });
@@ -112,7 +113,11 @@ export function registerInviteRoutes(
     // so wallet-connect lookups land on the right object regardless of case.
     const checksummed = getAddress(ethRaw);
     const lower = checksummed.toLowerCase();
-    const telegram = telegramRaw.startsWith("@") ? telegramRaw : `@${telegramRaw}`;
+    const telegram = telegramRaw
+      ? telegramRaw.startsWith("@")
+        ? telegramRaw
+        : `@${telegramRaw}`
+      : "";
     const ip = getClientIp(req);
 
     if (ip) {

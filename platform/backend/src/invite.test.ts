@@ -87,7 +87,7 @@ describe("POST /api/invite/request — validation", () => {
     assert.match(res.json().error, /Ethereum/);
   });
 
-  it("400 on bad telegram", async () => {
+  it("400 on bad telegram (when provided)", async () => {
     const { app } = await makeApp();
     const res = await app.inject({
       method: "POST",
@@ -96,6 +96,33 @@ describe("POST /api/invite/request — validation", () => {
     });
     assert.equal(res.statusCode, 400);
     assert.match(res.json().error, /Telegram/);
+  });
+
+  it("201 when telegram is omitted (optional)", async () => {
+    const { app, store } = await makeApp();
+    const { telegram: _t, ...withoutTelegram } = VALID_PAYLOAD;
+    void _t;
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/invite/request",
+      payload: withoutTelegram,
+    });
+    assert.equal(res.statusCode, 201);
+    const row = await store.getByAddress(ALICE);
+    assert.ok(row);
+    assert.equal(row.telegram, "");
+  });
+
+  it("201 when telegram is empty string", async () => {
+    const { app, store } = await makeApp();
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/invite/request",
+      payload: { ...VALID_PAYLOAD, telegram: "" },
+    });
+    assert.equal(res.statusCode, 201);
+    const row = await store.getByAddress(ALICE);
+    assert.equal(row?.telegram, "");
   });
 });
 

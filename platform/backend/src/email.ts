@@ -127,9 +127,11 @@ export function renderEmail(payload: EmailPayload): RenderedEmail {
       const addr = payload.data.ethAddress ?? "";
       const tg = payload.data.telegram ?? "";
       const tgHandle = tg.startsWith("@") ? tg.slice(1) : tg;
-      const tgLink = tgHandle
-        ? `https://t.me/${escapeHtml(tgHandle)}`
-        : null;
+      const tgLink =
+        tgHandle && /^[A-Za-z][A-Za-z0-9_]{3,31}$/.test(tgHandle)
+          ? `https://t.me/${escapeHtml(tgHandle)}`
+          : null;
+      const tgDisplay = tg || "—";
       const subject = `New invite request — ${reqEmail || addr}`;
       const body = `
         <h1 style="font-size:20px;margin:0 0 14px 0;font-weight:700;">New invite request</h1>
@@ -148,7 +150,7 @@ export function renderEmail(payload: EmailPayload): RenderedEmail {
             <td style="padding:8px 0;border-top:1px solid #eef0ec;font-weight:600;">${
               tgLink
                 ? `<a href="${tgLink}" style="color:#2e6b3a;">${escapeHtml(tg)}</a>`
-                : escapeHtml(tg)
+                : escapeHtml(tgDisplay)
             }</td>
           </tr>
         </table>
@@ -160,7 +162,7 @@ export function renderEmail(payload: EmailPayload): RenderedEmail {
           "New invite request",
           `Email:    ${reqEmail}`,
           `Wallet:   ${addr}`,
-          `Telegram: ${tg}`,
+          `Telegram: ${tgDisplay}`,
         ].join("\n"),
       };
     }

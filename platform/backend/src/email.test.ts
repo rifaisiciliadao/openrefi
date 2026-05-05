@@ -60,6 +60,21 @@ describe("renderEmail · approved", () => {
 });
 
 describe("renderEmail · admin_notify", () => {
+  it("renders cleanly when telegram is empty", () => {
+    const r = renderEmail({
+      to: "hey@growfi.dev",
+      kind: "admin_notify",
+      data: {
+        requesterEmail: "alice@example.com",
+        ethAddress: ADDR,
+        telegram: "",
+      },
+    });
+    assert.match(r.html, /alice@example\.com/);
+    assert.doesNotMatch(r.html, /t\.me/);
+    assert.match(r.text, /Telegram: —/);
+  });
+
   it("subject names the requester + body lists email/wallet/telegram", () => {
     const r = renderEmail({
       to: "hey@growfi.dev",
