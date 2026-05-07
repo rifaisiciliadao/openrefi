@@ -2,10 +2,10 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -17,11 +17,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 ///         fill burns+mints (supply-neutral), new buyers should still be
 ///         able to consume the queue at cap. This suite pins that down.
 contract SellBackAtMaxCapTest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc;
 
-    Campaign campaign;
-    CampaignToken campaignToken;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
 
     address producer = makeAddr("producer");
     address feeRecipient = makeAddr("feeRecipient");
@@ -40,7 +40,7 @@ contract SellBackAtMaxCapTest is Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -59,11 +59,11 @@ contract SellBackAtMaxCapTest is Test {
             })
         );
         (address c, address ct,,,,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
 
         usdc.mint(alice, 10_000e6);
         usdc.mint(bob, 10_000e6);
@@ -88,7 +88,7 @@ contract SellBackAtMaxCapTest is Test {
         uint256 aliceSpend = (MAX_CAP * USDC_FIXED_RATE) / 1e18; // 1000 * 144_000 = 144_000_000 (144 USDC)
         vm.prank(alice);
         campaign.buy(address(usdc), aliceSpend);
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active), "must be Active");
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active), "must be Active");
         assertEq(campaign.currentSupply(), MAX_CAP, "supply == maxCap");
 
         // Alice queues 100 OLIVE for sell-back.
@@ -151,7 +151,7 @@ contract SellBackAtMaxCapTest is Test {
         uint256 aliceSpend = (600e18 * USDC_FIXED_RATE) / 1e18;
         vm.prank(alice);
         campaign.buy(address(usdc), aliceSpend);
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
 
         // Alice queues 100 for sell-back. supply=600, queue=100, room=400.
         vm.prank(alice);
@@ -175,7 +175,7 @@ contract SellBackAtMaxCapTest is Test {
 
         uint256 carolSpend = 144_000;
         vm.prank(carol);
-        vm.expectRevert(Campaign.MaxCapReached.selector);
+        vm.expectRevert(GrowfiCampaign.MaxCapReached.selector);
         campaign.buy(address(usdc), carolSpend);
     }
 }

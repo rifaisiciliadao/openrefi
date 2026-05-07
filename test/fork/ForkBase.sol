@@ -3,24 +3,24 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CampaignFactory} from "../../src/CampaignFactory.sol";
-import {Campaign} from "../../src/Campaign.sol";
-import {CampaignToken} from "../../src/CampaignToken.sol";
-import {YieldToken} from "../../src/YieldToken.sol";
-import {StakingVault} from "../../src/StakingVault.sol";
-import {HarvestManager} from "../../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../../src/GrowfiHarvestManager.sol";
 import {Deployer} from "../helpers/Deployer.sol";
 
 /// @title ForkBase — shared fork-test logic
 /// @notice Concrete child contracts override _rpcUrl() / _usdc() / _ethUsdFeed() to pin a chain.
 ///         All tests skip gracefully if the fork cannot be created (RPC down or env not set).
 abstract contract ForkBase is Test {
-    CampaignFactory factory;
-    Campaign campaign;
-    CampaignToken campaignToken;
-    YieldToken yieldToken;
-    StakingVault stakingVault;
-    HarvestManager harvestManager;
+    GrowfiCampaignFactory factory;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiYieldToken yieldToken;
+    GrowfiStakingVault stakingVault;
+    GrowfiHarvestManager harvestManager;
 
     address protocolOwner = makeAddr("protocolOwner");
     address feeRecipient = makeAddr("feeRecipient");
@@ -54,7 +54,7 @@ abstract contract ForkBase is Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -73,16 +73,16 @@ abstract contract ForkBase is Test {
             })
         );
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
-        yieldToken = YieldToken(yt);
-        stakingVault = StakingVault(sv);
-        harvestManager = HarvestManager(hm);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
+        yieldToken = GrowfiYieldToken(yt);
+        stakingVault = GrowfiStakingVault(sv);
+        harvestManager = GrowfiHarvestManager(hm);
 
         // Wire real USDC (fixed rate) and real ETH/USD oracle
         vm.startPrank(producer);
-        campaign.addAcceptedToken(_usdc(), Campaign.PricingMode.Fixed, 144_000, address(0));
-        campaign.addAcceptedToken(_weth(), Campaign.PricingMode.Oracle, 0, _ethUsdFeed());
+        campaign.addAcceptedToken(_usdc(), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(_weth(), GrowfiCampaign.PricingMode.Oracle, 0, _ethUsdFeed());
         vm.stopPrank();
     }
 
@@ -103,7 +103,7 @@ abstract contract ForkBase is Test {
         vm.stopPrank();
 
         assertEq(campaignToken.balanceOf(alice), 10_000e18, "10k OLIVE minted");
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active), "auto-activated");
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active), "auto-activated");
     }
 
     /// @dev Oracle price fetch works against the real Chainlink feed.

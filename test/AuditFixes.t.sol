@@ -2,12 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {MockOracle} from "./helpers/MockOracle.sol";
@@ -17,7 +17,7 @@ import {Deployer} from "./helpers/Deployer.sol";
 /// @title Regression tests for the Apr-2026 security audit findings.
 /// @dev Every finding in the audit report gets at least one test here.
 contract AuditFixesTest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc; // 6 decimals — realistic USDC
     MockERC20 weth; // 18 decimals
     MockERC20 wbtc; // 8 decimals — the finding target
@@ -32,9 +32,9 @@ contract AuditFixesTest is Test {
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
 
-    Campaign campaign;
-    CampaignToken campaignToken;
-    StakingVault stakingVault;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiStakingVault stakingVault;
 
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
@@ -48,7 +48,7 @@ contract AuditFixesTest is Test {
         factory = Deployer.deployProtocol(owner, feeRecipient, address(usdc), address(0));
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -68,9 +68,9 @@ contract AuditFixesTest is Test {
         );
 
         (address c, address ct,, address sv,,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
-        stakingVault = StakingVault(sv);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
+        stakingVault = GrowfiStakingVault(sv);
     }
 
     // ===================================================================
@@ -81,7 +81,7 @@ contract AuditFixesTest is Test {
     ///         number of $CAMPAIGN tokens as the fixed-rate equivalent.
     function test_H01_oracleMode_6decimalToken_usdc() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Oracle, 0, address(usdcOracle));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Oracle, 0, address(usdcOracle));
 
         usdc.mint(alice, 1_000e6); // 1000 USDC
         vm.prank(alice);
@@ -98,7 +98,7 @@ contract AuditFixesTest is Test {
     ///         number of $CAMPAIGN tokens.
     function test_H01_oracleMode_8decimalToken_wbtc() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(wbtc), Campaign.PricingMode.Oracle, 0, address(wbtcOracle));
+        campaign.addAcceptedToken(address(wbtc), GrowfiCampaign.PricingMode.Oracle, 0, address(wbtcOracle));
 
         wbtc.mint(alice, 10e8); // 10 WBTC
         vm.prank(alice);
@@ -117,7 +117,7 @@ contract AuditFixesTest is Test {
     /// @notice 18-decimal WETH oracle path must keep its original behaviour.
     function test_H01_oracleMode_18decimalToken_weth() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(weth), Campaign.PricingMode.Oracle, 0, address(wethOracle));
+        campaign.addAcceptedToken(address(weth), GrowfiCampaign.PricingMode.Oracle, 0, address(wethOracle));
 
         weth.mint(alice, 10e18);
         vm.prank(alice);
@@ -136,7 +136,7 @@ contract AuditFixesTest is Test {
     ///         oracle mode.
     function test_H01_getPrice_oracleMode_6decimalToken() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Oracle, 0, address(usdcOracle));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Oracle, 0, address(usdcOracle));
 
         // 1000 $CAMPAIGN @ $0.144 = $144. Oracle is $1/USDC → 144 USDC native (144e6).
         uint256 price = campaign.getPrice(address(usdc), 1000e18);
@@ -149,7 +149,7 @@ contract AuditFixesTest is Test {
         MockOracle feed = new MockOracle(1e8, 8);
         vm.prank(producer);
         vm.expectRevert();
-        campaign.addAcceptedToken(address(weird), Campaign.PricingMode.Oracle, 0, address(feed));
+        campaign.addAcceptedToken(address(weird), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
     }
 
     // ===================================================================
@@ -161,7 +161,7 @@ contract AuditFixesTest is Test {
         address bobProducer = bob;
         vm.prank(bobProducer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: bobProducer,
                 tokenName: "Wheat",
                 tokenSymbol: "WHEAT",
@@ -189,7 +189,7 @@ contract AuditFixesTest is Test {
         vm.prank(bob);
         vm.expectRevert(bytes("tokenName already taken"));
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: bob,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE2",
@@ -211,7 +211,7 @@ contract AuditFixesTest is Test {
         // A different name from the same producer goes through.
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive Phase 2",
                 tokenSymbol: "OLIVE2",
@@ -236,7 +236,7 @@ contract AuditFixesTest is Test {
         vm.prank(producer);
         vm.expectRevert(bytes("Empty tokenName"));
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "",
                 tokenSymbol: "X",
@@ -262,14 +262,14 @@ contract AuditFixesTest is Test {
 
     function test_M07_sellBackOrderCap() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
         usdc.mint(alice, 10_000e6);
         vm.prank(alice);
         usdc.approve(address(campaign), type(uint256).max);
         vm.prank(alice);
         campaign.buy(address(usdc), 7_200e6);
 
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
 
         vm.prank(alice);
         campaignToken.approve(address(campaign), type(uint256).max);
@@ -280,7 +280,7 @@ contract AuditFixesTest is Test {
             campaign.sellBack(1);
         }
         vm.prank(alice);
-        vm.expectRevert(Campaign.TooManyOpenSellBackOrders.selector);
+        vm.expectRevert(GrowfiCampaign.TooManyOpenSellBackOrders.selector);
         campaign.sellBack(1);
 
         // Cancel resets the counter.
@@ -296,7 +296,7 @@ contract AuditFixesTest is Test {
 
     function test_M04_reportHarvest_pausable() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
         usdc.mint(alice, 10_000e6);
         vm.prank(alice);
         usdc.approve(address(campaign), type(uint256).max);
@@ -315,12 +315,12 @@ contract AuditFixesTest is Test {
         factory.pauseCampaign(0);
         vm.prank(producer);
         vm.expectRevert();
-        HarvestManager(hmAddr).reportHarvest(1, 1000e18, bytes32(0), 0);
+        GrowfiHarvestManager(hmAddr).reportHarvest(1, 1000e18, bytes32(0), 0);
     }
 
-    function harvestManagerOf(uint256 i) internal view returns (HarvestManager) {
+    function harvestManagerOf(uint256 i) internal view returns (GrowfiHarvestManager) {
         (,,,, address hm,,) = factory.campaigns(i);
-        return HarvestManager(hm);
+        return GrowfiHarvestManager(hm);
     }
 
     // ===================================================================
@@ -329,7 +329,7 @@ contract AuditFixesTest is Test {
 
     function test_M03_unstake_worksWhilePaused() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
         usdc.mint(alice, 10_000e6);
         vm.prank(alice);
         usdc.approve(address(campaign), type(uint256).max);
@@ -339,7 +339,7 @@ contract AuditFixesTest is Test {
         campaign.startSeason(1);
 
         (,,, address sv,,,) = factory.campaigns(0);
-        StakingVault vault = StakingVault(sv);
+        GrowfiStakingVault vault = GrowfiStakingVault(sv);
 
         uint256 aliceBal = campaignToken.balanceOf(alice);
         vm.prank(alice);
@@ -369,12 +369,12 @@ contract AuditFixesTest is Test {
         // Fill to cap with 10 distinct tokens.
         for (uint256 i = 0; i < 10; i++) {
             MockERC20 t = new MockERC20("T", "T", 18);
-            campaign.addAcceptedToken(address(t), Campaign.PricingMode.Oracle, 0, address(feed));
+            campaign.addAcceptedToken(address(t), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
         }
         // 11th add must revert.
         MockERC20 over = new MockERC20("Over", "O", 18);
-        vm.expectRevert(Campaign.TooManyAcceptedTokens.selector);
-        campaign.addAcceptedToken(address(over), Campaign.PricingMode.Oracle, 0, address(feed));
+        vm.expectRevert(GrowfiCampaign.TooManyAcceptedTokens.selector);
+        campaign.addAcceptedToken(address(over), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
 
         // Remove the first one, slot must be freed.
         address[] memory accepted = campaign.getAcceptedTokens();
@@ -382,7 +382,7 @@ contract AuditFixesTest is Test {
         assertEq(campaign.getAcceptedTokens().length, 9, "M-01: slot not freed");
 
         // New add now succeeds.
-        campaign.addAcceptedToken(address(over), Campaign.PricingMode.Oracle, 0, address(feed));
+        campaign.addAcceptedToken(address(over), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
         assertEq(campaign.getAcceptedTokens().length, 10);
         vm.stopPrank();
     }
@@ -392,7 +392,7 @@ contract AuditFixesTest is Test {
         vm.prank(alice);
         vm.expectRevert("producer must be caller");
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: bob, // caller is alice, not bob
                 tokenName: "X",
                 tokenSymbol: "X",
@@ -417,12 +417,12 @@ contract AuditFixesTest is Test {
     // ===================================================================
 
     /// @dev Helper to deploy a campaign wired to a given sequencer feed.
-    function _deployCampaignWithSequencer(address sequencerFeed) internal returns (Campaign, MockERC20, MockOracle) {
-        CampaignFactory f = Deployer.deployProtocol(owner, feeRecipient, address(usdc), sequencerFeed);
+    function _deployCampaignWithSequencer(address sequencerFeed) internal returns (GrowfiCampaign, MockERC20, MockOracle) {
+        GrowfiCampaignFactory f = Deployer.deployProtocol(owner, feeRecipient, address(usdc), sequencerFeed);
         address newProducer = makeAddr("producer2");
         vm.prank(newProducer);
         f.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: newProducer,
                 tokenName: "X",
                 tokenSymbol: "X",
@@ -441,11 +441,11 @@ contract AuditFixesTest is Test {
             })
         );
         (address c,,,,,,) = f.campaigns(0);
-        Campaign camp = Campaign(c);
+        GrowfiCampaign camp = GrowfiCampaign(c);
         MockERC20 token = new MockERC20("T", "T", 6);
         MockOracle feed = new MockOracle(1e8, 8);
         vm.prank(newProducer);
-        camp.addAcceptedToken(address(token), Campaign.PricingMode.Oracle, 0, address(feed));
+        camp.addAcceptedToken(address(token), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
         token.mint(alice, 10_000e6);
         vm.prank(alice);
         token.approve(address(camp), type(uint256).max);
@@ -455,9 +455,9 @@ contract AuditFixesTest is Test {
     /// @notice When the sequencer is reported DOWN, buys revert.
     function test_H02_sequencerDown_blocksBuy() public {
         MockSequencerFeed seq = new MockSequencerFeed(1, block.timestamp); // down
-        (Campaign camp, MockERC20 tok,) = _deployCampaignWithSequencer(address(seq));
+        (GrowfiCampaign camp, MockERC20 tok,) = _deployCampaignWithSequencer(address(seq));
         vm.prank(alice);
-        vm.expectRevert(Campaign.SequencerDown.selector);
+        vm.expectRevert(GrowfiCampaign.SequencerDown.selector);
         camp.buy(address(tok), 100e6);
     }
 
@@ -465,9 +465,9 @@ contract AuditFixesTest is Test {
     function test_H02_sequencerGracePeriod_blocksBuy() public {
         uint256 recoveredAt = block.timestamp;
         MockSequencerFeed seq = new MockSequencerFeed(0, recoveredAt); // up, just now
-        (Campaign camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(seq));
+        (GrowfiCampaign camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(seq));
         vm.prank(alice);
-        vm.expectRevert(Campaign.SequencerGracePeriod.selector);
+        vm.expectRevert(GrowfiCampaign.SequencerGracePeriod.selector);
         camp.buy(address(tok), 100e6);
 
         // After grace period, buy should succeed. Warp invalidates the oracle
@@ -480,23 +480,23 @@ contract AuditFixesTest is Test {
 
     /// @notice When sequencer feed is address(0) (L1 deployment), no check.
     function test_H02_noSequencerFeed_buysSucceed() public {
-        (Campaign camp, MockERC20 tok,) = _deployCampaignWithSequencer(address(0));
+        (GrowfiCampaign camp, MockERC20 tok,) = _deployCampaignWithSequencer(address(0));
         vm.prank(alice);
         camp.buy(address(tok), 100e6); // must not revert
     }
 
     /// @notice Oracle with stale answeredInRound must revert.
     function test_H02_staleRound_revertsBuy() public {
-        (Campaign camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(0));
+        (GrowfiCampaign camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(0));
         feed.setRoundData(10, 5); // answeredInRound(5) < roundId(10)
         vm.prank(alice);
-        vm.expectRevert(Campaign.StaleOraclePrice.selector);
+        vm.expectRevert(GrowfiCampaign.StaleOraclePrice.selector);
         camp.buy(address(tok), 100e6);
     }
 
     /// @notice Oracle with startedAt == 0 must revert.
     function test_H02_unstartedRound_revertsBuy() public {
-        (Campaign camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(0));
+        (GrowfiCampaign camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(0));
         // MockOracle returns startedAt = block.timestamp; simulate startedAt=0 via
         // updatedAt manipulation on a different path — instead we check that a
         // fresh feed with normal state works, and rely on a dedicated unit below.
@@ -514,10 +514,10 @@ contract AuditFixesTest is Test {
     ///      for USDC at harvest. Returns the campaign+harvest pair.
     function _runToHarvest()
         internal
-        returns (Campaign camp, HarvestManager hm, uint256 aliceYield, uint256 holderPoolUsdc6)
+        returns (GrowfiCampaign camp, GrowfiHarvestManager hm, uint256 aliceYield, uint256 holderPoolUsdc6)
     {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
 
         // Fund past minCap → auto-activate. 50_000 $CAMPAIGN @ 0.144 USDC = 7200 USDC.
         usdc.mint(alice, 7200e6);
@@ -530,8 +530,8 @@ contract AuditFixesTest is Test {
         campaign.startSeason(1);
 
         (,,, address sv, address hmAddr,,) = factory.campaigns(0);
-        StakingVault vault = StakingVault(sv);
-        CampaignToken tok = campaignToken;
+        GrowfiStakingVault vault = GrowfiStakingVault(sv);
+        GrowfiCampaignToken tok = campaignToken;
 
         vm.prank(alice);
         tok.approve(address(vault), type(uint256).max);
@@ -548,29 +548,29 @@ contract AuditFixesTest is Test {
 
         uint256 totalValueUSD = 1000e18; // $1000 harvest
         vm.prank(producer);
-        HarvestManager(hmAddr).reportHarvest(1, totalValueUSD, bytes32(0), 0);
+        GrowfiHarvestManager(hmAddr).reportHarvest(1, totalValueUSD, bytes32(0), 0);
 
         (,, address ytAddr,,,,) = factory.campaigns(0);
         aliceYield = IERC20(ytAddr).balanceOf(alice);
 
         vm.prank(alice);
-        HarvestManager(hmAddr).redeemUSDC(1, aliceYield);
+        GrowfiHarvestManager(hmAddr).redeemUSDC(1, aliceYield);
 
         // Producer must now deposit. Compute gross USDC they need to deposit
         // to fully satisfy usdcOwed given the 2%/98% split on deposit.
         // holderPool = 980e18; usdcOwed ≤ 980e18; deposit gross = usdcOwed / 0.98 / 1e12.
-        (,,,,,,,, uint256 usdcOwed18,,,) = HarvestManager(hmAddr).seasonHarvests(1);
+        (,,,,,,,, uint256 usdcOwed18,,,) = GrowfiHarvestManager(hmAddr).seasonHarvests(1);
         // deposit amount in 6-dec USDC such that poolPortion * 1e12 >= usdcOwed18
         // poolPortion = deposit * 9800/10000 → deposit >= usdcOwed18 / 1e12 * 10000/9800
         usdcOwed18; // silence unused warning
-        holderPoolUsdc6 = HarvestManager(hmAddr).remainingDepositGross(1);
+        holderPoolUsdc6 = GrowfiHarvestManager(hmAddr).remainingDepositGross(1);
         camp = campaign;
-        hm = HarvestManager(hmAddr);
+        hm = GrowfiHarvestManager(hmAddr);
     }
 
     /// @notice Each depositUSDC call routes 2% of the amount to protocolFeeRecipient.
     function test_M05_depositUSDC_routesFeeToRecipient() public {
-        (Campaign camp, HarvestManager hm,, uint256 depositAmount) = _runToHarvest();
+        (GrowfiCampaign camp, GrowfiHarvestManager hm,, uint256 depositAmount) = _runToHarvest();
         camp; // silence unused
 
         uint256 feeBefore = usdc.balanceOf(feeRecipient);
@@ -596,7 +596,7 @@ contract AuditFixesTest is Test {
     ///         oversubscribe the USDC pool.
     function test_M06_forgottenClaim_noOversubscription() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
 
         usdc.mint(alice, 10_000e6);
         usdc.mint(bob, 10_000e6);
@@ -615,8 +615,8 @@ contract AuditFixesTest is Test {
         campaign.startSeason(1);
 
         (,,, address sv, address hmAddr,,) = factory.campaigns(0);
-        StakingVault vault = StakingVault(sv);
-        HarvestManager hm = HarvestManager(hmAddr);
+        GrowfiStakingVault vault = GrowfiStakingVault(sv);
+        GrowfiHarvestManager hm = GrowfiHarvestManager(hmAddr);
         (,, address ytAddr,,,,) = factory.campaigns(0);
         IERC20 yieldTok = IERC20(ytAddr);
 
@@ -671,7 +671,7 @@ contract AuditFixesTest is Test {
 
     function test_previewBuy_matchesActualBuy_fixedMode() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
 
         (uint256 tokensOut, uint256 effPay,, uint256 fee) = campaign.previewBuy(address(usdc), 144e6);
         assertEq(tokensOut, 1000e18, "previewBuy fixed-mode wrong tokensOut");
@@ -688,7 +688,7 @@ contract AuditFixesTest is Test {
 
     function test_previewBuy_capsAtMaxCap() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
         // overshoot: try to buy more than maxCap (1M @ 0.144 = 144k USDC)
         uint256 huge = 200_000e6;
         (uint256 tokensOut, uint256 effPay,, uint256 fee) = campaign.previewBuy(address(usdc), huge);
@@ -715,8 +715,8 @@ contract AuditFixesTest is Test {
     // ===================================================================
     // L-02: depositUSDC caps at usdcOwed — over-cap walletCap is silently
     // floored to the obligation, no revert. Pre-v3.4 the producer-facing
-    // entry was HarvestManager.depositUSDC which reverted with
-    // DepositExceedsOwed; v3.4 routes through Campaign.depositUSDC which
+    // entry was GrowfiHarvestManager.depositUSDC which reverted with
+    // DepositExceedsOwed; v3.4 routes through GrowfiCampaign.depositUSDC which
     // computes `total = min(obligation, fromCollateral + walletCap)` and
     // never overshoots, so a `walletCap = 2 × obligation` deposit just
     // closes the gap exactly.
@@ -738,7 +738,7 @@ contract AuditFixesTest is Test {
 
     /// @notice Fee is routed across multiple partial deposits, not only once.
     function test_M05_depositUSDC_routesFeeOnEveryDeposit() public {
-        (, HarvestManager hm,, uint256 depositAmount) = _runToHarvest();
+        (, GrowfiHarvestManager hm,, uint256 depositAmount) = _runToHarvest();
 
         usdc.mint(producer, depositAmount);
         vm.prank(producer);

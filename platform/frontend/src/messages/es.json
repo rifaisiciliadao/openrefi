@@ -607,6 +607,110 @@
   "kyc": {
     "verified": "KYC verificado — identidad atestiguada onchain por un admin del registry"
   },
+  "grow": {
+    "title": "$GROW",
+    "subtitle": "El token de utilidad del protocolo. Gánalo participando en cualquier campaña, cómpralo directamente con stablecoins en allowlist, hazle stake para un flujo continuo de USDC, o quémalo para canjear una cesta pro-rata del Treasury.",
+    "floorPrice": "Precio floor",
+    "floorPriceHint": "{circulating} $GROW en circulación · respaldo por $GROW circulante",
+    "floorHint": "Respaldo por $GROW circulante",
+    "circulating": "En circulación",
+    "circulatingHint": "de {total} $GROW totales",
+    "treasuryHolds": "Treasury tiene",
+    "treasuryHoldsHint": "$GROW (excluidos del divisor del floor)",
+    "buy": {
+      "title": "Comprar $GROW",
+      "blurb": "Venta primaria directa: paga una stablecoin en allowlist, mintea $GROW fresco al floor + {markup}%. El {markup}% de markup va al Treasury — cada compra es no diluyente.",
+      "salePrice": "Sale price",
+      "salePriceHint": "floor + {markup}% markup",
+      "salePaused": "Venta directa actualmente pausada por el multisig.",
+      "depegged": "Feed de {symbol} insano. Precio Chainlink stale o fuera de la banda $0,95-$1,05. Compras con este token bloqueadas hasta que el feed se recupere (o el multisig revoque el token).",
+      "payWith": "Pagar con",
+      "mintFaucet": "+ Mintear 10.000 {symbol}",
+      "minting": "Minteando…",
+      "confirmInWallet": "Confirma en el wallet…",
+      "youPay": "Pagas",
+      "balance": "Saldo",
+      "insufficientBalance": "Saldo insuficiente",
+      "youReceive": "Recibes",
+      "connectWallet": "Conectar wallet",
+      "approveAndBuy": "Aprobar {symbol} + Comprar $GROW",
+      "buyButton": "Comprar $GROW",
+      "approvingSig": "Aprueba en el wallet…",
+      "approvingChain": "Confirmando aprobación…",
+      "buyingSig": "Confirma compra…",
+      "buyingChain": "Confirmando on-chain…",
+      "notDeployed": "Contratos $GROW aún no desplegados en esta cadena. Configura NEXT_PUBLIC_GROW_TOKEN y NEXT_PUBLIC_GROW_TREASURY en .env.local."
+    },
+    "stake": {
+      "title": "Stake $GROW",
+      "totalStaked": "Total en stake: {amount} $GROW",
+      "blurb": "Gana USDC, alimentado por las distribuciones de cosecha del Treasury. El multiplicador sube 1,0× → 2,0× en 365 días. Cualquier withdraw resetea la racha.",
+      "multiplier": "Multiplicador (live)",
+      "multiplierStored": "Guardado: {value}× — se actualiza en la próxima acción",
+      "timeToCap": "Tiempo a 2,0×",
+      "max": "MAX",
+      "pendingUsdc": "USDC pendientes",
+      "distEndsIn": "Distrib. termina en {days}d",
+      "stakeTab": "Stake",
+      "withdrawTab": "Withdraw",
+      "withdrawWarning": "La racha se resetea a 1,0× con cualquier withdraw, incluso parcial. Reclama los USDC primero si quieres las recompensas al multiplicador actual sin resetear la racha.",
+      "amountToStake": "Cantidad a stakear",
+      "amountToWithdraw": "Cantidad a retirar",
+      "wallet": "Wallet",
+      "stakedLabel": "En stake",
+      "insufficientBalance": "Saldo insuficiente.",
+      "insufficientStaked": "Cantidad en stake insuficiente.",
+      "approveGrow": "Aprobar $GROW…",
+      "approvingChain": "Confirmando aprobación…",
+      "submittingSig": "Confirma en el wallet…",
+      "submittingChain": "Confirmando on-chain…",
+      "approveAndStake": "Aprobar + Stake",
+      "stakeButton": "Stake",
+      "withdrawButton": "Withdraw",
+      "claimSig": "Confirma reclamo…",
+      "claimingChain": "Reclamando on-chain…",
+      "nothingToClaim": "Nada que reclamar",
+      "claim": "Reclamar {amount} USDC",
+      "connectWallet": "Conectar wallet",
+      "notDeployed": "Staking pool aún no desplegado. Configura NEXT_PUBLIC_GROW_STAKING_POOL en .env.local."
+    },
+    "flywheel": {
+      "eyebrow": "Flywheel",
+      "title": "Cómo se compone la participación",
+      "subtitle": "Cada compra de campaña alimenta el Treasury. Cada asignación del Treasury hace crecer la cesta. Cada cosecha paga a los stakers de $GROW. Cada ganancia de los stakers empuja el floor hacia arriba — y el loop empieza de nuevo.",
+      "footnote": "Sin humano en el medio: cada paso es automático vía hooks on-chain. El multisig solo cura la lista de campañas tracked.",
+      "s1": {
+        "title": "Compra y gana $GROW",
+        "body": "Cualquiera financia una campaña con USDC. 3% va al FeeSplitter (30% Treasury / 70% ops). El comprador también gana $GROW gratis vía bonding curve — en escrow pre-softcap, minteado directamente post-activación."
+      },
+      "s2": {
+        "title": "El Treasury auto-asigna",
+        "body": "Las compras directas de $GROW al floor + 10% mandan los USDC directamente al Treasury, que los reparte equitativamente entre todas las campañas tracked Active. Sin clic del multisig."
+      },
+      "s3": {
+        "title": "El yield regresa",
+        "body": "El Treasury tiene CampaignTokens, hace stake, reclama $YIELD, lo canjea por USDC en la cosecha. Los USDC de la cosecha vuelven al Treasury — el respaldo por $GROW circulante crece."
+      },
+      "s4": {
+        "title": "Stakers ganan, floor sube",
+        "body": "El 80% del USDC de cosecha va al pool de staking $GROW. El multiplicador sube 1,0× → 2,0× en 365 días. El floor sube por buybacks + ingresos de cosecha → el próximo comprador paga más por menos $GROW."
+      }
+    },
+    "escrow": {
+      "title": "Tu $GROW en escrow",
+      "blurb": "$GROW que ganaste comprando en una campaña antes de su soft cap. Reclamable una vez que la campaña se activa; anulado si la campaña falla su ronda de funding.",
+      "connectPrompt": "Conecta tu wallet para ver tus asignaciones en escrow.",
+      "empty": "Aún no hay $GROW en escrow. Compra en cualquier campaña y una asignación gratuita de $GROW aterrizará aquí automáticamente.",
+      "campaign": "Campaña",
+      "readyToClaim": "listo para reclamar",
+      "voided": "anulado (campaña fallida)",
+      "pendingSoftcap": "esperando soft cap",
+      "claim": "Reclamar",
+      "pending": "Pendiente",
+      "voidedShort": "Anulado",
+      "notDeployed": "Minter aún no desplegado. Configura NEXT_PUBLIC_GROW_MINTER en .env.local."
+    }
+  },
   "grower": {
     "invalidAddress": "Dirección de cultivador no válida.",
     "anonymous": "Anon grower",

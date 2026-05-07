@@ -2,7 +2,7 @@
 
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { base, baseSepolia } from "wagmi/chains";
+import { base, baseSepolia, foundry } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fallback, http } from "viem";
 import "@rainbow-me/rainbowkit/styles.css";
@@ -33,13 +33,24 @@ const baseTransport = fallback(
   { rank: false, retryCount: 1 },
 );
 
+// Local anvil (chainId 31337) — only enabled when NEXT_PUBLIC_CHAIN_ID points at it.
+// Keeps prod bundles lean; dev builds against 8545 just work.
+const anvilTransport = http("http://127.0.0.1:8545", {
+  retryCount: 1,
+  retryDelay: 200,
+  timeout: 5_000,
+});
+
+const isLocal = process.env.NEXT_PUBLIC_CHAIN_ID === "31337";
+
 export const config = getDefaultConfig({
   appName: "GrowFi",
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-  chains: [baseSepolia, base],
+  chains: isLocal ? [foundry, baseSepolia, base] : [baseSepolia, base],
   transports: {
     [baseSepolia.id]: baseSepoliaTransport,
     [base.id]: baseTransport,
+    [foundry.id]: anvilTransport,
   },
   ssr: true,
 });

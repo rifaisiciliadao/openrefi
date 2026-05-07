@@ -2,17 +2,17 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 
 contract SecurityTest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc;
     MockERC20 weth;
 
@@ -22,9 +22,9 @@ contract SecurityTest is Test {
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
 
-    Campaign campaign;
-    CampaignToken campaignToken;
-    StakingVault stakingVault;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiStakingVault stakingVault;
 
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
@@ -33,7 +33,7 @@ contract SecurityTest is Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -53,12 +53,12 @@ contract SecurityTest is Test {
         );
 
         (address ca, address ct,, address sv,,,) = factory.campaigns(0);
-        campaign = Campaign(ca);
-        campaignToken = CampaignToken(ct);
-        stakingVault = StakingVault(sv);
+        campaign = GrowfiCampaign(ca);
+        campaignToken = GrowfiCampaignToken(ct);
+        stakingVault = GrowfiStakingVault(sv);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144000, address(0));
 
         usdc.mint(alice, 100_000e6);
         usdc.mint(bob, 100_000e6);
@@ -101,14 +101,14 @@ contract SecurityTest is Test {
         campaign.buy(address(usdc), 8_640_000_000);
 
         vm.prank(alice);
-        vm.expectRevert(Campaign.OnlyProducer.selector);
+        vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
         campaign.startSeason(1);
     }
 
     function test_cannotStartSeasonInFunding() public {
         vm.prank(producer);
         vm.expectRevert(
-            abi.encodeWithSelector(Campaign.InvalidState.selector, Campaign.State.Active, Campaign.State.Funding)
+            abi.encodeWithSelector(GrowfiCampaign.InvalidState.selector, GrowfiCampaign.State.Active, GrowfiCampaign.State.Funding)
         );
         campaign.startSeason(1);
     }
@@ -118,7 +118,7 @@ contract SecurityTest is Test {
     function test_multiTokenBuyback() public {
         // Add WETH as accepted token (1 WETH = 1000 $CAMPAIGN → fixedRate = 0.001e18)
         vm.prank(producer);
-        campaign.addAcceptedToken(address(weth), Campaign.PricingMode.Fixed, 0.001e18, address(0));
+        campaign.addAcceptedToken(address(weth), GrowfiCampaign.PricingMode.Fixed, 0.001e18, address(0));
 
         // Alice buys with USDC: 20k tokens (below 50k minCap)
         vm.prank(alice);
@@ -187,7 +187,7 @@ contract SecurityTest is Test {
         vm.prank(producer);
         vm.expectRevert("Zero price");
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "T",
                 tokenSymbol: "T",
@@ -211,7 +211,7 @@ contract SecurityTest is Test {
         vm.prank(producer);
         vm.expectRevert("minCap > maxCap");
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "T",
                 tokenSymbol: "T",
@@ -235,7 +235,7 @@ contract SecurityTest is Test {
         vm.prank(producer);
         vm.expectRevert("Deadline in past");
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "T",
                 tokenSymbol: "T",
@@ -259,7 +259,7 @@ contract SecurityTest is Test {
         vm.prank(producer);
         vm.expectRevert("Season too short");
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "T",
                 tokenSymbol: "T",
@@ -284,13 +284,13 @@ contract SecurityTest is Test {
     function test_cannotAddTokenWithZeroFixedRate() public {
         vm.prank(producer);
         vm.expectRevert("Zero fixedRate");
-        campaign.addAcceptedToken(address(weth), Campaign.PricingMode.Fixed, 0, address(0));
+        campaign.addAcceptedToken(address(weth), GrowfiCampaign.PricingMode.Fixed, 0, address(0));
     }
 
     function test_cannotAddTokenWithZeroOracleAddress() public {
         vm.prank(producer);
         vm.expectRevert("Zero oracle address");
-        campaign.addAcceptedToken(address(weth), Campaign.PricingMode.Oracle, 0, address(0));
+        campaign.addAcceptedToken(address(weth), GrowfiCampaign.PricingMode.Oracle, 0, address(0));
     }
 
     // --- No purchases tracked in Active state ---
@@ -299,7 +299,7 @@ contract SecurityTest is Test {
         // Alice activates campaign
         vm.prank(alice);
         campaign.buy(address(usdc), 8_640_000_000);
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
 
         // Bob buys in Active state
         vm.prank(bob);

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {ProducerRegistry} from "../src/ProducerRegistry.sol";
+import {GrowfiProducerRegistry} from "../src/GrowfiProducerRegistry.sol";
 
-/// @notice Deploys ProducerRegistry. Constructor takes the initial owner,
+/// @notice Deploys GrowfiProducerRegistry. Constructor takes the initial owner,
 ///         which controls the KYC admin set (default: the deployer). The
 ///         self-served profile surface remains zero-admin.
 ///
@@ -20,10 +20,10 @@ contract DeployProducerRegistryScript is Script {
         address owner = vm.envOr("OWNER", deployer);
 
         vm.startBroadcast(pk);
-        ProducerRegistry registry = new ProducerRegistry(owner);
+        GrowfiProducerRegistry registry = new GrowfiProducerRegistry(owner);
         vm.stopBroadcast();
 
-        console.log("ProducerRegistry deployed at:", address(registry));
+        console.log("GrowfiProducerRegistry deployed at:", address(registry));
         console.log("Initial owner            :", owner);
     }
 }

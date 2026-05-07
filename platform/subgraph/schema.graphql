@@ -30,7 +30,9 @@ type Campaign @entity(immutable: false) {
 
   currentSupply: BigInt!
   totalStaked: BigInt!
-  totalRaised: BigInt!
+  totalRaised: BigInt!                    # USD-18 sum across all buys (direct + treasury)
+  treasuryRaised: BigInt!                 # USD-18 sum of buys where buyer == GrowfiTreasury
+  treasuryTokensOut: BigInt!              # raw CampaignTokens (18-dec) minted to the Treasury
   currentYieldRate: BigInt!
   currentSeasonId: BigInt!
   state: String!                          # "Funding" | "Active" | "Buyback" | "Ended"
@@ -188,6 +190,17 @@ type GlobalStats @entity(immutable: false) {
   totalStakers: Int!
 }
 
+# Singleton populated by `factory.handleGrowfiContractsSet`. Read by the Campaign
+# handler so `handleTokensPurchased` can attribute a buy to the Treasury (auto-alloc)
+# vs a regular backer. Empty until the multisig wires the GROW system.
+type Protocol @entity(immutable: false) {
+  id: Bytes!                              # always "protocol"
+  growToken: Bytes
+  growMinter: Bytes
+  growTreasury: Bytes
+  growFeeSplitter: Bytes
+}
+
 # Maps dynamic contract addresses (vault, harvestManager) → their parent Campaign.
 # Populated by factory.ts on CampaignCreated. Used by staking.ts and harvest.ts to
 # resolve the owning Campaign without expensive contract calls.
@@ -195,4 +208,154 @@ type ContractIndex @entity(immutable: true) {
   id: Bytes!                              # vault or harvestManager address
   campaign: Campaign!
   kind: String!                           # "vault" | "harvest"
+}
+
+# ---------- GROW system (v4) ----------
+
+# Singleton — protocol-wide state of the GROW token.
+type GrowToken @entity(immutable: false) {
+  id: Bytes!                              # GrowfiToken proxy address
+  totalSupply: BigInt!
+  treasuryHolds: BigInt!                  # GROW held by the Treasury (excluded from circulating)
+  circulatingSupply: BigInt!              # totalSupply - treasuryHolds
+  saleActive: Boolean!
+  markupBps: BigInt!
+  referencePrice: BigInt!                 # USD-18-dec per GROW
+  effectiveFloorPrice: BigInt!            # last known floor (intrinsic OR cached)
+  totalDirectBuys: BigInt!
+  totalDirectBuyVolumeUsd: BigInt!        # 18-dec
+}
+
+# Per-address GROW holder record.
+type GrowHolder @entity(immutable: false) {
+  id: Bytes!                              # holder address
+  balance: BigInt!
+  totalEarnedFromBuys: BigInt!            # GROW received via direct buy
+  totalEarnedFromEscrowClaims: BigInt!    # GROW received via Minter.claimEscrow
+  totalEarnedFromCampaignBuys: BigInt!    # GROW received via campaign buys (post-softcap, direct mint)
+  totalRedeemed: BigInt!                  # GROW burned to redeem treasury
+  firstSeenAt: BigInt!
+  lastActivityAt: BigInt!
+  directBuys: [GrowDirectBuy!]! @derivedFrom(field: "buyer")
+  escrowClaims: [GrowEscrowClaim!]! @derivedFrom(field: "claimer")
+  redemptions: [TreasuryRedemption!]! @derivedFrom(field: "redeemer")
+  escrowPositions: [GrowEscrow!]! @derivedFrom(field: "user")
+}
+
+# Direct purchase of GROW with USDC/USDT/DAI.
+type GrowDirectBuy @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  buyer: GrowHolder!
+  paymentToken: Bytes!                    # USDC / USDT / DAI / etc.
+  paymentAmount: BigInt!                  # raw amount in payment token decimals
+  growOut: BigInt!                        # 18-dec
+  effectivePrice: BigInt!                 # USD-18-dec per GROW at exec time
+  timestamp: BigInt!
+  block: BigInt!
+  transactionHash: Bytes!
+}
+
+# Per-(campaign, user) escrow position. Mutates as buys add / claim subtracts.
+type GrowEscrow @entity(immutable: false) {
+  id: Bytes!                              # campaign + user
+  campaign: Bytes!                        # GrowfiCampaign address
+  user: GrowHolder!
+  amount: BigInt!                         # current escrow balance
+  status: String!                         # "Pending" | "Claimable" | "Voided" | "Claimed"
+  lastUpdatedAt: BigInt!
+}
+
+# Each Minter.EscrowClaimed event.
+type GrowEscrowClaim @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  campaign: Bytes!
+  claimer: GrowHolder!
+  amount: BigInt!
+  timestamp: BigInt!
+  block: BigInt!
+  transactionHash: Bytes!
+}
+
+# Per-campaign GROW lifecycle (Pending → Active → {Failed}).
+type CampaignGrowState @entity(immutable: false) {
+  id: Bytes!                              # campaign address
+  campaign: Campaign!
+  status: String!                         # "Pending" | "Active" | "Failed"
+  cumBuyVolumeUsd: BigInt!                # monotonic (only-increases)
+  totalEscrowed: BigInt!
+  totalMinted: BigInt!
+  registeredAt: BigInt!
+  activatedAt: BigInt
+  failedAt: BigInt
+}
+
+# Snapshots of the bonding-curve params each time the multisig changes them.
+type BondingCurveSnapshot @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  tier1RateBps: BigInt!
+  tier2RateBps: BigInt!
+  tier3RateBps: BigInt!
+  tier2to3ThresholdBps: BigInt!
+  setAt: BigInt!
+}
+
+# Singleton — Treasury state.
+type GrowfiTreasuryState @entity(immutable: false) {
+  id: Bytes!                              # GrowfiTreasury proxy address
+  acceptedStablecoinsCount: BigInt!
+  trackedCampaignsCount: BigInt!
+  totalAllocations: BigInt!
+  totalRedemptions: BigInt!
+  intrinsicFloorPrice: BigInt!            # latest (computed at last interaction; can be stale between events)
+}
+
+type StablecoinAcceptance @entity(immutable: false) {
+  id: Bytes!                              # token address
+  active: Boolean!
+  scale: BigInt!                          # 1e12 for 6-dec, 1 for 18-dec
+  priceFeed: Bytes                        # Chainlink USD aggregator
+  heartbeat: BigInt                       # max staleness, seconds
+  minPriceBps: Int                        # depeg lower bound (e.g. 9500 = $0.95)
+  maxPriceBps: Int                        # depeg upper bound (e.g. 10500 = $1.05)
+  acceptedAt: BigInt!
+  revokedAt: BigInt
+}
+
+type TreasuryAllocation @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  campaign: Bytes!
+  paymentToken: Bytes!
+  amount: BigInt!                         # USDC raw
+  campaignTokensReceived: BigInt!
+  timestamp: BigInt!
+  block: BigInt!
+  transactionHash: Bytes!
+}
+
+type TreasuryRedemption @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  redeemer: GrowHolder!
+  growBurned: BigInt!
+  timestamp: BigInt!
+  block: BigInt!
+  transactionHash: Bytes!
+}
+
+type TreasuryRescue @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  token: Bytes!
+  recipient: Bytes!
+  amount: BigInt!
+  timestamp: BigInt!
+}
+
+type FeeFlush @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  token: Bytes!                           # the stablecoin flushed
+  toTreasury: BigInt!                     # raw amount sent to GrowfiTreasury
+  toOperations: BigInt!                   # raw amount sent to ops multisig
+  caller: Bytes!                          # whoever triggered the flush (permissionless)
+  timestamp: BigInt!
+  block: BigInt!
+  transactionHash: Bytes!
 }

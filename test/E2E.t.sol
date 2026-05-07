@@ -2,12 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {MockOracle} from "./helpers/MockOracle.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -20,16 +20,16 @@ import {Deployer} from "./helpers/Deployer.sol";
 ///         with real Merkle tree → product + USDC redemption → partial USDC
 ///         deposits with pro-rata claims → season 2 restake → final harvest.
 contract E2ETest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc;
     MockERC20 weth;
     MockOracle wethOracle;
 
-    Campaign campaign;
-    CampaignToken campaignToken;
-    YieldToken yieldToken;
-    StakingVault stakingVault;
-    HarvestManager harvestManager;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiYieldToken yieldToken;
+    GrowfiStakingVault stakingVault;
+    GrowfiHarvestManager harvestManager;
 
     address protocolOwner = makeAddr("protocolOwner");
     address feeRecipient = makeAddr("feeRecipient");
@@ -60,7 +60,7 @@ contract E2ETest is Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive Tree",
                 tokenSymbol: "OLIVE",
@@ -80,16 +80,16 @@ contract E2ETest is Test {
         );
 
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
-        yieldToken = YieldToken(yt);
-        stakingVault = StakingVault(sv);
-        harvestManager = HarvestManager(hm);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
+        yieldToken = GrowfiYieldToken(yt);
+        stakingVault = GrowfiStakingVault(sv);
+        harvestManager = GrowfiHarvestManager(hm);
 
         // Producer configures both USDC (fixed) and WETH (oracle) as accepted payments
         vm.startPrank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
-        campaign.addAcceptedToken(address(weth), Campaign.PricingMode.Oracle, 0, address(wethOracle));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(weth), GrowfiCampaign.PricingMode.Oracle, 0, address(wethOracle));
         vm.stopPrank();
 
         // Fund investors
@@ -131,7 +131,7 @@ contract E2ETest is Test {
         vm.prank(alice);
         campaign.buy(address(usdc), alicePayUsdc);
         assertEq(campaignToken.balanceOf(alice), 20_000e18, "alice 20k");
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Funding));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Funding));
 
         // Bob buys 15k OLIVE with WETH via oracle
         // tokensOut = paymentAmount * oraclePrice / pricePerToken
@@ -148,7 +148,7 @@ contract E2ETest is Test {
         campaign.buy(address(usdc), charliePay);
 
         assertGt(campaign.currentSupply(), MIN_CAP, "minCap reached");
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active), "auto-activated");
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active), "auto-activated");
 
         // Protocol fee was taken (2% of escrowed funds)
         uint256 feeRecipientUsdc = usdc.balanceOf(feeRecipient);
@@ -304,9 +304,9 @@ contract E2ETest is Test {
         vm.prank(alice);
         harvestManager.redeemProduct(1, aliceYieldBalance, proofA);
 
-        (bool claimedA, HarvestManager.RedemptionType typeA,,,) = harvestManager.claims(1, alice);
+        (bool claimedA, GrowfiHarvestManager.RedemptionType typeA,,,) = harvestManager.claims(1, alice);
         assertTrue(claimedA);
-        assertEq(uint8(typeA), uint8(HarvestManager.RedemptionType.Product));
+        assertEq(uint8(typeA), uint8(GrowfiHarvestManager.RedemptionType.Product));
         assertEq(yieldToken.balanceOf(alice), 0, "alice burned all yield");
 
         // Charlie redeems USDC
@@ -314,8 +314,8 @@ contract E2ETest is Test {
         vm.prank(charlie);
         harvestManager.redeemUSDC(1, charlieYield);
 
-        (, HarvestManager.RedemptionType typeC,, uint256 charlieUsdcOwed18,) = harvestManager.claims(1, charlie);
-        assertEq(uint8(typeC), uint8(HarvestManager.RedemptionType.USDC));
+        (, GrowfiHarvestManager.RedemptionType typeC,, uint256 charlieUsdcOwed18,) = harvestManager.claims(1, charlie);
+        assertEq(uint8(typeC), uint8(GrowfiHarvestManager.RedemptionType.USDC));
         assertGt(charlieUsdcOwed18, 0);
 
         // Dave redeems USDC
@@ -411,7 +411,7 @@ contract E2ETest is Test {
         // End campaign
         vm.prank(producer);
         campaign.endCampaign();
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Ended));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Ended));
 
         console.log("=== E2E COMPLETED ===");
     }

@@ -2,20 +2,20 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {Campaign} from "../../src/Campaign.sol";
-import {CampaignToken} from "../../src/CampaignToken.sol";
-import {YieldToken} from "../../src/YieldToken.sol";
-import {StakingVault} from "../../src/StakingVault.sol";
+import {GrowfiCampaign} from "../../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../../src/GrowfiStakingVault.sol";
 import {MockERC20} from "../helpers/MockERC20.sol";
 
 /// @title Handler — bounded random actions for invariant testing
 /// @notice Funnels fuzzer into meaningful protocol state transitions.
 ///         Every external function here is a potential call target for the invariant runner.
 contract Handler is Test {
-    Campaign public campaign;
-    CampaignToken public campaignToken;
-    YieldToken public yieldToken;
-    StakingVault public stakingVault;
+    GrowfiCampaign public campaign;
+    GrowfiCampaignToken public campaignToken;
+    GrowfiYieldToken public yieldToken;
+    GrowfiStakingVault public stakingVault;
     MockERC20 public usdc;
     address public producer;
 
@@ -34,10 +34,10 @@ contract Handler is Test {
     }
 
     constructor(
-        Campaign _campaign,
-        CampaignToken _campaignToken,
-        YieldToken _yieldToken,
-        StakingVault _stakingVault,
+        GrowfiCampaign _campaign,
+        GrowfiCampaignToken _campaignToken,
+        GrowfiYieldToken _yieldToken,
+        GrowfiStakingVault _stakingVault,
         MockERC20 _usdc,
         address _producer,
         address[] memory _actors
@@ -74,11 +74,11 @@ contract Handler is Test {
         vm.warp(block.timestamp + secondsAhead);
     }
 
-    // --- Campaign actions ---
+    // --- GrowfiCampaign actions ---
 
     function buy(uint256 actorSeed, uint256 payAmount) external countCall("buy") {
-        Campaign.State s = campaign.state();
-        if (s != Campaign.State.Funding && s != Campaign.State.Active) return;
+        GrowfiCampaign.State s = campaign.state();
+        if (s != GrowfiCampaign.State.Funding && s != GrowfiCampaign.State.Active) return;
         payAmount = bound(payAmount, 1_000_000, 5_000e6); // 1 USDC to 5000 USDC
 
         address actor = _pickActor(actorSeed);
@@ -91,14 +91,14 @@ contract Handler is Test {
     }
 
     function triggerBuyback() external countCall("triggerBuyback") {
-        if (campaign.state() != Campaign.State.Funding) return;
+        if (campaign.state() != GrowfiCampaign.State.Funding) return;
         if (block.timestamp < campaign.fundingDeadline()) return;
         if (campaign.currentSupply() >= campaign.minCap()) return;
         try campaign.triggerBuyback() {} catch {}
     }
 
     function buyback(uint256 actorSeed) external countCall("buyback") {
-        if (campaign.state() != Campaign.State.Buyback) return;
+        if (campaign.state() != GrowfiCampaign.State.Buyback) return;
         address actor = _pickActor(actorSeed);
         if (campaign.purchases(actor, address(usdc)) == 0) return;
 
@@ -110,7 +110,7 @@ contract Handler is Test {
     }
 
     function sellBack(uint256 actorSeed, uint256 amount) external countCall("sellBack") {
-        if (campaign.state() != Campaign.State.Active) return;
+        if (campaign.state() != GrowfiCampaign.State.Active) return;
         address actor = _pickActor(actorSeed);
         uint256 balance = campaignToken.balanceOf(actor);
         if (balance == 0) return;
@@ -130,7 +130,7 @@ contract Handler is Test {
     // --- Season management ---
 
     function startSeason(uint256 seasonSeed) external countCall("startSeason") {
-        if (campaign.state() != Campaign.State.Active) return;
+        if (campaign.state() != GrowfiCampaign.State.Active) return;
         if (seasonActive) return;
         uint256 newSeason = currentSeason + 1 + (seasonSeed % 3);
 
@@ -143,7 +143,7 @@ contract Handler is Test {
 
     function endSeason() external countCall("endSeason") {
         if (!seasonActive) return;
-        if (campaign.state() != Campaign.State.Active) return;
+        if (campaign.state() != GrowfiCampaign.State.Active) return;
         vm.prank(producer);
         try campaign.endSeason() {
             seasonActive = false;

@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
 
 /// @title SmokeTest1h — creates a 1-hour-season campaign, activates, stakes
 /// @notice After this runs, user waits ≥1 hour and can then call:
@@ -22,7 +22,7 @@ import {StakingVault} from "../src/StakingVault.sol";
 contract SmokeTest1h is Script {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
-        CampaignFactory factory = CampaignFactory(vm.envAddress("FACTORY_ADDRESS"));
+        GrowfiCampaignFactory factory = GrowfiCampaignFactory(vm.envAddress("FACTORY_ADDRESS"));
         IERC20 usdc = IERC20(vm.envAddress("USDC_ADDRESS"));
         address me = vm.addr(pk);
 
@@ -36,7 +36,7 @@ contract SmokeTest1h is Script {
         // 1. Create campaign with seasonDuration = 1 hour. minCap deliberately low so a single
         //    buy triggers auto-activation.
         address campaignAddr = factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: me,
                 tokenName: "Fast Olive",
                 tokenSymbol: "FAST",
@@ -55,17 +55,17 @@ contract SmokeTest1h is Script {
             })
         );
         console.log("campaign         :", campaignAddr);
-        Campaign campaign = Campaign(campaignAddr);
+        GrowfiCampaign campaign = GrowfiCampaign(campaignAddr);
 
         // 2. Add USDC as accepted token.
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
 
         // 3. Buy enough to reach minCap (auto-activates). minCap = 100e18 FAST.
         //    payment = 100e18 * 144000 / 1e18 = 14_400_000 (= 14.4 USDC, 6-dec)
         usdc.approve(address(campaign), type(uint256).max);
         uint256 payment = 15_000_000; // 15 USDC, safely over minCap
         campaign.buy(address(usdc), payment);
-        require(uint8(campaign.state()) == uint8(Campaign.State.Active), "not activated");
+        require(uint8(campaign.state()) == uint8(GrowfiCampaign.State.Active), "not activated");
         console.log("state=Active     : OK");
 
         // 4. Start season 1.
@@ -73,8 +73,8 @@ contract SmokeTest1h is Script {
         console.log("season 1 started :", block.timestamp);
 
         // 5. Stake all FAST tokens.
-        CampaignToken ct = CampaignToken(campaign.campaignToken());
-        StakingVault sv = StakingVault(address(campaign.stakingVault()));
+        GrowfiCampaignToken ct = GrowfiCampaignToken(campaign.campaignToken());
+        GrowfiStakingVault sv = GrowfiStakingVault(address(campaign.stakingVault()));
         uint256 fastBalance = ct.balanceOf(me);
         ct.approve(address(sv), type(uint256).max);
         uint256 positionId = sv.stake(fastBalance);

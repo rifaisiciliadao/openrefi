@@ -39,6 +39,13 @@ export function Nav() {
           >
             {tNav("portfolio")}
           </Link>
+          <Link
+            href="/grow"
+            className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
+            style={{ fontFamily: "var(--font-header)" }}
+          >
+            $GROW
+          </Link>
           {approved ? (
             <Link
               href="/create"

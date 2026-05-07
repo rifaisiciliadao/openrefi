@@ -2,19 +2,19 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {MockOracle} from "./helpers/MockOracle.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract IntegrationTest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc;
     MockERC20 weth;
     MockOracle wethOracle;
@@ -25,14 +25,14 @@ contract IntegrationTest is Test {
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
 
-    // Campaign contracts (set after creation)
-    Campaign campaign;
-    CampaignToken campaignToken;
-    YieldToken yieldToken;
-    StakingVault stakingVault;
-    HarvestManager harvestManager;
+    // GrowfiCampaign contracts (set after creation)
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiYieldToken yieldToken;
+    GrowfiStakingVault stakingVault;
+    GrowfiHarvestManager harvestManager;
 
-    // Campaign params
+    // GrowfiCampaign params
     uint256 constant PRICE_PER_TOKEN = 0.144e18; // $0.144
     uint256 constant MIN_CAP = 50_000e18;
     uint256 constant MAX_CAP = 100_000e18;
@@ -52,7 +52,7 @@ contract IntegrationTest is Test {
         uint256 deadline = block.timestamp + 90 days;
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive Tree",
                 tokenSymbol: "OLIVE",
@@ -73,11 +73,11 @@ contract IntegrationTest is Test {
 
         // Get contract references
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
-        yieldToken = YieldToken(yt);
-        stakingVault = StakingVault(sv);
-        harvestManager = HarvestManager(hm);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
+        yieldToken = GrowfiYieldToken(yt);
+        stakingVault = GrowfiStakingVault(sv);
+        harvestManager = GrowfiHarvestManager(hm);
 
         // Producer adds USDC as accepted payment (fixed rate)
         // fixedRate = 0.144e6 USDC per 1 $CAMPAIGN (since USDC has 6 decimals)
@@ -90,7 +90,7 @@ contract IntegrationTest is Test {
         // But we need 18 decimal precision: fixedRate = 144000 (raw USDC units per 1e18 $CAMPAIGN)
         // Let's simplify: fixedRate in payment token units (with its own decimals) per 1 $CAMPAIGN (1e18)
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144000, address(0)); // 0.144 USDC per token
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144000, address(0)); // 0.144 USDC per token
 
         // Mint USDC to buyers
         usdc.mint(alice, 100_000e6); // 100k USDC
@@ -114,7 +114,7 @@ contract IntegrationTest is Test {
         campaign.buy(address(usdc), alicePayment);
 
         // Should auto-activate since 60k > 50k min cap
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
         assertEq(campaignToken.balanceOf(alice), 60_000e18);
 
         // 2. STAKING: Alice stakes her tokens
@@ -161,7 +161,7 @@ contract IntegrationTest is Test {
         assertGt(aliceTotalYield, 0);
     }
 
-    // --- Buyback Test (Failed Campaign) ---
+    // --- Buyback Test (Failed GrowfiCampaign) ---
 
     function test_buybackOnFailedCampaign() public {
         // Alice buys 30,000 tokens (below min cap of 50,000)
@@ -169,7 +169,7 @@ contract IntegrationTest is Test {
         vm.prank(alice);
         campaign.buy(address(usdc), payment);
 
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Funding));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Funding));
         assertEq(campaignToken.balanceOf(alice), 30_000e18);
         uint256 aliceUsdcBefore = usdc.balanceOf(alice);
 
@@ -178,7 +178,7 @@ contract IntegrationTest is Test {
 
         // Anyone can trigger buyback
         campaign.triggerBuyback();
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Buyback));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Buyback));
 
         // Alice claims refund
         vm.prank(alice);

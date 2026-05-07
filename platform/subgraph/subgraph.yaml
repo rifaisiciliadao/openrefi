@@ -9,9 +9,9 @@ dataSources:
     name: CampaignFactory
     network: base-sepolia
     source:
-      address: "0x26dfae1d399a737708aab1f9a116eb814e98ee87"
+      address: "0x5d43e9B1835afDcb4c88f712e80D730B7890B31b"
       abi: CampaignFactory
-      startBlock: 40817442
+      startBlock: 41201340
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -20,6 +20,7 @@ dataSources:
       entities:
         - Campaign
         - GlobalStats
+        - Protocol
       abis:
         - name: CampaignFactory
           file: ./abis/CampaignFactory.json
@@ -30,14 +31,16 @@ dataSources:
           handler: handleCampaignCreated
         - event: ProtocolFeeRecipientUpdated(address,address)
           handler: handleProtocolFeeRecipientUpdated
+        - event: GrowfiContractsSet(indexed address,indexed address,indexed address,address)
+          handler: handleGrowfiContractsSet
 
   - kind: ethereum/contract
     name: CampaignRegistry
     network: base-sepolia
     source:
-      address: "0x40696756DE89c0C5DF59219e565b4a1F18e909ea"
+      address: "0x9d91b83ba2e068625a42Fe1d375AB1Aa98313584"
       abi: CampaignRegistry
-      startBlock: 40817471
+      startBlock: 41201450
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -56,9 +59,9 @@ dataSources:
     name: ProducerRegistry
     network: base-sepolia
     source:
-      address: "0xe5ed3b78631a02EAB46477F67c2b41Ec31a97A21"
+      address: "0x5d03F9B8F9e01E18C58833dcE0B930f8D7193194"
       abi: ProducerRegistry
-      startBlock: 40817476
+      startBlock: 41201456
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -75,6 +78,141 @@ dataSources:
         - event: KycSet(indexed address,indexed bool,indexed address)
           handler: handleKycSet
 
+  # ---------- GROW system (v4) ----------
+  # Addresses below are PLACEHOLDERS — replace with the real proxy addresses after the
+  # v4 redeploy. `startBlock` should be the deploy block of each contract.
+  - kind: ethereum/contract
+    name: GrowfiToken
+    network: base-sepolia
+    source:
+      address: "0x6432D463B2264Bb8fD56DEC6bB119473c1e2b7B3"
+      abi: GrowfiToken
+      startBlock: 41201343
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/grow/token.ts
+      entities:
+        - GrowToken
+        - GrowHolder
+        - GrowDirectBuy
+      abis:
+        - name: GrowfiToken
+          file: ./abis/GrowfiToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleGrowTransfer
+        - event: DirectBuy(indexed address,indexed address,uint256,uint256,uint256)
+          handler: handleDirectBuy
+        - event: GenesisMinted(indexed address,uint256)
+          handler: handleGenesisMinted
+        - event: SaleActiveSet(bool)
+          handler: handleSaleActiveSet
+        - event: MarkupSet(uint256)
+          handler: handleMarkupSet
+        - event: ReferencePriceSet(uint256,uint256)
+          handler: handleReferencePriceSet
+        - event: MinterUpdated(indexed address,indexed address)
+          handler: handleMinterUpdated
+        - event: TreasuryUpdated(indexed address,indexed address)
+          handler: handleTokenTreasuryUpdated
+
+  - kind: ethereum/contract
+    name: GrowfiTreasury
+    network: base-sepolia
+    source:
+      address: "0xC188324847dB525574A6FD26AD3A0B8f96421674"
+      abi: GrowfiTreasury
+      startBlock: 41201345
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/grow/treasury.ts
+      entities:
+        - GrowfiTreasuryState
+        - StablecoinAcceptance
+        - TreasuryAllocation
+        - TreasuryRedemption
+        - TreasuryRescue
+      abis:
+        - name: GrowfiTreasury
+          file: ./abis/GrowfiTreasury.json
+      eventHandlers:
+        - event: StablecoinAccepted(indexed address,uint256,address,uint64,uint16,uint16)
+          handler: handleStablecoinAccepted
+        - event: StablecoinRevoked(indexed address)
+          handler: handleStablecoinRevoked
+        - event: CampaignTracked(indexed address)
+          handler: handleCampaignTracked
+        - event: CampaignUntracked(indexed address)
+          handler: handleCampaignUntracked
+        - event: Allocated(indexed address,indexed address,uint256,uint256)
+          handler: handleAllocated
+        - event: Redeemed(indexed address,uint256)
+          handler: handleRedeemed
+        - event: TokenRescued(indexed address,indexed address,uint256)
+          handler: handleTokenRescued
+
+  - kind: ethereum/contract
+    name: GrowfiMinter
+    network: base-sepolia
+    source:
+      address: "0xd11AcDAE626ffF50cf0BcB5C19D094a78feC7289"
+      abi: GrowfiMinter
+      startBlock: 41201347
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/grow/minter.ts
+      entities:
+        - GrowEscrow
+        - GrowEscrowClaim
+        - CampaignGrowState
+        - BondingCurveSnapshot
+      abis:
+        - name: GrowfiMinter
+          file: ./abis/GrowfiMinter.json
+      eventHandlers:
+        - event: CampaignRegistered(indexed address)
+          handler: handleCampaignRegistered
+        - event: GrowEscrowed(indexed address,indexed address,uint256)
+          handler: handleGrowEscrowed
+        - event: GrowMinted(indexed address,indexed address,uint256)
+          handler: handleGrowMinted
+        - event: SoftCapReached(indexed address,uint256)
+          handler: handleSoftCapReached
+        - event: CampaignBuyback(indexed address,uint256)
+          handler: handleCampaignBuyback
+        - event: EscrowClaimed(indexed address,indexed address,uint256)
+          handler: handleEscrowClaimed
+        - event: BondingCurveUpdated(uint256,uint256,uint256,uint256)
+          handler: handleBondingCurveUpdated
+        - event: ExcludedFromMintUpdated(indexed address,bool)
+          handler: handleExcludedFromMintUpdated
+
+  - kind: ethereum/contract
+    name: GrowfiFeeSplitter
+    network: base-sepolia
+    source:
+      address: "0x13B80362f4e2fd81322194647f1ED3AA3D9c7d41"
+      abi: GrowfiFeeSplitter
+      startBlock: 41201349
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/grow/splitter.ts
+      entities:
+        - FeeFlush
+      abis:
+        - name: GrowfiFeeSplitter
+          file: ./abis/GrowfiFeeSplitter.json
+      eventHandlers:
+        - event: Flushed(indexed address,uint256,uint256)
+          handler: handleFlushed
 templates:
   - kind: ethereum/contract
     name: Campaign
@@ -194,3 +332,4 @@ templates:
           handler: handleUSDCDeposited
         - event: USDCRedeemed(indexed address,indexed uint256,uint256)
           handler: handleUSDCRedeemed
+

@@ -2,17 +2,17 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 
 contract AuditTest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc;
 
     address owner = address(this);
@@ -21,11 +21,11 @@ contract AuditTest is Test {
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
 
-    Campaign campaign;
-    CampaignToken campaignToken;
-    YieldToken yieldToken;
-    StakingVault stakingVault;
-    HarvestManager harvestManager;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiYieldToken yieldToken;
+    GrowfiStakingVault stakingVault;
+    GrowfiHarvestManager harvestManager;
 
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
@@ -33,7 +33,7 @@ contract AuditTest is Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -53,14 +53,14 @@ contract AuditTest is Test {
         );
 
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
-        yieldToken = YieldToken(yt);
-        stakingVault = StakingVault(sv);
-        harvestManager = HarvestManager(hm);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
+        yieldToken = GrowfiYieldToken(yt);
+        stakingVault = GrowfiStakingVault(sv);
+        harvestManager = GrowfiHarvestManager(hm);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144000, address(0));
 
         usdc.mint(alice, 100_000e6);
         usdc.mint(bob, 100_000e6);
@@ -153,7 +153,7 @@ contract AuditTest is Test {
 
         // Try to reuse season 1
         vm.prank(producer);
-        vm.expectRevert(StakingVault.SeasonAlreadyUsed.selector);
+        vm.expectRevert(GrowfiStakingVault.SeasonAlreadyUsed.selector);
         campaign.startSeason(1);
 
         // Season 2 should work
@@ -173,7 +173,7 @@ contract AuditTest is Test {
 
         // Try to restake in same season — should revert
         vm.prank(alice);
-        vm.expectRevert(StakingVault.RestakeSameSeason.selector);
+        vm.expectRevert(GrowfiStakingVault.RestakeSameSeason.selector);
         stakingVault.restake(0);
     }
 

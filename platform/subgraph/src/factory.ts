@@ -2,15 +2,25 @@ import { BigInt, Bytes, log } from "@graphprotocol/graph-ts";
 import {
   CampaignCreated as CampaignCreatedEvent,
   ProtocolFeeRecipientUpdated as ProtocolFeeRecipientUpdatedEvent,
+  GrowfiContractsSet as GrowfiContractsSetEvent,
 } from "../generated/CampaignFactory/CampaignFactory";
 import {
   Campaign as CampaignTemplate,
   StakingVault as StakingVaultTemplate,
   HarvestManager as HarvestManagerTemplate,
 } from "../generated/templates";
-import { Campaign, GlobalStats, ContractIndex } from "../generated/schema";
+import { Campaign, GlobalStats, ContractIndex, Protocol } from "../generated/schema";
 
 const GLOBAL_ID = Bytes.fromUTF8("global");
+const PROTOCOL_ID = Bytes.fromUTF8("protocol");
+
+export function loadOrCreateProtocol(): Protocol {
+  let p = Protocol.load(PROTOCOL_ID);
+  if (p == null) {
+    p = new Protocol(PROTOCOL_ID);
+  }
+  return p;
+}
 
 function loadOrCreateGlobalStats(): GlobalStats {
   let stats = GlobalStats.load(GLOBAL_ID);
@@ -48,6 +58,8 @@ export function handleCampaignCreated(event: CampaignCreatedEvent): void {
   campaign.currentSupply = BigInt.zero();
   campaign.totalStaked = BigInt.zero();
   campaign.totalRaised = BigInt.zero();
+  campaign.treasuryRaised = BigInt.zero();
+  campaign.treasuryTokensOut = BigInt.zero();
   campaign.currentYieldRate = BigInt.fromI32(5).times(
     BigInt.fromI32(10).pow(18),
   ); // 5x
@@ -90,5 +102,20 @@ export function handleProtocolFeeRecipientUpdated(
   log.info("Protocol fee recipient updated from {} to {}", [
     event.params.oldRecipient.toHexString(),
     event.params.newRecipient.toHexString(),
+  ]);
+}
+
+/// Captured so per-Campaign handlers can attribute a buy to the GROW Treasury
+/// (auto-allocation path) vs. a regular backer (direct funding). The 4 GROW
+/// addresses are written exactly once per deploy via `factory.setGrowfiContracts`.
+export function handleGrowfiContractsSet(event: GrowfiContractsSetEvent): void {
+  const p = loadOrCreateProtocol();
+  p.growToken = event.params.growfiToken;
+  p.growMinter = event.params.growfiMinter;
+  p.growTreasury = event.params.growfiTreasury;
+  p.growFeeSplitter = event.params.growfiFeeSplitter;
+  p.save();
+  log.info("Growfi contracts set, treasury={}", [
+    event.params.growfiTreasury.toHexString(),
   ]);
 }

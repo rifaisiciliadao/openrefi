@@ -2,9 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 
@@ -13,11 +13,11 @@ import {Deployer} from "./helpers/Deployer.sol";
 ///         setters. They skip the impl-redeploy dance but keep the
 ///         invariants that make prior buyers whole.
 contract ParamUpdatesTest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc;
 
-    Campaign campaign;
-    CampaignToken campaignToken;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
 
     address producer = makeAddr("producer");
     address feeRecipient = makeAddr("feeRecipient");
@@ -38,7 +38,7 @@ contract ParamUpdatesTest is Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -57,11 +57,11 @@ contract ParamUpdatesTest is Test {
             })
         );
         (address c, address ct,,,,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
 
         usdc.mint(alice, 10_000e6);
         vm.prank(alice);
@@ -79,20 +79,20 @@ contract ParamUpdatesTest is Test {
 
     function test_setFundingDeadline_shortening_reverts() public {
         vm.prank(producer);
-        vm.expectRevert(Campaign.DeadlineNotExtended.selector);
+        vm.expectRevert(GrowfiCampaign.DeadlineNotExtended.selector);
         campaign.setFundingDeadline(initialDeadline - 1);
     }
 
     function test_setFundingDeadline_pastTimestamp_reverts() public {
         vm.warp(initialDeadline + 1);
         vm.prank(producer);
-        vm.expectRevert(Campaign.DeadlineInPast.selector);
+        vm.expectRevert(GrowfiCampaign.DeadlineInPast.selector);
         campaign.setFundingDeadline(block.timestamp - 1);
     }
 
     function test_setFundingDeadline_nonProducer_reverts() public {
         vm.prank(attacker);
-        vm.expectRevert(Campaign.OnlyProducer.selector);
+        vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
         campaign.setFundingDeadline(initialDeadline + 1 days);
     }
 
@@ -101,7 +101,7 @@ contract ParamUpdatesTest is Test {
         uint256 spend = (MIN_CAP * USDC_FIXED_RATE) / 1e18;
         vm.prank(alice);
         campaign.buy(address(usdc), spend);
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
 
         vm.prank(producer);
         vm.expectRevert();
@@ -123,13 +123,13 @@ contract ParamUpdatesTest is Test {
         campaign.buy(address(usdc), spend);
 
         vm.prank(producer);
-        vm.expectRevert(Campaign.NewMinCapBelowSupply.selector);
+        vm.expectRevert(GrowfiCampaign.NewMinCapBelowSupply.selector);
         campaign.setMinCap(150e18);
     }
 
     function test_setMinCap_aboveMaxCap_reverts() public {
         vm.prank(producer);
-        vm.expectRevert(Campaign.NewMinCapBelowSupply.selector);
+        vm.expectRevert(GrowfiCampaign.NewMinCapBelowSupply.selector);
         campaign.setMinCap(MAX_CAP + 1);
     }
 
@@ -170,7 +170,7 @@ contract ParamUpdatesTest is Test {
         campaign.buy(address(usdc), spend);
 
         vm.prank(producer);
-        vm.expectRevert(Campaign.NewMaxCapBelowCommitted.selector);
+        vm.expectRevert(GrowfiCampaign.NewMaxCapBelowCommitted.selector);
         campaign.setMaxCap(300e18);
     }
 
@@ -186,7 +186,7 @@ contract ParamUpdatesTest is Test {
 
         // currentSupply=500, queue=100 → committed=600
         vm.prank(producer);
-        vm.expectRevert(Campaign.NewMaxCapBelowCommitted.selector);
+        vm.expectRevert(GrowfiCampaign.NewMaxCapBelowCommitted.selector);
         campaign.setMaxCap(550e18);
     }
 
@@ -194,7 +194,7 @@ contract ParamUpdatesTest is Test {
         uint256 spend = (MIN_CAP * USDC_FIXED_RATE) / 1e18;
         vm.prank(alice);
         campaign.buy(address(usdc), spend);
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
 
         vm.prank(producer);
         campaign.setMaxCap(10_000e18);
@@ -204,7 +204,7 @@ contract ParamUpdatesTest is Test {
     function test_setMaxCap_duringBuyback_reverts() public {
         vm.warp(initialDeadline + 1);
         campaign.triggerBuyback();
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Buyback));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Buyback));
 
         vm.prank(producer);
         vm.expectRevert();
@@ -213,13 +213,13 @@ contract ParamUpdatesTest is Test {
 
     function test_setMaxCap_belowMinCap_duringFunding_reverts() public {
         vm.prank(producer);
-        vm.expectRevert(Campaign.NewMaxCapBelowCommitted.selector);
+        vm.expectRevert(GrowfiCampaign.NewMaxCapBelowCommitted.selector);
         campaign.setMaxCap(MIN_CAP - 1);
     }
 
     function test_setMaxCap_nonProducer_reverts() public {
         vm.prank(attacker);
-        vm.expectRevert(Campaign.OnlyProducer.selector);
+        vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
         campaign.setMaxCap(5_000e18);
     }
 }

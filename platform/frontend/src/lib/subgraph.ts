@@ -41,6 +41,8 @@ export interface SubgraphCampaign {
   currentSupply: string;
   totalStaked: string;
   totalRaised: string;
+  treasuryRaised?: string;        // USD-18 raised via GROW Treasury auto-alloc (subgraph v3.x)
+  treasuryTokensOut?: string;     // raw CT minted to the Treasury
   currentYieldRate: string;
   state: "Funding" | "Active" | "Buyback" | "Ended";
   paused: boolean;
@@ -73,6 +75,8 @@ const CAMPAIGN_FIELDS = `
   currentSupply
   totalStaked
   totalRaised
+  treasuryRaised
+  treasuryTokensOut
   currentYieldRate
   state
   paused

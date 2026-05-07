@@ -3,12 +3,12 @@ pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 import {StdInvariant} from "forge-std/StdInvariant.sol";
-import {CampaignFactory} from "../../src/CampaignFactory.sol";
-import {Campaign} from "../../src/Campaign.sol";
-import {CampaignToken} from "../../src/CampaignToken.sol";
-import {YieldToken} from "../../src/YieldToken.sol";
-import {StakingVault} from "../../src/StakingVault.sol";
-import {HarvestManager} from "../../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../../src/GrowfiHarvestManager.sol";
 import {MockERC20} from "../helpers/MockERC20.sol";
 import {Handler} from "./Handler.sol";
 import {Deployer} from "../helpers/Deployer.sol";
@@ -17,12 +17,12 @@ import {Deployer} from "../helpers/Deployer.sol";
 /// @notice Foundry fires random sequences of Handler calls; invariants must
 ///         hold after every single call across every run.
 contract InvariantsTest is StdInvariant, Test {
-    CampaignFactory factory;
-    Campaign campaign;
-    CampaignToken campaignToken;
-    YieldToken yieldToken;
-    StakingVault stakingVault;
-    HarvestManager harvestManager;
+    GrowfiCampaignFactory factory;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiYieldToken yieldToken;
+    GrowfiStakingVault stakingVault;
+    GrowfiHarvestManager harvestManager;
     MockERC20 usdc;
 
     Handler handler;
@@ -45,7 +45,7 @@ contract InvariantsTest is StdInvariant, Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -65,14 +65,14 @@ contract InvariantsTest is StdInvariant, Test {
         );
 
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
-        yieldToken = YieldToken(yt);
-        stakingVault = StakingVault(sv);
-        harvestManager = HarvestManager(hm);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
+        yieldToken = GrowfiYieldToken(yt);
+        stakingVault = GrowfiStakingVault(sv);
+        harvestManager = GrowfiHarvestManager(hm);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
 
         actors.push(makeAddr("alice"));
         actors.push(makeAddr("bob"));
@@ -102,7 +102,7 @@ contract InvariantsTest is StdInvariant, Test {
     // INVARIANTS
     // -------------------------------------------------------------------------
 
-    /// @dev INV-1: StakingVault must always hold exactly `totalStaked` $CAMPAIGN.
+    /// @dev INV-1: GrowfiStakingVault must always hold exactly `totalStaked` $CAMPAIGN.
     ///             Any drift means stake/unstake accounting is broken.
     function invariant_vaultHoldsExactlyTotalStaked() public view {
         assertEq(
@@ -144,11 +144,11 @@ contract InvariantsTest is StdInvariant, Test {
         assertEq(sumPending, queueDepth, "pendingSellBack total != queueDepth");
     }
 
-    /// @dev INV-5: During Funding, the Campaign contract holds exactly the sum of
+    /// @dev INV-5: During Funding, the GrowfiCampaign contract holds exactly the sum of
     ///             purchases across users. After activation/buyback this relationship
     ///             changes, so we only check in Funding.
     function invariant_escrowMatchesPurchasesInFunding() public view {
-        if (campaign.state() != Campaign.State.Funding) return;
+        if (campaign.state() != GrowfiCampaign.State.Funding) return;
 
         uint256 sum;
         uint256 n = handler.actorsLength();
@@ -158,7 +158,7 @@ contract InvariantsTest is StdInvariant, Test {
         assertEq(usdc.balanceOf(address(campaign)), sum, "escrow balance != sum(purchases)");
     }
 
-    /// @dev INV-6: Campaign contract must hold at least the queued sell-back tokens
+    /// @dev INV-6: GrowfiCampaign contract must hold at least the queued sell-back tokens
     ///             (sellers transferred their tokens here; queued ones are not yet
     ///             burned until a buyer fills them).
     function invariant_campaignHoldsQueuedSellbackTokens() public view {
@@ -183,7 +183,7 @@ contract InvariantsTest is StdInvariant, Test {
         }
     }
 
-    /// @dev INV-10: YieldToken supply never exceeds the cumulative totalYieldOwed
+    /// @dev INV-10: GrowfiYieldToken supply never exceeds the cumulative totalYieldOwed
     ///              across all seasons that have started (with a small floor-drift
     ///              tolerance: per-position and aggregate floor divisions accumulate
     ///              rounding at most O(positions * seasons) wei).

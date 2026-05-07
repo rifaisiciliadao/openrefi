@@ -607,6 +607,110 @@
   "kyc": {
     "verified": "KYC vérifié — identité attestée onchain par un admin du registry"
   },
+  "grow": {
+    "title": "$GROW",
+    "subtitle": "Le token utilitaire du protocole. Gagnez-le en participant à n'importe quelle campagne, achetez-le directement avec des stablecoins en allowlist, stakez-le pour un flux continu d'USDC, ou brûlez-le pour racheter un panier pro-rata du Treasury.",
+    "floorPrice": "Prix plancher",
+    "floorPriceHint": "{circulating} $GROW en circulation · soutien par $GROW circulant",
+    "floorHint": "Soutien par $GROW circulant",
+    "circulating": "En circulation",
+    "circulatingHint": "sur {total} $GROW au total",
+    "treasuryHolds": "Treasury détient",
+    "treasuryHoldsHint": "$GROW (exclus du diviseur du plancher)",
+    "buy": {
+      "title": "Acheter $GROW",
+      "blurb": "Vente primaire directe : payez une stablecoin en allowlist, mintez du $GROW frais au plancher + {markup}%. Le markup de {markup}% va au Treasury — chaque achat est non-dilutif.",
+      "salePrice": "Prix de vente",
+      "salePriceHint": "plancher + {markup}% markup",
+      "salePaused": "Vente directe actuellement en pause par le multisig.",
+      "depegged": "Feed {symbol} en panne. Prix Chainlink stale ou hors de la bande $0,95-$1,05. Achats avec ce token bloqués jusqu'à ce que le feed récupère (ou que le multisig révoque le token).",
+      "payWith": "Payer avec",
+      "mintFaucet": "+ Minter 10 000 {symbol}",
+      "minting": "Minting…",
+      "confirmInWallet": "Confirmez dans le wallet…",
+      "youPay": "Vous payez",
+      "balance": "Solde",
+      "insufficientBalance": "Solde insuffisant",
+      "youReceive": "Vous recevez",
+      "connectWallet": "Connecter le wallet",
+      "approveAndBuy": "Approuver {symbol} + Acheter $GROW",
+      "buyButton": "Acheter $GROW",
+      "approvingSig": "Approuvez dans le wallet…",
+      "approvingChain": "Confirmation de l'approbation…",
+      "buyingSig": "Confirmez l'achat…",
+      "buyingChain": "Confirmation on-chain…",
+      "notDeployed": "Contrats $GROW pas encore déployés sur cette chaîne. Définissez NEXT_PUBLIC_GROW_TOKEN et NEXT_PUBLIC_GROW_TREASURY dans .env.local."
+    },
+    "stake": {
+      "title": "Stake $GROW",
+      "totalStaked": "Total staké : {amount} $GROW",
+      "blurb": "Gagnez de l'USDC, alimenté par les distributions de récolte du Treasury. Le multiplicateur monte de 1,0× à 2,0× en 365 jours. Tout retrait reset la streak.",
+      "multiplier": "Multiplicateur (live)",
+      "multiplierStored": "Enregistré : {value}× — actualisé à la prochaine action",
+      "timeToCap": "Temps jusqu'à 2,0×",
+      "max": "MAX",
+      "pendingUsdc": "USDC en attente",
+      "distEndsIn": "Distrib. termine dans {days}j",
+      "stakeTab": "Stake",
+      "withdrawTab": "Withdraw",
+      "withdrawWarning": "La streak revient à 1,0× à chaque withdraw, même partiel. Réclamez d'abord l'USDC si vous voulez les récompenses au multiplicateur actuel sans reset la streak.",
+      "amountToStake": "Montant à staker",
+      "amountToWithdraw": "Montant à retirer",
+      "wallet": "Wallet",
+      "stakedLabel": "Staké",
+      "insufficientBalance": "Solde insuffisant.",
+      "insufficientStaked": "Montant staké insuffisant.",
+      "approveGrow": "Approuver $GROW…",
+      "approvingChain": "Confirmation de l'approbation…",
+      "submittingSig": "Confirmez dans le wallet…",
+      "submittingChain": "Confirmation on-chain…",
+      "approveAndStake": "Approuver + Stake",
+      "stakeButton": "Stake",
+      "withdrawButton": "Withdraw",
+      "claimSig": "Confirmez la réclamation…",
+      "claimingChain": "Réclamation on-chain…",
+      "nothingToClaim": "Rien à réclamer",
+      "claim": "Réclamer {amount} USDC",
+      "connectWallet": "Connecter le wallet",
+      "notDeployed": "Staking pool pas encore déployé. Définissez NEXT_PUBLIC_GROW_STAKING_POOL dans .env.local."
+    },
+    "flywheel": {
+      "eyebrow": "Flywheel",
+      "title": "Comment la participation se compose",
+      "subtitle": "Chaque achat de campagne alimente le Treasury. Chaque allocation du Treasury fait grandir le panier. Chaque récolte paie les stakers de $GROW. Chaque gain de staker pousse le plancher vers le haut — et la boucle recommence.",
+      "footnote": "Aucun humain au milieu : chaque étape est automatique via des hooks on-chain. Le multisig se contente de curer la liste des campagnes tracked.",
+      "s1": {
+        "title": "Achetez et gagnez $GROW",
+        "body": "N'importe qui finance une campagne avec USDC. 3% va au FeeSplitter (30% Treasury / 70% ops). L'acheteur gagne aussi du $GROW gratuit via bonding curve — en escrow pré-softcap, minté directement post-activation."
+      },
+      "s2": {
+        "title": "Le Treasury alloue auto",
+        "body": "Les achats directs de $GROW au plancher + 10% envoient l'USDC directement au Treasury, qui le répartit également entre toutes les campagnes tracked Active. Aucun clic du multisig."
+      },
+      "s3": {
+        "title": "Le rendement revient",
+        "body": "Le Treasury détient des CampaignTokens, les stake, réclame le $YIELD, l'échange contre USDC à la récolte. L'USDC de la récolte revient au Treasury — le soutien par $GROW circulant grandit."
+      },
+      "s4": {
+        "title": "Stakers gagnent, plancher monte",
+        "body": "80% de l'USDC de récolte va au pool de staking $GROW. Le multiplicateur monte de 1,0× à 2,0× en 365 jours. Le plancher monte grâce aux buybacks + revenus de récolte → le prochain acheteur paie plus pour moins de $GROW."
+      }
+    },
+    "escrow": {
+      "title": "Votre $GROW en escrow",
+      "blurb": "$GROW gagné en achetant dans une campagne avant son soft cap. Réclamable une fois la campagne activée ; annulé si la campagne échoue sa phase de funding.",
+      "connectPrompt": "Connectez votre wallet pour voir vos allocations en escrow.",
+      "empty": "Pas encore de $GROW en escrow. Achetez dans n'importe quelle campagne et une allocation gratuite de $GROW atterrira ici automatiquement.",
+      "campaign": "Campagne",
+      "readyToClaim": "prêt à réclamer",
+      "voided": "annulé (campagne échouée)",
+      "pendingSoftcap": "en attente du soft cap",
+      "claim": "Réclamer",
+      "pending": "En attente",
+      "voidedShort": "Annulé",
+      "notDeployed": "Minter pas encore déployé. Définissez NEXT_PUBLIC_GROW_MINTER dans .env.local."
+    }
+  },
   "grower": {
     "invalidAddress": "Adresse cultivateur invalide.",
     "anonymous": "Anon grower",

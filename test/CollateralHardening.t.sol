@@ -2,12 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {FeeOnTransferToken} from "./helpers/FeeOnTransferToken.sol";
 import {ReentrantToken} from "./helpers/ReentrantToken.sol";
@@ -46,13 +46,13 @@ contract CollateralHardeningTest is Test {
 
     function _bootstrap(address tokenAddr)
         internal
-        returns (CampaignFactory factory, Campaign campaign, CampaignToken ct, HarvestManager hm)
+        returns (GrowfiCampaignFactory factory, GrowfiCampaign campaign, GrowfiCampaignToken ct, GrowfiHarvestManager hm)
     {
         factory = Deployer.deployProtocol(protocolOwner, feeRecipient, tokenAddr, address(0));
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -77,9 +77,9 @@ contract CollateralHardeningTest is Test {
         );
 
         (address c, address cTok,,, address hmAddr,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        ct = CampaignToken(cTok);
-        hm = HarvestManager(hmAddr);
+        campaign = GrowfiCampaign(c);
+        ct = GrowfiCampaignToken(cTok);
+        hm = GrowfiHarvestManager(hmAddr);
     }
 
     // =========================================================================
@@ -92,19 +92,19 @@ contract CollateralHardeningTest is Test {
     /// we never assume otherwise without a deliberate change.
     function test_fot_lockCollateral_overCountsBalance() public {
         FeeOnTransferToken fot = new FeeOnTransferToken("FoT", "FOT", 18, 100); // 1% burn
-        (, Campaign campaign,,) = _bootstrap(address(fot));
+        (, GrowfiCampaign campaign,,) = _bootstrap(address(fot));
 
         // Activate via a regular buy (FoT through buy is a separate footgun
         // already covered in PoolSecurity; we don't care for this test).
         // Here we shortcut state by hitting minCap with one big buy.
         vm.prank(producer);
-        campaign.addAcceptedToken(address(fot), Campaign.PricingMode.Fixed, USDC_RATE_FOT, address(0));
+        campaign.addAcceptedToken(address(fot), GrowfiCampaign.PricingMode.Fixed, USDC_RATE_FOT, address(0));
         fot.mint(alice, 200_000e18);
         vm.startPrank(alice);
         fot.approve(address(campaign), type(uint256).max);
         campaign.buy(address(fot), 60_000e18); // hits minCap → activates
         vm.stopPrank();
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
 
         // Producer locks 1000 FoT.
         fot.mint(producer, 1_000e18);
@@ -132,22 +132,22 @@ contract CollateralHardeningTest is Test {
     // 2. REENTRANCY ON lockCollateral
     // =========================================================================
 
-    /// A hostile USDC re-enters Campaign.lockCollateral inside its own
+    /// A hostile USDC re-enters GrowfiCampaign.lockCollateral inside its own
     /// transfer hook. The nonReentrant modifier on lockCollateral must
     /// abort the inner call.
     function test_reentrancy_lockCollateral_blocked() public {
         ReentrantToken rog = new ReentrantToken("Rogue", "ROG", 18);
-        (, Campaign campaign,,) = _bootstrap(address(rog));
+        (, GrowfiCampaign campaign,,) = _bootstrap(address(rog));
 
         // Activate quickly via a regular buy with ROG as payment.
         vm.prank(producer);
-        campaign.addAcceptedToken(address(rog), Campaign.PricingMode.Fixed, USDC_RATE_RGN, address(0));
+        campaign.addAcceptedToken(address(rog), GrowfiCampaign.PricingMode.Fixed, USDC_RATE_RGN, address(0));
         rog.mint(alice, 200_000e18);
         vm.startPrank(alice);
         rog.approve(address(campaign), type(uint256).max);
         campaign.buy(address(rog), 60_000e18);
         vm.stopPrank();
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
 
         // Arm the token so its next transfer hook re-enters
         // lockCollateral on the same campaign.
@@ -155,7 +155,7 @@ contract CollateralHardeningTest is Test {
         vm.prank(producer);
         rog.approve(address(campaign), type(uint256).max);
 
-        bytes memory payload = abi.encodeCall(Campaign.lockCollateral, (100e18));
+        bytes memory payload = abi.encodeCall(GrowfiCampaign.lockCollateral, (100e18));
         rog.arm(address(campaign), payload);
 
         vm.prank(producer);
@@ -175,11 +175,11 @@ contract CollateralHardeningTest is Test {
     /// the same-seasonId path because it's the realistic griefing attempt.
     function test_reentrancy_settleSeasonShortfall_blocked() public {
         ReentrantToken rog = new ReentrantToken("Rogue", "ROG", 18);
-        (, Campaign campaign, CampaignToken ct, HarvestManager hm) = _bootstrap(address(rog));
+        (, GrowfiCampaign campaign, GrowfiCampaignToken ct, GrowfiHarvestManager hm) = _bootstrap(address(rog));
 
         // Whitelist + activate
         vm.prank(producer);
-        campaign.addAcceptedToken(address(rog), Campaign.PricingMode.Fixed, USDC_RATE_RGN, address(0));
+        campaign.addAcceptedToken(address(rog), GrowfiCampaign.PricingMode.Fixed, USDC_RATE_RGN, address(0));
         rog.mint(alice, 1_000_000e18);
         vm.startPrank(alice);
         rog.approve(address(campaign), type(uint256).max);
@@ -197,7 +197,7 @@ contract CollateralHardeningTest is Test {
         vm.stopPrank();
         // Alice stakes
         vm.startPrank(alice);
-        StakingVault sv = StakingVault(address(campaign.stakingVault()));
+        GrowfiStakingVault sv = GrowfiStakingVault(address(campaign.stakingVault()));
         ct.approve(address(sv), type(uint256).max);
         uint256 posId = sv.stake(ct.balanceOf(alice));
         vm.stopPrank();
@@ -209,7 +209,7 @@ contract CollateralHardeningTest is Test {
         // Alice commits a USDC claim so usdcOwed > 0
         vm.startPrank(alice);
         sv.claimYield(posId);
-        YieldToken yt = YieldToken(address(hm.yieldToken()));
+        GrowfiYieldToken yt = GrowfiYieldToken(address(hm.yieldToken()));
         uint256 yieldBal = yt.balanceOf(alice);
         if (yieldBal > 0) hm.redeemUSDC(1, yieldBal);
         vm.stopPrank();
@@ -220,17 +220,17 @@ contract CollateralHardeningTest is Test {
 
         // Arm the token so usdc.safeTransferFrom (called inside
         // depositFromCollateral) re-enters settleSeasonShortfall(1).
-        bytes memory payload = abi.encodeCall(Campaign.settleSeasonShortfall, (1));
+        bytes memory payload = abi.encodeCall(GrowfiCampaign.settleSeasonShortfall, (1));
         rog.arm(address(campaign), payload);
 
         // The outer call enters settleSeasonShortfall, sets
         // `seasonShortfallSettled[1] = true`, computes a draw, calls
         // depositFromCollateral → usdc.safeTransferFrom from the campaign
         // → ReentrantToken._update fires the armed payload, which calls
-        // back into Campaign.settleSeasonShortfall(1).
+        // back into GrowfiCampaign.settleSeasonShortfall(1).
         //
         // Two compounding defenses fire:
-        //   (a) Campaign.settleSeasonShortfall is `nonReentrant` — the
+        //   (a) GrowfiCampaign.settleSeasonShortfall is `nonReentrant` — the
         //       inner call hits ReentrancyGuardReentrantCall before any
         //       state read, OR
         //   (b) if the reentrancy guard were ever weakened, the inner
@@ -256,7 +256,7 @@ contract CollateralHardeningTest is Test {
     /// would fail. Defensive snapshot of the v3 layout we ship.
     function test_storageLayout_v1v2v3FieldsResolveAtExpectedAccessors() public {
         MockERC20 usdc = new MockERC20("USD Coin", "USDC", 6);
-        (, Campaign campaign,,) = _bootstrap(address(usdc));
+        (, GrowfiCampaign campaign,,) = _bootstrap(address(usdc));
 
         // v1 fields (state machine, caps, dates)
         assertEq(campaign.producer(), producer, "v1: producer slot");
@@ -265,7 +265,7 @@ contract CollateralHardeningTest is Test {
         assertEq(campaign.minCap(), MIN_CAP, "v1: minCap slot");
         assertEq(campaign.maxCap(), MAX_CAP, "v1: maxCap slot");
         assertEq(campaign.seasonDuration(), SEASON_DURATION, "v1: seasonDuration slot");
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Funding), "v1: state slot");
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Funding), "v1: state slot");
         assertEq(campaign.currentSupply(), 0, "v1: currentSupply slot");
 
         // v1 zombie + v1 active fee fields
@@ -291,7 +291,7 @@ contract CollateralHardeningTest is Test {
     /// trip the explicit assertEq in the layout test above. Defense in depth.
     function test_storageLayout_zombieSlotPreservesValue() public {
         MockERC20 usdc = new MockERC20("USD Coin", "USDC", 6);
-        (, Campaign campaign,,) = _bootstrap(address(usdc));
+        (, GrowfiCampaign campaign,,) = _bootstrap(address(usdc));
         assertGt(campaign.protocolFeeBps(), 0, "zombie slot must hold init value");
     }
 }

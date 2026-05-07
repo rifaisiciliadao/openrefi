@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
 import {MockUSDC} from "../src/mocks/MockUSDC.sol";
 
 /// @title OliveSetup — Phase 1 of the full 2-actor lifecycle smoke on Base Sepolia
@@ -24,7 +24,7 @@ contract OliveSetup is Script {
     function run() external {
         uint256 alicePK = vm.envUint("PRIVATE_KEY");
         uint256 bobPK = vm.envUint("BOB_PRIVATE_KEY");
-        CampaignFactory factory = CampaignFactory(vm.envAddress("FACTORY_ADDRESS"));
+        GrowfiCampaignFactory factory = GrowfiCampaignFactory(vm.envAddress("FACTORY_ADDRESS"));
         MockUSDC usdc = MockUSDC(vm.envAddress("USDC_ADDRESS"));
         address alice = vm.addr(alicePK);
         address bob = vm.addr(bobPK);
@@ -44,7 +44,7 @@ contract OliveSetup is Script {
         }
 
         address campaignAddr = factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: alice,
                 tokenName: "Olive IGP Sicily",
                 tokenSymbol: "OLIVE",
@@ -64,7 +64,7 @@ contract OliveSetup is Script {
                 coverageHarvests: 3
             })
         );
-        Campaign campaign = Campaign(campaignAddr);
+        GrowfiCampaign campaign = GrowfiCampaign(campaignAddr);
 
         // Fetch the 5 proxy addresses in one shot.
         uint256 idx = factory.getCampaignCount() - 1;
@@ -86,13 +86,13 @@ contract OliveSetup is Script {
         console.log("harvestManager   :", hmAddr);
 
         // Accept USDC at 0.144 USDC per 1 OLIVE.
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
 
         // Alice buys 120,000 OLIVE → activates (>100k minCap).
         // 120_000 * 0.144 = 17,280 USDC = 17_280_000_000 (6-dec).
         usdc.approve(address(campaign), type(uint256).max);
         campaign.buy(address(usdc), 17_280_000_000);
-        require(uint8(campaign.state()) == uint8(Campaign.State.Active), "Alice buy didn't activate");
+        require(uint8(campaign.state()) == uint8(GrowfiCampaign.State.Active), "Alice buy didn't activate");
         console.log("alice bought     : 120,000 OLIVE (state=Active, ~$17,280)");
 
         // v3 — Lock USDC as a 3-harvest yield reserve.
@@ -108,8 +108,8 @@ contract OliveSetup is Script {
         console.log("season 1 started :", block.timestamp);
 
         // Alice stakes all her OLIVE.
-        CampaignToken ct = CampaignToken(ctAddr);
-        StakingVault sv = StakingVault(svAddr);
+        GrowfiCampaignToken ct = GrowfiCampaignToken(ctAddr);
+        GrowfiStakingVault sv = GrowfiStakingVault(svAddr);
         ct.approve(address(sv), type(uint256).max);
         uint256 alicePos = sv.stake(ct.balanceOf(alice));
         console.log("alice stake pos  :", alicePos);

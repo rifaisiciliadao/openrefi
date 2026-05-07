@@ -5,7 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @title FeeOnTransferToken — ERC20 that skims `feeBps` on every transfer
 /// @notice Burns the fee; recipient receives `amount * (10_000 - feeBps) / 10_000`.
-///         Used to document Campaign's assumption that payment tokens are
+///         Used to document GrowfiCampaign's assumption that payment tokens are
 ///         not fee-on-transfer, and to prove what breaks if one is whitelisted.
 contract FeeOnTransferToken is ERC20 {
     uint256 public immutable feeBps;

@@ -26,7 +26,10 @@ import {
   SellBackOrder,
   User,
   GlobalStats,
+  Protocol,
 } from "../generated/schema";
+
+const PROTOCOL_ID = Bytes.fromUTF8("protocol");
 
 const STATES = ["Funding", "Active", "Buyback", "Ended"];
 const GLOBAL_ID = Bytes.fromUTF8("global");
@@ -89,6 +92,20 @@ export function handleTokensPurchased(event: TokensPurchasedEvent): void {
     .times(campaign.pricePerToken)
     .div(BigInt.fromI32(10).pow(18));
   campaign.totalRaised = campaign.totalRaised.plus(usdValue);
+
+  // Attribution: when the GROW Treasury is the buyer, the funding came from
+  // protocol auto-allocation rather than a direct backer. Track separately so
+  // the UI can render a two-segment funding bar.
+  const protocol = Protocol.load(PROTOCOL_ID);
+  if (protocol !== null) {
+    const treasury = protocol.growTreasury;
+    if (treasury !== null && event.params.buyer.equals(treasury)) {
+      campaign.treasuryRaised = campaign.treasuryRaised.plus(usdValue);
+      campaign.treasuryTokensOut = campaign.treasuryTokensOut.plus(
+        event.params.campaignTokensOut,
+      );
+    }
+  }
   campaign.save();
 
   // User

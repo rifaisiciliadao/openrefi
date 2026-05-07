@@ -2,12 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {ReentrantToken} from "./helpers/ReentrantToken.sol";
 import {FeeOnTransferToken} from "./helpers/FeeOnTransferToken.sol";
@@ -22,21 +22,21 @@ import {Deployer} from "./helpers/Deployer.sol";
 ///              rejects a re-entry from a hostile ERC20's transfer hook.
 ///           2. Cross-function reentrancy inside the same proxy (buy → sellBack,
 ///              buy → cancelSellBack, buy → buyback, etc.).
-///           3. Cross-PROXY reentrancy: hostile payment token during Campaign.buy
-///              re-enters StakingVault / HarvestManager; prove no drain is
+///           3. Cross-PROXY reentrancy: hostile payment token during GrowfiCampaign.buy
+///              re-enters GrowfiStakingVault / GrowfiHarvestManager; prove no drain is
 ///              possible even though those guards are per-contract.
 ///           4. Fee-on-transfer payment token: demonstrate the accounting
 ///              gap if a producer carelessly whitelists a FoT ERC20. Not a
 ///              protocol bug per se — the whitelist is producer-gated — but
 ///              the tests pin down what breaks so the docs can warn producers.
 contract PoolSecurityTest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc;
-    Campaign campaign;
-    CampaignToken campaignToken;
-    YieldToken yieldToken;
-    StakingVault stakingVault;
-    HarvestManager harvestManager;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiYieldToken yieldToken;
+    GrowfiStakingVault stakingVault;
+    GrowfiHarvestManager harvestManager;
 
     address protocolOwner = makeAddr("protocolOwner");
     address feeRecipient = makeAddr("feeRecipient");
@@ -57,7 +57,7 @@ contract PoolSecurityTest is Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -77,14 +77,14 @@ contract PoolSecurityTest is Test {
         );
 
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
-        yieldToken = YieldToken(yt);
-        stakingVault = StakingVault(sv);
-        harvestManager = HarvestManager(hm);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
+        yieldToken = GrowfiYieldToken(yt);
+        stakingVault = GrowfiStakingVault(sv);
+        harvestManager = GrowfiHarvestManager(hm);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
 
         usdc.mint(alice, 100_000e6);
         usdc.mint(bob, 100_000e6);
@@ -106,27 +106,27 @@ contract PoolSecurityTest is Test {
 
     function _whitelistReentrantToken(ReentrantToken tok, uint256 fixedRate) internal {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(tok), Campaign.PricingMode.Fixed, fixedRate, address(0));
+        campaign.addAcceptedToken(address(tok), GrowfiCampaign.PricingMode.Fixed, fixedRate, address(0));
     }
 
     function _whitelistFotToken(FeeOnTransferToken tok, uint256 fixedRate) internal {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(tok), Campaign.PricingMode.Fixed, fixedRate, address(0));
+        campaign.addAcceptedToken(address(tok), GrowfiCampaign.PricingMode.Fixed, fixedRate, address(0));
     }
 
     function _activateViaAlice() internal {
         uint256 pay = 60_000 * USDC_FIXED_RATE;
         vm.prank(alice);
         campaign.buy(address(usdc), pay);
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active), "setup: not active");
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active), "setup: not active");
     }
 
     // =========================================================================
     // 1. DIRECT REENTRANCY — same-function, guarded by nonReentrant
     // =========================================================================
 
-    /// Attacker whitelists a reentrant token, then calls Campaign.buy. During
-    /// the payment token's transferFrom, it re-enters Campaign.buy. The
+    /// Attacker whitelists a reentrant token, then calls GrowfiCampaign.buy. During
+    /// the payment token's transferFrom, it re-enters GrowfiCampaign.buy. The
     /// nonReentrant modifier must block the inner call.
     function test_reentrancy_buy_blocksSelfReentry() public {
         ReentrantToken rog = new ReentrantToken("Rogue", "ROG", 18);
@@ -135,8 +135,8 @@ contract PoolSecurityTest is Test {
         vm.prank(attacker);
         rog.approve(address(campaign), type(uint256).max);
 
-        // Arm the token so its next transfer re-enters Campaign.buy(rog, 1e18).
-        bytes memory payload = abi.encodeCall(Campaign.buy, (address(rog), 1e18));
+        // Arm the token so its next transfer re-enters GrowfiCampaign.buy(rog, 1e18).
+        bytes memory payload = abi.encodeCall(GrowfiCampaign.buy, (address(rog), 1e18));
         rog.arm(address(campaign), payload);
 
         vm.prank(attacker);
@@ -159,10 +159,10 @@ contract PoolSecurityTest is Test {
 
         vm.warp(block.timestamp + 91 days);
         campaign.triggerBuyback();
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Buyback));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Buyback));
 
         // Now arm the refund token to reenter buyback during safeTransfer.
-        bytes memory payload = abi.encodeCall(Campaign.buyback, (address(rog)));
+        bytes memory payload = abi.encodeCall(GrowfiCampaign.buyback, (address(rog)));
         rog.arm(address(campaign), payload);
 
         vm.prank(attacker);
@@ -171,7 +171,7 @@ contract PoolSecurityTest is Test {
     }
 
     /// Re-enter sellBack() during the campaignToken transfer inside
-    /// another sellBack call. CampaignToken is a controlled token that doesn't
+    /// another sellBack call. GrowfiCampaignToken is a controlled token that doesn't
     /// have hooks, so we need a different vector: attacker reenters from a
     /// TRIGGERED call. In practice the only re-entrant surface is the payment
     /// token during a buy that fills the queue. Cover that below.
@@ -192,8 +192,8 @@ contract PoolSecurityTest is Test {
         // During _fillSellBackQueue → safeTransfer(order.seller, paymentForFill)
         // the seller is alice, not the attacker, so arming `rog` here doesn't
         // hit us. Instead, arm the token's safeTransferFrom (pull from buyer)
-        // to reenter Campaign.buy.
-        bytes memory payload = abi.encodeCall(Campaign.buy, (address(rog), 1e18));
+        // to reenter GrowfiCampaign.buy.
+        bytes memory payload = abi.encodeCall(GrowfiCampaign.buy, (address(rog), 1e18));
         rog.arm(address(campaign), payload);
 
         vm.prank(attacker);
@@ -201,8 +201,8 @@ contract PoolSecurityTest is Test {
         campaign.buy(address(rog), 5e18);
     }
 
-    /// StakingVault.stake: reentrant token as $CAMPAIGN? Not possible —
-    /// CampaignToken is a fixed contract without hooks. But prove that
+    /// GrowfiStakingVault.stake: reentrant token as $CAMPAIGN? Not possible —
+    /// GrowfiCampaignToken is a fixed contract without hooks. But prove that
     /// campaignToken.transferFrom into stake cannot produce a reentry anyway.
     /// This is a sanity test on the pattern.
     function test_reentrancy_stake_campaignTokenHasNoHook() public {
@@ -224,7 +224,7 @@ contract PoolSecurityTest is Test {
         assertTrue(active);
     }
 
-    /// Campaign.depositUSDC: if the USDC token were hostile, could the
+    /// GrowfiCampaign.depositUSDC: if the USDC token were hostile, could the
     /// producer be tricked into double-accounting? ReentrantGuard should
     /// block even theoretical re-entry. We can't whitelist a different USDC
     /// (it's fixed at factory init), so we build an isolated campaign with
@@ -232,11 +232,11 @@ contract PoolSecurityTest is Test {
     function test_reentrancy_depositUSDC_blocksSelfReentry() public {
         // Build a parallel factory whose USDC is the reentrant token.
         ReentrantToken rog = new ReentrantToken("Rogue USDC", "rUSDC", 6);
-        CampaignFactory rogueFactory = Deployer.deployProtocol(protocolOwner, feeRecipient, address(rog), address(0));
+        GrowfiCampaignFactory rogueFactory = Deployer.deployProtocol(protocolOwner, feeRecipient, address(rog), address(0));
 
         vm.prank(producer);
         rogueFactory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive2",
                 tokenSymbol: "OLIVE2",
@@ -255,7 +255,7 @@ contract PoolSecurityTest is Test {
             })
         );
         (,,,, address hm2,,) = rogueFactory.campaigns(0);
-        HarvestManager hm = HarvestManager(hm2);
+        GrowfiHarvestManager hm = GrowfiHarvestManager(hm2);
 
         // Arm the token to try reentering depositUSDC during safeTransferFrom.
         rog.mint(producer, 1_000e6);
@@ -265,7 +265,7 @@ contract PoolSecurityTest is Test {
         // depositFromCollateral is onlyCampaign so the rogue token's reentry
         // would revert anyway — but the outer NotReported check trips first
         // and we never reach the transferFrom that triggers the hook.
-        bytes memory payload = abi.encodeCall(HarvestManager.depositFromCollateral, (1, 1e6));
+        bytes memory payload = abi.encodeCall(GrowfiHarvestManager.depositFromCollateral, (1, 1e6));
         rog.arm(address(hm), payload);
 
         // reportHarvest is onlyStakingVault — we can't easily trigger deposit,
@@ -283,7 +283,7 @@ contract PoolSecurityTest is Test {
     // =========================================================================
 
     /// From the reentrant buy(), try to call sellBack() / cancelSellBack() /
-    /// buyback(). All share the same nonReentrant slot on Campaign, so all
+    /// buyback(). All share the same nonReentrant slot on GrowfiCampaign, so all
     /// must revert.
     function test_reentrancy_buy_blocksSellBackRentry() public {
         _activateViaAlice();
@@ -298,7 +298,7 @@ contract PoolSecurityTest is Test {
 
         // Reentry: call sellBack — the attacker doesn't own $CAMPAIGN yet
         // (still in buy flow), but nonReentrant must trip before that check.
-        bytes memory payload = abi.encodeCall(Campaign.sellBack, (1));
+        bytes memory payload = abi.encodeCall(GrowfiCampaign.sellBack, (1));
         rog.arm(address(campaign), payload);
 
         vm.prank(attacker);
@@ -315,7 +315,7 @@ contract PoolSecurityTest is Test {
         vm.prank(attacker);
         rog.approve(address(campaign), type(uint256).max);
 
-        bytes memory payload = abi.encodeCall(Campaign.cancelSellBack, ());
+        bytes memory payload = abi.encodeCall(GrowfiCampaign.cancelSellBack, ());
         rog.arm(address(campaign), payload);
 
         vm.prank(attacker);
@@ -327,9 +327,9 @@ contract PoolSecurityTest is Test {
     // 3. CROSS-PROXY REENTRANCY — same campaign's other contracts
     // =========================================================================
 
-    /// A hostile payment token during Campaign.buy re-enters StakingVault.stake.
-    /// StakingVault has its own nonReentrant slot so the inner call is NOT
-    /// blocked by Campaign's lock. We prove that the reentry's `msg.sender`
+    /// A hostile payment token during GrowfiCampaign.buy re-enters GrowfiStakingVault.stake.
+    /// GrowfiStakingVault has its own nonReentrant slot so the inner call is NOT
+    /// blocked by GrowfiCampaign's lock. We prove that the reentry's `msg.sender`
     /// is the hostile TOKEN CONTRACT, not the attacker — so the token can
     /// only stake with its OWN balance/allowance. It has neither, so the
     /// inner call reverts cleanly. The outer buy still completes normally
@@ -346,12 +346,12 @@ contract PoolSecurityTest is Test {
         vm.prank(attacker);
         rog.approve(address(campaign), type(uint256).max);
 
-        // Arm the token to reenter StakingVault.stake(1e18). The reentry will
-        // fail inside StakingVault with ERC20InsufficientAllowance because
+        // Arm the token to reenter GrowfiStakingVault.stake(1e18). The reentry will
+        // fail inside GrowfiStakingVault with ERC20InsufficientAllowance because
         // msg.sender there is the rogue token contract, which has no
         // approval. We use swallow=true so the outer buy completes and we
         // can observe post-state.
-        bytes memory payload = abi.encodeCall(StakingVault.stake, (1e18));
+        bytes memory payload = abi.encodeCall(GrowfiStakingVault.stake, (1e18));
         rog.arm(address(stakingVault), payload, true);
 
         vm.prank(attacker);
@@ -360,7 +360,7 @@ contract PoolSecurityTest is Test {
         // Reentry failed harmlessly.
         assertFalse(rog.lastCallOk(), "reentry must fail on missing allowance");
 
-        // StakingVault has no positions at all — attacker didn't stake.
+        // GrowfiStakingVault has no positions at all — attacker didn't stake.
         assertEq(stakingVault.getPositions(attacker).length, 0);
         assertEq(stakingVault.getPositions(address(rog)).length, 0);
 
@@ -373,7 +373,7 @@ contract PoolSecurityTest is Test {
     // 4. FEE-ON-TRANSFER — documents the producer-whitelist risk
     // =========================================================================
 
-    /// FoT token as payment: Campaign records `paymentAmount` even though the
+    /// FoT token as payment: GrowfiCampaign records `paymentAmount` even though the
     /// contract received less. In Buyback state, the last user to refund
     /// reverts with ERC20InsufficientBalance because the shortfall accumulated.
     /// This is NOT a protocol-level bug — the accepted-token allowlist is
@@ -442,7 +442,7 @@ contract PoolSecurityTest is Test {
         vm.prank(alice);
         campaign.buy(address(fot), declared);
 
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
 
         // Producer receives whatever is left in escrow after: (1) 1% FoT on
         // transferFrom from alice, (2) the 3% nominal funding fee leaving the

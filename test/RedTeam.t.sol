@@ -2,12 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {MockOracle} from "./helpers/MockOracle.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -17,16 +17,16 @@ import {Deployer} from "./helpers/Deployer.sol";
 /// @notice Each test simulates an attacker trying to exploit a specific surface.
 ///         A passing test means the attack was successfully *blocked* by the contracts.
 contract RedTeamTest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc;
     MockERC20 weth;
     MockOracle wethOracle;
 
-    Campaign campaign;
-    CampaignToken campaignToken;
-    YieldToken yieldToken;
-    StakingVault stakingVault;
-    HarvestManager harvestManager;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiYieldToken yieldToken;
+    GrowfiStakingVault stakingVault;
+    GrowfiHarvestManager harvestManager;
 
     address protocolOwner = makeAddr("protocolOwner");
     address feeRecipient = makeAddr("feeRecipient");
@@ -50,7 +50,7 @@ contract RedTeamTest is Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -70,15 +70,15 @@ contract RedTeamTest is Test {
         );
 
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
-        yieldToken = YieldToken(yt);
-        stakingVault = StakingVault(sv);
-        harvestManager = HarvestManager(hm);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
+        yieldToken = GrowfiYieldToken(yt);
+        stakingVault = GrowfiStakingVault(sv);
+        harvestManager = GrowfiHarvestManager(hm);
 
         vm.startPrank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
-        campaign.addAcceptedToken(address(weth), Campaign.PricingMode.Oracle, 0, address(wethOracle));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(weth), GrowfiCampaign.PricingMode.Oracle, 0, address(wethOracle));
         vm.stopPrank();
 
         usdc.mint(alice, 100_000e6);
@@ -105,15 +105,15 @@ contract RedTeamTest is Test {
         uint256 pay = 60_000 * USDC_FIXED_RATE;
         vm.prank(alice);
         campaign.buy(address(usdc), pay);
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
     }
 
     // =========================================================================
-    // ATTACK 1 — Unauthorized mint of CampaignToken
+    // ATTACK 1 — Unauthorized mint of GrowfiCampaignToken
     // =========================================================================
     function test_attack_mintCampaignTokenDirectly() public {
         vm.prank(attacker);
-        vm.expectRevert(CampaignToken.OnlyCampaign.selector);
+        vm.expectRevert(GrowfiCampaignToken.OnlyCampaign.selector);
         campaignToken.mint(attacker, 1_000_000e18);
     }
 
@@ -123,7 +123,7 @@ contract RedTeamTest is Test {
     function test_attack_burnVictimTokens() public {
         _activateCampaign();
         vm.prank(attacker);
-        vm.expectRevert(CampaignToken.OnlyCampaignOrVault.selector);
+        vm.expectRevert(GrowfiCampaignToken.OnlyCampaignOrVault.selector);
         campaignToken.burn(alice, 1e18);
     }
 
@@ -132,7 +132,7 @@ contract RedTeamTest is Test {
     // =========================================================================
     function test_attack_mintYieldTokenDirectly() public {
         vm.prank(attacker);
-        vm.expectRevert(YieldToken.OnlyStakingVault.selector);
+        vm.expectRevert(GrowfiYieldToken.OnlyStakingVault.selector);
         yieldToken.mint(attacker, 1_000_000e18);
     }
 
@@ -143,19 +143,19 @@ contract RedTeamTest is Test {
         // Factory already called setCampaignToken during createCampaign
         // Even if factory could somehow re-call it, the one-time guard must block
         vm.prank(address(factory));
-        vm.expectRevert(Campaign.AlreadySet.selector);
+        vm.expectRevert(GrowfiCampaign.AlreadySet.selector);
         campaign.setCampaignToken(address(0xdead));
     }
 
     function test_attack_resetStakingVaultOnToken() public {
         vm.prank(address(campaign));
-        vm.expectRevert(CampaignToken.StakingVaultAlreadySet.selector);
+        vm.expectRevert(GrowfiCampaignToken.StakingVaultAlreadySet.selector);
         campaignToken.setStakingVault(address(0xdead));
     }
 
     function test_attack_resetYieldTokenOnHarvest() public {
         vm.prank(address(factory));
-        vm.expectRevert(HarvestManager.AlreadySet.selector);
+        vm.expectRevert(GrowfiHarvestManager.AlreadySet.selector);
         harvestManager.setYieldToken(address(0xdead));
     }
 
@@ -164,7 +164,7 @@ contract RedTeamTest is Test {
     // =========================================================================
     function test_attack_forgeHarvestReport() public {
         vm.prank(attacker);
-        vm.expectRevert(HarvestManager.OnlyProducer.selector);
+        vm.expectRevert(GrowfiHarvestManager.OnlyProducer.selector);
         harvestManager.reportHarvest(1, 1_000_000e18, bytes32(uint256(0xdead)), 1000e18);
     }
 
@@ -197,13 +197,13 @@ contract RedTeamTest is Test {
         bytes32[] memory fakeProof = new bytes32[](1);
         fakeProof[0] = bytes32(uint256(0xbeef));
         vm.prank(attacker);
-        vm.expectRevert(HarvestManager.InvalidMerkleProof.selector);
+        vm.expectRevert(GrowfiHarvestManager.InvalidMerkleProof.selector);
         harvestManager.redeemProduct(1, 10e18, fakeProof);
 
         // Even with correct-shaped proof but wrong leaf (attacker pretends to be alice)
         bytes32[] memory emptyProof = new bytes32[](0);
         vm.prank(attacker);
-        vm.expectRevert(HarvestManager.InvalidMerkleProof.selector);
+        vm.expectRevert(GrowfiHarvestManager.InvalidMerkleProof.selector);
         harvestManager.redeemProduct(1, aliceYield, emptyProof);
     }
 
@@ -238,7 +238,7 @@ contract RedTeamTest is Test {
 
         // Alice tries to also redeem USDC for the same season — must revert
         vm.prank(alice);
-        vm.expectRevert(HarvestManager.AlreadyClaimed.selector);
+        vm.expectRevert(GrowfiHarvestManager.AlreadyClaimed.selector);
         harvestManager.redeemUSDC(1, 1);
     }
 
@@ -264,7 +264,7 @@ contract RedTeamTest is Test {
         // 31 days later, window closed
         vm.warp(block.timestamp + 31 days);
         vm.prank(alice);
-        vm.expectRevert(HarvestManager.ClaimWindowClosed.selector);
+        vm.expectRevert(GrowfiHarvestManager.ClaimWindowClosed.selector);
         harvestManager.redeemUSDC(1, aliceYield);
     }
 
@@ -291,7 +291,7 @@ contract RedTeamTest is Test {
 
         usdc.mint(producer, 1000e6);
         vm.prank(producer);
-        vm.expectRevert(HarvestManager.DepositWindowClosed.selector);
+        vm.expectRevert(GrowfiHarvestManager.DepositWindowClosed.selector);
         campaign.depositUSDC(1, 1000e6);
     }
 
@@ -307,7 +307,7 @@ contract RedTeamTest is Test {
 
         // Attacker never bought anything → NothingToRefund
         vm.prank(attacker);
-        vm.expectRevert(Campaign.NothingToRefund.selector);
+        vm.expectRevert(GrowfiCampaign.NothingToRefund.selector);
         campaign.buyback(address(usdc));
     }
 
@@ -330,7 +330,7 @@ contract RedTeamTest is Test {
     function test_attack_oracleNegativePrice() public {
         wethOracle.setPrice(-1); // malicious oracle reports negative
         vm.prank(attacker);
-        vm.expectRevert(Campaign.NegativeOraclePrice.selector);
+        vm.expectRevert(GrowfiCampaign.NegativeOraclePrice.selector);
         campaign.buy(address(weth), 1e18);
     }
 
@@ -341,7 +341,7 @@ contract RedTeamTest is Test {
         // Advance time 2h without updating oracle
         vm.warp(block.timestamp + 2 hours);
         vm.prank(attacker);
-        vm.expectRevert(Campaign.StaleOraclePrice.selector);
+        vm.expectRevert(GrowfiCampaign.StaleOraclePrice.selector);
         campaign.buy(address(weth), 1e18);
     }
 
@@ -357,17 +357,17 @@ contract RedTeamTest is Test {
 
         // Attacker tries to unstake alice's position
         vm.prank(attacker);
-        vm.expectRevert(StakingVault.NotPositionOwner.selector);
+        vm.expectRevert(GrowfiStakingVault.NotPositionOwner.selector);
         stakingVault.unstake(pos);
 
         // Same for claim
         vm.prank(attacker);
-        vm.expectRevert(StakingVault.NotPositionOwner.selector);
+        vm.expectRevert(GrowfiStakingVault.NotPositionOwner.selector);
         stakingVault.claimYield(pos);
 
         // Same for restake
         vm.prank(attacker);
-        vm.expectRevert(StakingVault.NotPositionOwner.selector);
+        vm.expectRevert(GrowfiStakingVault.NotPositionOwner.selector);
         stakingVault.restake(pos);
     }
 
@@ -383,7 +383,7 @@ contract RedTeamTest is Test {
 
         // Try to re-start the same seasonId → SeasonAlreadyUsed
         vm.prank(producer);
-        vm.expectRevert(StakingVault.SeasonAlreadyUsed.selector);
+        vm.expectRevert(GrowfiStakingVault.SeasonAlreadyUsed.selector);
         campaign.startSeason(1);
     }
 
@@ -403,7 +403,7 @@ contract RedTeamTest is Test {
 
         // Producer tries to overwrite with higher value
         vm.prank(producer);
-        vm.expectRevert(HarvestManager.AlreadyReported.selector);
+        vm.expectRevert(GrowfiHarvestManager.AlreadyReported.selector);
         harvestManager.reportHarvest(1, 999_999e18, bytes32(0), 2000e18);
     }
 
@@ -414,7 +414,7 @@ contract RedTeamTest is Test {
         _activateCampaign();
         // No season started yet
         vm.prank(alice);
-        vm.expectRevert(StakingVault.NoActiveSeason.selector);
+        vm.expectRevert(GrowfiStakingVault.NoActiveSeason.selector);
         stakingVault.stake(10_000e18);
     }
 
@@ -423,11 +423,11 @@ contract RedTeamTest is Test {
     // =========================================================================
     function test_attack_pauseAsAttacker() public {
         vm.prank(attacker);
-        vm.expectRevert(Campaign.OnlyFactory.selector);
+        vm.expectRevert(GrowfiCampaign.OnlyFactory.selector);
         campaign.emergencyPause();
 
         vm.prank(attacker);
-        vm.expectRevert(StakingVault.OnlyFactory.selector);
+        vm.expectRevert(GrowfiStakingVault.OnlyFactory.selector);
         stakingVault.emergencyPause();
     }
 
@@ -460,7 +460,7 @@ contract RedTeamTest is Test {
     function test_attack_cancelSellBackNoPending() public {
         _activateCampaign();
         vm.prank(attacker);
-        vm.expectRevert(Campaign.NoSellBackPending.selector);
+        vm.expectRevert(GrowfiCampaign.NoSellBackPending.selector);
         campaign.cancelSellBack();
     }
 
@@ -471,10 +471,10 @@ contract RedTeamTest is Test {
         uint256 pay = 10_000 * USDC_FIXED_RATE;
         vm.prank(alice);
         campaign.buy(address(usdc), pay);
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Funding));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Funding));
 
         vm.prank(producer);
-        vm.expectRevert(Campaign.MinCapNotReached.selector);
+        vm.expectRevert(GrowfiCampaign.MinCapNotReached.selector);
         campaign.activateCampaign();
     }
 
@@ -502,7 +502,7 @@ contract RedTeamTest is Test {
 
         // Producer hasn't deposited yet
         vm.prank(alice);
-        vm.expectRevert(HarvestManager.USDCNotDeposited.selector);
+        vm.expectRevert(GrowfiHarvestManager.USDCNotDeposited.selector);
         harvestManager.claimUSDC(1);
     }
 
@@ -511,7 +511,7 @@ contract RedTeamTest is Test {
     // =========================================================================
     function test_attack_zeroBuy() public {
         vm.prank(attacker);
-        vm.expectRevert(Campaign.ZeroAmount.selector);
+        vm.expectRevert(GrowfiCampaign.ZeroAmount.selector);
         campaign.buy(address(usdc), 0);
     }
 
@@ -521,8 +521,8 @@ contract RedTeamTest is Test {
     function test_attack_addMaliciousPaymentToken() public {
         MockERC20 attackerToken = new MockERC20("Fake", "FAKE", 18);
         vm.prank(attacker);
-        vm.expectRevert(Campaign.OnlyProducer.selector);
-        campaign.addAcceptedToken(address(attackerToken), Campaign.PricingMode.Fixed, 1, address(0));
+        vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
+        campaign.addAcceptedToken(address(attackerToken), GrowfiCampaign.PricingMode.Fixed, 1, address(0));
     }
 
     // =========================================================================
@@ -535,7 +535,7 @@ contract RedTeamTest is Test {
         rogue.approve(address(campaign), type(uint256).max);
 
         vm.prank(attacker);
-        vm.expectRevert(Campaign.TokenNotAccepted.selector);
+        vm.expectRevert(GrowfiCampaign.TokenNotAccepted.selector);
         campaign.buy(address(rogue), 100e18);
     }
 
@@ -554,7 +554,7 @@ contract RedTeamTest is Test {
 
         // Attacker tries to buy more
         vm.prank(attacker);
-        vm.expectRevert(Campaign.MaxCapReached.selector);
+        vm.expectRevert(GrowfiCampaign.MaxCapReached.selector);
         campaign.buy(address(usdc), USDC_FIXED_RATE);
     }
 
@@ -569,7 +569,7 @@ contract RedTeamTest is Test {
         uint256 pos = stakingVault.stake(10_000e18);
 
         vm.prank(alice);
-        vm.expectRevert(StakingVault.RestakeSameSeason.selector);
+        vm.expectRevert(GrowfiStakingVault.RestakeSameSeason.selector);
         stakingVault.restake(pos);
     }
 
@@ -582,7 +582,7 @@ contract RedTeamTest is Test {
         campaign.startSeason(1);
 
         vm.prank(producer);
-        vm.expectRevert(StakingVault.SeasonAlreadyActive.selector);
+        vm.expectRevert(GrowfiStakingVault.SeasonAlreadyActive.selector);
         campaign.startSeason(2);
     }
 
@@ -603,7 +603,7 @@ contract RedTeamTest is Test {
         assertGt(yieldToken.balanceOf(alice), 0);
 
         vm.prank(attacker);
-        vm.expectRevert(YieldToken.OnlyVaultOrHarvest.selector);
+        vm.expectRevert(GrowfiYieldToken.OnlyVaultOrHarvest.selector);
         yieldToken.burn(alice, 1);
     }
 
@@ -611,7 +611,7 @@ contract RedTeamTest is Test {
     // ATTACK 31 — Producer drains escrow via wrong state (cannot in Funding)
     // =========================================================================
     function test_attack_producerDrainsFundingEscrow() public {
-        // Alice buys in funding (funds stay in Campaign contract until activation,
+        // Alice buys in funding (funds stay in GrowfiCampaign contract until activation,
         // minus the 3% funding fee skimmed at buy time → the rest escrows).
         uint256 pay = 20_000 * USDC_FIXED_RATE;
         vm.prank(alice);
@@ -621,10 +621,10 @@ contract RedTeamTest is Test {
         uint256 escrowed = usdc.balanceOf(address(campaign));
         assertEq(escrowed, pay - fee, "escrow holds gross minus funding fee");
 
-        // Producer cannot pull the USDC — no admin function on Campaign for that
+        // Producer cannot pull the USDC — no admin function on GrowfiCampaign for that
         // Only path to release is _activate() or buyback(). Attacker calls whatever is callable.
         vm.prank(producer);
-        vm.expectRevert(Campaign.MinCapNotReached.selector);
+        vm.expectRevert(GrowfiCampaign.MinCapNotReached.selector);
         campaign.activateCampaign();
 
         // Funds remain escrowed
@@ -639,7 +639,7 @@ contract RedTeamTest is Test {
         vm.prank(producer);
         campaign.startSeason(1);
         vm.prank(attacker);
-        vm.expectRevert(Campaign.OnlyProducer.selector);
+        vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
         campaign.endSeason();
     }
 
@@ -666,7 +666,7 @@ contract RedTeamTest is Test {
         campaign.buy(address(usdc), pay);
 
         vm.prank(attacker);
-        vm.expectRevert(Campaign.FundingNotExpired.selector);
+        vm.expectRevert(GrowfiCampaign.FundingNotExpired.selector);
         campaign.triggerBuyback();
     }
 
@@ -679,7 +679,7 @@ contract RedTeamTest is Test {
         strangeToken.mint(attacker, 10e18);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(strangeToken), Campaign.PricingMode.Oracle, 0, address(badOracle));
+        campaign.addAcceptedToken(address(strangeToken), GrowfiCampaign.PricingMode.Oracle, 0, address(badOracle));
 
         vm.prank(attacker);
         strangeToken.approve(address(campaign), type(uint256).max);
@@ -703,7 +703,7 @@ contract RedTeamTest is Test {
             stakingVault.stake(1e18);
         }
 
-        vm.expectRevert(StakingVault.TooManyPositions.selector);
+        vm.expectRevert(GrowfiStakingVault.TooManyPositions.selector);
         stakingVault.stake(1e18);
         vm.stopPrank();
 
@@ -738,7 +738,7 @@ contract RedTeamTest is Test {
 
         bytes32[] memory emptyProof = new bytes32[](0);
         vm.prank(alice);
-        vm.expectRevert(HarvestManager.BelowMinProductClaim.selector);
+        vm.expectRevert(GrowfiHarvestManager.BelowMinProductClaim.selector);
         harvestManager.redeemProduct(1, dustYield, emptyProof);
 
         // Unused vars

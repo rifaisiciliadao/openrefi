@@ -33,6 +33,12 @@ export function Header() {
           >
             {t("portfolio")}
           </Link>
+          <Link
+            href="/grow"
+            className="text-sm font-medium tracking-wide text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            $GROW
+          </Link>
           {approved ? (
             <Link
               href="/create"

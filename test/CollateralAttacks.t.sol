@@ -2,12 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 
@@ -16,13 +16,13 @@ import {Deployer} from "./helpers/Deployer.sol";
 ///         `settleSeasonShortfall` / `depositFromCollateral`. A passing test
 ///         means the attack was successfully blocked.
 contract CollateralAttacksTest is Test {
-    CampaignFactory factory;
+    GrowfiCampaignFactory factory;
     MockERC20 usdc;
-    Campaign campaign;
-    CampaignToken campaignToken;
-    YieldToken yieldToken;
-    StakingVault stakingVault;
-    HarvestManager harvestManager;
+    GrowfiCampaign campaign;
+    GrowfiCampaignToken campaignToken;
+    GrowfiYieldToken yieldToken;
+    GrowfiStakingVault stakingVault;
+    GrowfiHarvestManager harvestManager;
 
     address protocolOwner = makeAddr("protocolOwner");
     address feeRecipient = makeAddr("feeRecipient");
@@ -44,7 +44,7 @@ contract CollateralAttacksTest is Test {
 
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -64,14 +64,14 @@ contract CollateralAttacksTest is Test {
         );
 
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = Campaign(c);
-        campaignToken = CampaignToken(ct);
-        yieldToken = YieldToken(yt);
-        stakingVault = StakingVault(sv);
-        harvestManager = HarvestManager(hm);
+        campaign = GrowfiCampaign(c);
+        campaignToken = GrowfiCampaignToken(ct);
+        yieldToken = GrowfiYieldToken(yt);
+        stakingVault = GrowfiStakingVault(sv);
+        harvestManager = GrowfiHarvestManager(hm);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
 
         usdc.mint(alice, 1_000_000e6);
         usdc.mint(bob, 1_000_000e6);
@@ -101,7 +101,7 @@ contract CollateralAttacksTest is Test {
         // Bob tops up.
         vm.prank(bob);
         campaign.buy(address(usdc), 5_000 * USDC_FIXED_RATE);
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
     }
 
     function _startSeason(uint256 seasonId) internal {
@@ -142,7 +142,7 @@ contract CollateralAttacksTest is Test {
     function test_attack_nonProducerCannotLock() public {
         _activate();
         vm.prank(attacker);
-        vm.expectRevert(Campaign.OnlyProducer.selector);
+        vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
         campaign.lockCollateral(1_000e6);
     }
 
@@ -152,7 +152,7 @@ contract CollateralAttacksTest is Test {
     function test_attack_lockZeroReverts() public {
         _activate();
         vm.prank(producer);
-        vm.expectRevert(Campaign.ZeroAmount.selector);
+        vm.expectRevert(GrowfiCampaign.ZeroAmount.selector);
         campaign.lockCollateral(0);
     }
 
@@ -163,7 +163,7 @@ contract CollateralAttacksTest is Test {
     // =========================================================================
     function test_lockCollateral_duringFunding_allowed() public {
         // Still in Funding (no buys yet).
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Funding));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Funding));
         vm.prank(producer);
         campaign.lockCollateral(1_000e6);
         assertEq(campaign.collateralLocked(), 1_000e6);
@@ -213,14 +213,14 @@ contract CollateralAttacksTest is Test {
     function test_attack_settleSeasonZero_reverts() public {
         _activate();
         vm.prank(attacker);
-        vm.expectRevert(Campaign.OutOfCoverage.selector);
+        vm.expectRevert(GrowfiCampaign.OutOfCoverage.selector);
         campaign.settleSeasonShortfall(0);
     }
 
     function test_attack_settleSeasonBeyondCoverage_reverts() public {
         _activate();
         vm.prank(attacker);
-        vm.expectRevert(Campaign.OutOfCoverage.selector);
+        vm.expectRevert(GrowfiCampaign.OutOfCoverage.selector);
         campaign.settleSeasonShortfall(COVERAGE + 1);
     }
 
@@ -236,7 +236,7 @@ contract CollateralAttacksTest is Test {
         _endAndReport(1, 1_000e18); // reports → starts deadline
         // Don't warp — deadline is far in the future.
         vm.prank(attacker);
-        vm.expectRevert(Campaign.DeadlineNotReached.selector);
+        vm.expectRevert(GrowfiCampaign.DeadlineNotReached.selector);
         campaign.settleSeasonShortfall(1);
     }
 
@@ -250,7 +250,7 @@ contract CollateralAttacksTest is Test {
         // No reportHarvest called.
         vm.warp(block.timestamp + 365 days);
         vm.prank(attacker);
-        vm.expectRevert(Campaign.SeasonNotReported.selector);
+        vm.expectRevert(GrowfiCampaign.SeasonNotReported.selector);
         campaign.settleSeasonShortfall(1);
     }
 
@@ -274,43 +274,43 @@ contract CollateralAttacksTest is Test {
         campaign.settleSeasonShortfall(1);
         // Second attempt must revert.
         vm.prank(attacker);
-        vm.expectRevert(Campaign.AlreadySettled.selector);
+        vm.expectRevert(GrowfiCampaign.AlreadySettled.selector);
         campaign.settleSeasonShortfall(1);
     }
 
     // =========================================================================
-    // ATTACK 10 — Direct call to HarvestManager.depositFromCollateral by anyone
-    //             other than the owning Campaign must revert (preventing fake
+    // ATTACK 10 — Direct call to GrowfiHarvestManager.depositFromCollateral by anyone
+    //             other than the owning GrowfiCampaign must revert (preventing fake
     //             "shortfall coverage" from attacker capital).
     // =========================================================================
     function test_attack_directDepositFromCollateral_blocked() public {
         _activate();
-        // Even producer cannot call this — only the Campaign proxy.
+        // Even producer cannot call this — only the GrowfiCampaign proxy.
         vm.prank(producer);
-        vm.expectRevert(HarvestManager.OnlyCampaign.selector);
+        vm.expectRevert(GrowfiHarvestManager.OnlyCampaign.selector);
         harvestManager.depositFromCollateral(1, 1e6);
 
         vm.prank(attacker);
-        vm.expectRevert(HarvestManager.OnlyCampaign.selector);
+        vm.expectRevert(GrowfiHarvestManager.OnlyCampaign.selector);
         harvestManager.depositFromCollateral(1, 1e6);
     }
 
     // =========================================================================
-    // ATTACK 11 — Re-set the campaign address on HarvestManager. Must revert
+    // ATTACK 11 — Re-set the campaign address on GrowfiHarvestManager. Must revert
     //             because the wiring is one-shot.
     // =========================================================================
     function test_attack_resetCampaignOnHm_blocked() public {
         vm.prank(address(factory));
-        vm.expectRevert(HarvestManager.AlreadySet.selector);
+        vm.expectRevert(GrowfiHarvestManager.AlreadySet.selector);
         harvestManager.setCampaign(address(0xdead));
     }
 
     // =========================================================================
-    // ATTACK 12 — Re-set the harvestManager address on Campaign. Must revert.
+    // ATTACK 12 — Re-set the harvestManager address on GrowfiCampaign. Must revert.
     // =========================================================================
     function test_attack_resetHmOnCampaign_blocked() public {
         vm.prank(address(factory));
-        vm.expectRevert(Campaign.AlreadySet.selector);
+        vm.expectRevert(GrowfiCampaign.AlreadySet.selector);
         campaign.setHarvestManager(address(0xdead));
     }
 
@@ -348,7 +348,7 @@ contract CollateralAttacksTest is Test {
         assertTrue(campaign.seasonShortfallSettled(1), "still flags settled");
 
         vm.prank(attacker);
-        vm.expectRevert(Campaign.AlreadySettled.selector);
+        vm.expectRevert(GrowfiCampaign.AlreadySettled.selector);
         campaign.settleSeasonShortfall(1);
     }
 

@@ -607,6 +607,110 @@
   "kyc": {
     "verified": "KYC verified — identity attested onchain by a registry admin"
   },
+  "grow": {
+    "title": "$GROW",
+    "subtitle": "The protocol's utility token. Earn it by participating in any campaign, buy it directly with allowlisted stablecoins, stake it for a continuous USDC stream, or burn it to redeem a pro-rata basket of the Treasury.",
+    "floorPrice": "Floor price",
+    "floorPriceHint": "{circulating} circulating $GROW · backing per circulating $GROW",
+    "floorHint": "Backing per circulating $GROW",
+    "circulating": "Circulating",
+    "circulatingHint": "of {total} total $GROW",
+    "treasuryHolds": "Treasury holds",
+    "treasuryHoldsHint": "$GROW (excluded from floor divisor)",
+    "buy": {
+      "title": "Buy $GROW",
+      "blurb": "Direct primary sale: pay an allowlisted stablecoin, mint fresh $GROW at floor + {markup}%. The {markup}% markup goes to the Treasury — every buy is non-dilutive.",
+      "salePrice": "Sale price",
+      "salePriceHint": "floor + {markup}% markup",
+      "salePaused": "Direct sale is currently paused by the multisig.",
+      "depegged": "{symbol} feed unhealthy. Chainlink price is stale or outside the $0.95-$1.05 depeg band. Buys with this token are blocked until the feed recovers (or the multisig revokes the token).",
+      "payWith": "Pay with",
+      "mintFaucet": "+ Mint 10,000 {symbol}",
+      "minting": "Minting…",
+      "confirmInWallet": "Confirm in wallet…",
+      "youPay": "You pay",
+      "balance": "Balance",
+      "insufficientBalance": "Insufficient balance",
+      "youReceive": "You receive",
+      "connectWallet": "Connect wallet",
+      "approveAndBuy": "Approve {symbol} + Buy $GROW",
+      "buyButton": "Buy $GROW",
+      "approvingSig": "Approve in wallet…",
+      "approvingChain": "Confirming approval…",
+      "buyingSig": "Confirm buy in wallet…",
+      "buyingChain": "Confirming on-chain…",
+      "notDeployed": "$GROW contracts not yet deployed on this chain. Set NEXT_PUBLIC_GROW_TOKEN and NEXT_PUBLIC_GROW_TREASURY in .env.local."
+    },
+    "stake": {
+      "title": "Stake $GROW",
+      "totalStaked": "Total staked: {amount} $GROW",
+      "blurb": "Earn USDC, fed by Treasury harvest distributions. Multiplier ramps 1.0× → 2.0× over 365 days. Any withdraw resets the streak.",
+      "multiplier": "Multiplier (live)",
+      "multiplierStored": "Stored: {value}× — refresh on next action",
+      "timeToCap": "Time to 2.0×",
+      "max": "MAX",
+      "pendingUsdc": "Pending USDC",
+      "distEndsIn": "Distrib. ends in {days}d",
+      "stakeTab": "Stake",
+      "withdrawTab": "Withdraw",
+      "withdrawWarning": "Streak resets to 1.0× on any withdraw, even partial. Claim USDC first if you want the rewards earned at the current multiplier without resetting your streak.",
+      "amountToStake": "Amount to stake",
+      "amountToWithdraw": "Amount to withdraw",
+      "wallet": "Wallet",
+      "stakedLabel": "Staked",
+      "insufficientBalance": "Insufficient balance.",
+      "insufficientStaked": "Insufficient staked amount.",
+      "approveGrow": "Approve $GROW…",
+      "approvingChain": "Confirming approval…",
+      "submittingSig": "Confirm in wallet…",
+      "submittingChain": "Confirming on-chain…",
+      "approveAndStake": "Approve + Stake",
+      "stakeButton": "Stake",
+      "withdrawButton": "Withdraw",
+      "claimSig": "Confirm claim…",
+      "claimingChain": "Claiming on-chain…",
+      "nothingToClaim": "Nothing to claim",
+      "claim": "Claim {amount} USDC",
+      "connectWallet": "Connect wallet",
+      "notDeployed": "Staking pool not yet deployed. Set NEXT_PUBLIC_GROW_STAKING_POOL in .env.local."
+    },
+    "flywheel": {
+      "eyebrow": "Flywheel",
+      "title": "How participation compounds",
+      "subtitle": "Every campaign buy feeds the Treasury. Every Treasury allocation grows the basket. Every harvest pays $GROW stakers. Every staker earnings push the floor up — and the loop runs again.",
+      "footnote": "No human in the middle: each step is automatic via on-chain hooks. The multisig only curates the tracked-campaigns list.",
+      "s1": {
+        "title": "Buy & earn $GROW",
+        "body": "Anyone funds a campaign with USDC. 3% goes to the FeeSplitter (30% Treasury / 70% ops). The buyer also earns free $GROW via the bonding curve — escrowed pre-softcap, minted directly post-activation."
+      },
+      "s2": {
+        "title": "Treasury auto-allocates",
+        "body": "Direct buys of $GROW at floor + 10% land USDC straight into the Treasury, which auto-spreads it equally across all tracked Active campaigns. No multisig click needed."
+      },
+      "s3": {
+        "title": "Harvest yield flows back",
+        "body": "Treasury holds CampaignTokens, stakes them, claims $YIELD, then redeems for USDC at harvest. The harvest USDC lands in the Treasury — backing per circulating $GROW grows."
+      },
+      "s4": {
+        "title": "Stakers earn, floor pumps",
+        "body": "80% of harvest USDC is forwarded to the $GROW staking pool. Multiplier ramps 1.0× → 2.0× over 365 days. Floor pumps from buybacks + harvest revenue → next buyer pays more for less $GROW."
+      }
+    },
+    "escrow": {
+      "title": "Your $GROW escrow",
+      "blurb": "$GROW you earned by buying into a campaign before its soft cap. Claimable once the campaign activates; voided if the campaign fails its funding round.",
+      "connectPrompt": "Connect your wallet to view your escrow allocations.",
+      "empty": "No $GROW escrow yet. Buy into any campaign and a free $GROW allocation will land here automatically.",
+      "campaign": "Campaign",
+      "readyToClaim": "ready to claim",
+      "voided": "voided (campaign failed)",
+      "pendingSoftcap": "pending soft cap",
+      "claim": "Claim",
+      "pending": "Pending",
+      "voidedShort": "Voided",
+      "notDeployed": "Minter not yet deployed. Set NEXT_PUBLIC_GROW_MINTER in .env.local."
+    }
+  },
   "grower": {
     "invalidAddress": "Invalid grower address.",
     "anonymous": "Anon grower",

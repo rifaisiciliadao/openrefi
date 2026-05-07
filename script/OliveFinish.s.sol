@@ -3,25 +3,25 @@ pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {StakingVault} from "../src/StakingVault.sol";
-import {YieldToken} from "../src/YieldToken.sol";
-import {HarvestManager} from "../src/HarvestManager.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
+import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
 
 /// @title OliveFinish — Phase 2 of the 2-actor lifecycle smoke on Base Sepolia
 /// @notice Closes the season, both actors claim yield, Alice redeems USDC,
 ///         Bob redeems physical product via a 1-leaf Merkle tree (proof = []).
 ///         The deposit/claim cycle is intentionally left for the bash follow-up
-///         because `HarvestManager.remainingDepositGross` depends on live state
+///         because `GrowfiHarvestManager.remainingDepositGross` depends on live state
 ///         that forge-script's dual-pass simulation cannot pin down reliably.
 ///
 /// Env required:
 ///   PRIVATE_KEY             — Alice (producer, staker A)
 ///   BOB_PRIVATE_KEY         — Bob (staker B)
-///   OLIVE_CAMPAIGN          — Campaign proxy
-///   OLIVE_STAKING_VAULT     — StakingVault proxy
-///   OLIVE_HARVEST_MANAGER   — HarvestManager proxy
-///   OLIVE_YIELD_TOKEN       — YieldToken proxy
+///   OLIVE_CAMPAIGN          — GrowfiCampaign proxy
+///   OLIVE_STAKING_VAULT     — GrowfiStakingVault proxy
+///   OLIVE_HARVEST_MANAGER   — GrowfiHarvestManager proxy
+///   OLIVE_YIELD_TOKEN       — GrowfiYieldToken proxy
 contract OliveFinish is Script {
     uint256 internal constant REPORTED_VALUE_USD = 1_500e18; // $1,500 harvest
     uint256 internal constant TOTAL_PRODUCT_UNITS = 100e18; // 100 litres of olive oil
@@ -29,10 +29,10 @@ contract OliveFinish is Script {
     function run() external {
         uint256 alicePK = vm.envUint("PRIVATE_KEY");
         uint256 bobPK = vm.envUint("BOB_PRIVATE_KEY");
-        Campaign campaign = Campaign(vm.envAddress("OLIVE_CAMPAIGN"));
-        StakingVault vault = StakingVault(vm.envAddress("OLIVE_STAKING_VAULT"));
-        HarvestManager hm = HarvestManager(vm.envAddress("OLIVE_HARVEST_MANAGER"));
-        YieldToken yt = YieldToken(vm.envAddress("OLIVE_YIELD_TOKEN"));
+        GrowfiCampaign campaign = GrowfiCampaign(vm.envAddress("OLIVE_CAMPAIGN"));
+        GrowfiStakingVault vault = GrowfiStakingVault(vm.envAddress("OLIVE_STAKING_VAULT"));
+        GrowfiHarvestManager hm = GrowfiHarvestManager(vm.envAddress("OLIVE_HARVEST_MANAGER"));
+        GrowfiYieldToken yt = GrowfiYieldToken(vm.envAddress("OLIVE_YIELD_TOKEN"));
         address alice = vm.addr(alicePK);
         address bob = vm.addr(bobPK);
 

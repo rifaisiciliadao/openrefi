@@ -2,15 +2,15 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 
 /// @title GasBounds — regression tests for unbounded-loop DoS vectors
 contract GasBoundsTest is Test {
-    CampaignFactory factory;
-    Campaign campaign;
+    GrowfiCampaignFactory factory;
+    GrowfiCampaign campaign;
     MockERC20 usdc;
     address protocolOwner = makeAddr("protocolOwner");
     address feeRecipient = makeAddr("feeRecipient");
@@ -21,7 +21,7 @@ contract GasBoundsTest is Test {
         factory = Deployer.deployProtocol(protocolOwner, feeRecipient, address(usdc), address(0));
         vm.prank(producer);
         factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
                 tokenName: "Olive",
                 tokenSymbol: "OLIVE",
@@ -40,7 +40,7 @@ contract GasBoundsTest is Test {
             })
         );
         (address c,,,,,,) = factory.campaigns(0);
-        campaign = Campaign(c);
+        campaign = GrowfiCampaign(c);
     }
 
     /// @dev The producer can add up to MAX_ACCEPTED_TOKENS (10) payment tokens.
@@ -49,7 +49,7 @@ contract GasBoundsTest is Test {
         vm.startPrank(producer);
         for (uint256 i = 0; i < cap; i++) {
             MockERC20 t = new MockERC20("T", "T", 18);
-            campaign.addAcceptedToken(address(t), Campaign.PricingMode.Fixed, 1e18, address(0));
+            campaign.addAcceptedToken(address(t), GrowfiCampaign.PricingMode.Fixed, 1e18, address(0));
         }
         vm.stopPrank();
         assertEq(campaign.getAcceptedTokens().length, cap);
@@ -61,11 +61,11 @@ contract GasBoundsTest is Test {
         vm.startPrank(producer);
         for (uint256 i = 0; i < cap; i++) {
             MockERC20 t = new MockERC20("T", "T", 18);
-            campaign.addAcceptedToken(address(t), Campaign.PricingMode.Fixed, 1e18, address(0));
+            campaign.addAcceptedToken(address(t), GrowfiCampaign.PricingMode.Fixed, 1e18, address(0));
         }
         MockERC20 extra = new MockERC20("X", "X", 18);
-        vm.expectRevert(Campaign.TooManyAcceptedTokens.selector);
-        campaign.addAcceptedToken(address(extra), Campaign.PricingMode.Fixed, 1e18, address(0));
+        vm.expectRevert(GrowfiCampaign.TooManyAcceptedTokens.selector);
+        campaign.addAcceptedToken(address(extra), GrowfiCampaign.PricingMode.Fixed, 1e18, address(0));
         vm.stopPrank();
     }
 
@@ -75,11 +75,11 @@ contract GasBoundsTest is Test {
 
         // Register the campaign's own USDC as token 1
         vm.startPrank(producer);
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
         // Fill remaining slots with inert fixed-rate tokens (no balance → no transfer)
         for (uint256 i = 1; i < cap; i++) {
             MockERC20 t = new MockERC20("T", "T", 18);
-            campaign.addAcceptedToken(address(t), Campaign.PricingMode.Fixed, 1e18, address(0));
+            campaign.addAcceptedToken(address(t), GrowfiCampaign.PricingMode.Fixed, 1e18, address(0));
         }
         vm.stopPrank();
 
@@ -97,6 +97,6 @@ contract GasBoundsTest is Test {
 
         // Sanity: under 1M gas even with the full loop. (In practice ~500-700k.)
         assertLt(gasUsed, 1_000_000, "activation gas explosion");
-        assertEq(uint8(campaign.state()), uint8(Campaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
     }
 }

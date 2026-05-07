@@ -79,3 +79,32 @@ npm run goldsky:list       # lista subgraph del team
 ```bash
 npm run goldsky:delete    # ATTENZIONE: elimina gli indici della versione corrente
 ```
+
+## v4 — GROW system + rename
+
+The v4 redeploy adds:
+
+1. **Renamed contracts** (Growfi prefix on all 8). ABIs are re-extracted; existing handler files (campaign.ts, factory.ts, ...) still reference the old aliases (CampaignFactory etc.) but the underlying ABI JSON content is up to date so codegen produces the right types.
+
+2. **GROW system** (4 new contracts):
+   - GrowfiToken (`./src/grow/token.ts`) — Transfer, DirectBuy, GenesisMinted, sale config events
+   - GrowfiTreasury (`./src/grow/treasury.ts`) — StablecoinAccepted/Revoked, CampaignTracked/Untracked, Allocated, Redeemed, TokenRescued
+   - GrowfiMinter (`./src/grow/minter.ts`) — CampaignRegistered, GrowEscrowed, GrowMinted, SoftCapReached, CampaignBuyback, EscrowClaimed, BondingCurveUpdated
+   - GrowfiFeeSplitter (`./src/grow/splitter.ts`) — Flushed
+
+3. **New entities** in `schema.graphql`: GrowToken, GrowHolder, GrowDirectBuy, GrowEscrow, GrowEscrowClaim, CampaignGrowState, BondingCurveSnapshot, GrowfiTreasuryState, StablecoinAcceptance, TreasuryAllocation, TreasuryRedemption, TreasuryRescue, FeeFlush.
+
+### Post-deploy steps for v4
+
+After running the v4 deploy script:
+
+1. Replace the four `0x0000...0000` placeholder addresses in `subgraph.yaml` (the `GrowfiToken`, `GrowfiTreasury`, `GrowfiMinter`, `GrowfiFeeSplitter` data sources) with the actual proxy addresses.
+2. Replace each `startBlock: 0` in those four sources with the deploy block.
+3. Update the existing data sources (CampaignFactory, CampaignRegistry, ProducerRegistry, plus the dynamic templates) with their new v4 addresses + start blocks. The ABIs are already re-extracted as `Growfi*.json`.
+4. Optionally rename the abi `name` aliases in `subgraph.yaml` from `Campaign` → `GrowfiCampaign` etc. for clarity, and update handler imports accordingly. (Not strictly required — the subgraph runs on event signatures, not contract names.)
+5. Run:
+   ```bash
+   npm run prepare
+   npm run deploy:goldsky:prod
+   ```
+6. Verify on Goldsky that all data sources index from the new start blocks.

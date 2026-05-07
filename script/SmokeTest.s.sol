@@ -3,9 +3,9 @@ pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
-import {Campaign} from "../src/Campaign.sol";
-import {CampaignToken} from "../src/CampaignToken.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
+import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
 
 /// @title SmokeTest — end-to-end happy-path check against a live deployment
 /// @notice Creates a campaign, adds mUSDC as accepted token, buys a small
@@ -13,12 +13,12 @@ import {CampaignToken} from "../src/CampaignToken.sol";
 ///
 /// Env required:
 ///   PRIVATE_KEY       — producer / buyer (same address for the smoke)
-///   FACTORY_ADDRESS   — deployed CampaignFactory proxy
+///   FACTORY_ADDRESS   — deployed GrowfiCampaignFactory proxy
 ///   USDC_ADDRESS      — MockUSDC address
 contract SmokeTest is Script {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
-        CampaignFactory factory = CampaignFactory(vm.envAddress("FACTORY_ADDRESS"));
+        GrowfiCampaignFactory factory = GrowfiCampaignFactory(vm.envAddress("FACTORY_ADDRESS"));
         IERC20 usdc = IERC20(vm.envAddress("USDC_ADDRESS"));
         address me = vm.addr(pk);
 
@@ -31,7 +31,7 @@ contract SmokeTest is Script {
 
         // 1. createCampaign
         address campaignAddr = factory.createCampaign(
-            CampaignFactory.CreateCampaignParams({
+            GrowfiCampaignFactory.CreateCampaignParams({
                 producer: me,
                 tokenName: "Smoke Olive",
                 tokenSymbol: "SMOKE",
@@ -52,17 +52,17 @@ contract SmokeTest is Script {
         require(factory.isCampaign(campaignAddr), "factory: not registered");
         console.log("campaign  :", campaignAddr);
 
-        Campaign campaign = Campaign(campaignAddr);
+        GrowfiCampaign campaign = GrowfiCampaign(campaignAddr);
 
         // 2. addAcceptedToken (USDC fixed rate: 0.144 USDC per 1 $CAMPAIGN)
-        campaign.addAcceptedToken(address(usdc), Campaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
 
         // 3. approve + buy (1 USDC → ~6.944 SMOKE tokens)
         usdc.approve(address(campaign), type(uint256).max);
         uint256 paymentAmount = 1_000_000; // 1 USDC (6-dec)
-        uint256 balanceBefore = CampaignToken(campaign.campaignToken()).balanceOf(me);
+        uint256 balanceBefore = GrowfiCampaignToken(campaign.campaignToken()).balanceOf(me);
         campaign.buy(address(usdc), paymentAmount);
-        uint256 balanceAfter = CampaignToken(campaign.campaignToken()).balanceOf(me);
+        uint256 balanceAfter = GrowfiCampaignToken(campaign.campaignToken()).balanceOf(me);
         uint256 delta = balanceAfter - balanceBefore;
         console.log("bought    :", delta, "SMOKE (wei)");
 
@@ -73,7 +73,7 @@ contract SmokeTest is Script {
 
         console.log("--- done ---");
         console.log("campaign       =", campaignAddr);
-        console.log("campaignToken  =", address(CampaignToken(campaign.campaignToken())));
+        console.log("campaignToken  =", address(GrowfiCampaignToken(campaign.campaignToken())));
         console.log("stakingVault   =", address(campaign.stakingVault()));
     }
 }

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {CampaignRegistry} from "../src/CampaignRegistry.sol";
-import {CampaignFactory} from "../src/CampaignFactory.sol";
+import {GrowfiCampaignRegistry} from "../src/GrowfiCampaignRegistry.sol";
+import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 
-/// @notice Deploys CampaignRegistry pointing at an existing CampaignFactory.
+/// @notice Deploys GrowfiCampaignRegistry pointing at an existing GrowfiCampaignFactory.
 ///
 /// Usage:
 ///   FACTORY=0x3fA41528a22645Bef478E9eBae83981C02e98f74 \
@@ -17,10 +17,10 @@ contract DeployRegistryScript is Script {
         require(factoryAddr != address(0), "FACTORY env var required");
 
         vm.startBroadcast();
-        CampaignRegistry registry = new CampaignRegistry(CampaignFactory(factoryAddr));
+        GrowfiCampaignRegistry registry = new GrowfiCampaignRegistry(GrowfiCampaignFactory(factoryAddr));
         vm.stopBroadcast();
 
-        console.log("CampaignRegistry deployed at:", address(registry));
+        console.log("GrowfiCampaignRegistry deployed at:", address(registry));
         console.log("  Bound to factory:", factoryAddr);
     }
 }

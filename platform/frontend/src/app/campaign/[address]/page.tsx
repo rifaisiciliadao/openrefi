@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   useAccount,
+  useReadContract,
   useReadContracts,
   useWriteContract,
 } from "wagmi";
@@ -84,6 +85,22 @@ export default function CampaignDetail({
   const { data: sgCampaign } = useSubgraphCampaign(
     isValidAddress ? campaignAddress : undefined,
   );
+
+  // Direct on-chain read of Treasury's CT balance — used as a fallback when the
+  // subgraph isn't indexing yet (local anvil, fresh deploy). The funding bar
+  // splits direct backers vs Treasury auto-alloc using whichever is fresher.
+  const campaignTokenAddr = cd?.[7]?.result as Address | undefined;
+  const { growTreasury } = getAddresses();
+  const { data: treasuryCtBalance } = useReadContract({
+    abi: erc20Abi,
+    address: campaignTokenAddr,
+    functionName: "balanceOf",
+    args: growTreasury ? [growTreasury] : undefined,
+    query: {
+      enabled: Boolean(campaignTokenAddr && growTreasury),
+      refetchInterval: 15_000,
+    },
+  });
   const { data: metadata } = useCampaignMetadata(
     sgCampaign?.metadataURI,
     sgCampaign?.metadataVersion,
@@ -217,6 +234,11 @@ export default function CampaignDetail({
                 pricePerToken={pricePerToken}
                 fundingDeadline={
                   (cd?.[5]?.result as bigint | undefined) ?? 0n
+                }
+                treasuryTokensOut={
+                  sgCampaign?.treasuryTokensOut
+                    ? BigInt(sgCampaign.treasuryTokensOut)
+                    : ((treasuryCtBalance as bigint | undefined) ?? 0n)
                 }
                 hasOnChainData={hasOnChainData}
               />
@@ -671,6 +693,7 @@ function FundingProgressCard({
   minCap,
   pricePerToken,
   fundingDeadline,
+  treasuryTokensOut,
   hasOnChainData,
 }: {
   currentSupply: bigint;
@@ -678,6 +701,8 @@ function FundingProgressCard({
   minCap: bigint;
   pricePerToken: bigint;
   fundingDeadline: bigint;
+  /** Tokens minted to the GROW Treasury via auto-allocation (subgraph-tracked). */
+  treasuryTokensOut: bigint;
   hasOnChainData: boolean;
 }) {
   const t = useTranslations("detail.funding");
@@ -685,8 +710,12 @@ function FundingProgressCard({
   let raisedNum = 0;
   let targetNum = 0;
   let minCapNum = 0;
+  let directRaisedNum = 0;
+  let treasuryRaisedNum = 0;
   let pct = 0;
   let minCapPct = 0;
+  let directPct = 0;
+  let treasuryPct = 0;
   let daysLeft = 0;
   let softCapReached = false;
 
@@ -696,11 +725,23 @@ function FundingProgressCard({
       (currentSupply * pricePerToken) / 10n ** 18n / 10n ** 18n;
     const targetUsd = (maxCap * pricePerToken) / 10n ** 18n / 10n ** 18n;
     const minCapUsd = (minCap * pricePerToken) / 10n ** 18n / 10n ** 18n;
+    // Treasury portion (clamp at currentSupply — defensive against subgraph drift).
+    const treasuryTokens =
+      treasuryTokensOut > currentSupply ? currentSupply : treasuryTokensOut;
+    const directTokens = currentSupply - treasuryTokens;
+    const treasuryUsd =
+      (treasuryTokens * pricePerToken) / 10n ** 18n / 10n ** 18n;
+    const directUsd =
+      (directTokens * pricePerToken) / 10n ** 18n / 10n ** 18n;
     raisedNum = Number(raisedUsd);
     targetNum = Number(targetUsd);
     minCapNum = Number(minCapUsd);
+    treasuryRaisedNum = Number(treasuryUsd);
+    directRaisedNum = Number(directUsd);
     pct = maxCap > 0n ? Number((currentSupply * 100n) / maxCap) : 0;
     minCapPct = maxCap > 0n ? Number((minCap * 100n) / maxCap) : 0;
+    directPct = maxCap > 0n ? Number((directTokens * 100n) / maxCap) : 0;
+    treasuryPct = maxCap > 0n ? Number((treasuryTokens * 100n) / maxCap) : 0;
     softCapReached = currentSupply >= minCap;
     const now = Math.floor(Date.now() / 1000);
     const delta = Number(fundingDeadline) - now;
@@ -728,16 +769,33 @@ function FundingProgressCard({
         </div>
       </div>
       {/*
-        Two-layer progress bar: background track + filled primary + a
-        vertical tick marking the min cap (soft cap). Investors immediately
-        see how close the campaign is to being viable — below the tick the
-        campaign can still fail and refund; above it auto-activates.
+        Three-layer progress bar:
+          • dark green: direct backers (regular wallets buying CampaignTokens)
+          • light green: GROW Treasury auto-allocation (the protocol itself)
+          • vertical tick at the soft cap so investors see how close the
+            campaign is to being viable.
+        The Treasury segment sits ON TOP of direct (i.e. left-anchored at
+        directPct%) so the visual order matches the tooltip math.
       */}
       <div className="relative w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
-        <div
-          className="h-full bg-primary rounded-full transition-all duration-700"
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        />
+        {directPct > 0 && (
+          <div
+            className="absolute left-0 top-0 h-full bg-primary transition-all duration-700"
+            style={{ width: `${Math.min(directPct, 100)}%` }}
+            title={`Direct backers $${directRaisedNum.toLocaleString()}`}
+          />
+        )}
+        {treasuryPct > 0 && (
+          <div
+            className="absolute top-0 h-full transition-all duration-700"
+            style={{
+              left: `${Math.min(directPct, 100)}%`,
+              width: `${Math.min(treasuryPct, 100 - directPct)}%`,
+              backgroundColor: "#7BB68A",
+            }}
+            title={`Treasury auto-alloc $${treasuryRaisedNum.toLocaleString()}`}
+          />
+        )}
         {minCapNum > 0 && minCapPct < 100 && (
           <div
             className="absolute top-[-3px] bottom-[-3px] w-0.5"
@@ -750,6 +808,21 @@ function FundingProgressCard({
           />
         )}
       </div>
+      {treasuryRaisedNum > 0 && (
+        <div className="mt-2 flex items-center gap-3 text-[10px] uppercase tracking-wider text-on-surface-variant">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-sm bg-primary" />
+            Direct ${directRaisedNum.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-1">
+            <span
+              className="inline-block w-2 h-2 rounded-sm"
+              style={{ backgroundColor: "#7BB68A" }}
+            />
+            Treasury ${treasuryRaisedNum.toLocaleString()}
+          </span>
+        </div>
+      )}
       {minCapNum > 0 && (
         <div
           className="relative mt-1 h-3 text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant"
