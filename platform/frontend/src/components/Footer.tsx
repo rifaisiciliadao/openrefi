@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 export function Footer() {
@@ -16,6 +17,12 @@ export function Footer() {
           <p className="text-sm text-slate-400 mt-2">{t("tagline", { year })}</p>
         </div>
         <div className="flex flex-wrap justify-center md:justify-end gap-x-2 gap-y-1">
+          <Link
+            href="/grow"
+            className="inline-flex items-center min-h-[44px] px-3 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+          >
+            $GROW
+          </Link>
           {(["docs", "github", "discord", "terms", "privacy"] as const).map(
             (key) => (
               <a

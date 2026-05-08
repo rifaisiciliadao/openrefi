@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
@@ -13,6 +14,15 @@ export function Nav() {
   const tInvite = useTranslations("landing.invite");
   const { state } = useInviteGate();
   const approved = state === "approved";
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(min-width: 768px)");
+    const onChange = () => mql.matches && setMobileOpen(false);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
 
   return (
     <nav className="relative z-20 w-full">
@@ -67,6 +77,26 @@ export function Nav() {
 
         <div className="flex items-center gap-2 shrink-0">
           <LanguageSwitcher />
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            className="md:hidden flex h-10 w-10 items-center justify-center rounded-full bg-white/85 border border-black/15 backdrop-blur-md text-black hover:bg-white transition-colors"
+          >
+            {mobileOpen ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
+          </button>
           <ConnectButton.Custom>
             {({ account, chain, openConnectModal, mounted }) => {
               const ready = mounted;
@@ -99,6 +129,56 @@ export function Nav() {
           </ConnectButton.Custom>
         </div>
       </div>
+
+      {mobileOpen && (
+        <div className="md:hidden border-t border-black/10 bg-white/90 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3">
+            <a
+              href="#campaigns"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-3 text-base font-bold tracking-wide text-[#4a4a4a] hover:bg-black/5 hover:text-black transition-colors"
+              style={{ fontFamily: "var(--font-header)" }}
+            >
+              {tNav("explore")}
+            </a>
+            <Link
+              href="/portfolio"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-3 text-base font-bold tracking-wide text-[#4a4a4a] hover:bg-black/5 hover:text-black transition-colors"
+              style={{ fontFamily: "var(--font-header)" }}
+            >
+              {tNav("portfolio")}
+            </Link>
+            <Link
+              href="/grow"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-3 text-base font-bold tracking-wide text-emerald-700 hover:bg-emerald-50 transition-colors"
+              style={{ fontFamily: "var(--font-header)" }}
+            >
+              $GROW
+            </Link>
+            {approved ? (
+              <Link
+                href="/create"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-3 py-3 text-base font-bold tracking-wide text-[#4a4a4a] hover:bg-black/5 hover:text-black transition-colors"
+                style={{ fontFamily: "var(--font-header)" }}
+              >
+                {tNav("create")}
+              </Link>
+            ) : (
+              <a
+                href="#invite"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-3 py-3 text-base font-bold tracking-wide text-[#4a4a4a] hover:bg-black/5 hover:text-black transition-colors"
+                style={{ fontFamily: "var(--font-header)" }}
+              >
+                {tInvite("requestSubmit")}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
