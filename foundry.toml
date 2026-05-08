@@ -12,10 +12,10 @@ runs = 256
 depth = 128
 fail_on_revert = false
 
-# Lighter profile for CI. `FOUNDRY_PROFILE=ci forge test` cuts the
-# invariant sweep from 11×256×128 = 360k sequences (~25min on the
-# ubuntu-latest runner) down to 11×64×48 = 34k (~3min) while keeping
-# the fuzz coverage defaults. Local dev stays on the full profile.
+# Lighter profile for CI. `FOUNDRY_PROFILE=ci forge test` shrinks the
+# invariant + fuzz budget so the GROW suite (17 invariants, ~50 fuzz
+# tests) fits inside the workflow's 40-min timeout. Local dev stays on
+# the full profile.
 [profile.ci]
 src = "src"
 out = "out"
@@ -26,12 +26,12 @@ optimizer_runs = 200
 via_ir = true
 
 [profile.ci.invariant]
-runs = 64
-depth = 48
+runs = 32
+depth = 24
 fail_on_revert = false
 
 [profile.ci.fuzz]
-runs = 128
+runs = 64
 
 [fmt]
 line_length = 120
