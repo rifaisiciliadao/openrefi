@@ -76,7 +76,9 @@ export function Nav() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <LanguageSwitcher />
+          <div className="hidden md:block">
+            <LanguageSwitcher />
+          </div>
           <button
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
@@ -176,6 +178,9 @@ export function Nav() {
                 {tInvite("requestSubmit")}
               </a>
             )}
+            <div className="mt-2 border-t border-black/10 pt-3">
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       )}

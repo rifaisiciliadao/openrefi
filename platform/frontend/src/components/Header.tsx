@@ -57,7 +57,11 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <LanguageSwitcher />
+          {/* LanguageSwitcher hidden on mobile — moved inside the hamburger
+              sheet to free room for the Connect button. */}
+          <div className="hidden md:block">
+            <LanguageSwitcher />
+          </div>
           <button
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
@@ -174,6 +178,9 @@ export function Header() {
                 {tInvite("requestSubmit")}
               </Link>
             )}
+            <div className="mt-2 border-t border-outline-variant/15 pt-3">
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       )}
