@@ -35,7 +35,7 @@ All 5 per-campaign contracts are `Initializable` and deployed as `TransparentUpg
 4. `openSellBackCount[user] ≤ MAX_OPEN_SELLBACK_ORDERS_PER_USER` (50)
 5. `yieldToken.totalSupply() ≤ Σ season.totalYieldOwed` (with O(positions) floor drift tolerance)
 
-Invariant config: `runs = 256, depth = 128, fail_on_revert = false` → ~33k random sequences per invariant. GitHub Actions sets `FOUNDRY_PROFILE=ci`, which drops invariants to `64×48` and fuzz to `128` runs (~3min job vs ~25min) — local dev stays on the full profile.
+Invariant config: `runs = 256, depth = 128, fail_on_revert = false` → ~33k random sequences per invariant. GitHub Actions sets `FOUNDRY_PROFILE=ci`, which drops invariants to `32×24` and fuzz to `64` runs so the full suite (17 invariants + ~50 fuzz tests after the GROW additions) fits inside the workflow's 40-min `timeout-minutes` cap. Local dev stays on the full profile.
 
 ## Gotchas (audit-era learnings + upgradeable refactor)
 
