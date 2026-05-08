@@ -41,8 +41,10 @@ export function Header() {
               {t("create")}
             </Link>
           ) : (
+            // From any non-landing page, route to "/" with a query the
+            // <InviteModal/> on the landing auto-consumes to pop open.
             <Link
-              href="/#invite"
+              href="/?openInvite=1"
               className="text-sm font-medium tracking-wide text-on-surface-variant hover:text-on-surface transition-colors"
             >
               {tInvite("requestSubmit")}

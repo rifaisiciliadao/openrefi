@@ -7,6 +7,8 @@ import { formatUnits } from "viem";
 import { useInView } from "@/lib/landing/useInView";
 import { useSubgraphCampaigns, type SubgraphCampaign } from "@/lib/subgraph";
 import { useCampaignMetadata } from "@/lib/metadata";
+import { useInviteGate } from "@/lib/inviteGate";
+import { useInviteModal } from "@/lib/inviteModal";
 
 type CampaignState = "funding" | "active" | "ended";
 
@@ -285,19 +287,41 @@ function CreateCampaignCard({
   inView: boolean;
 }) {
   const t = useTranslations("landing.campaigns");
+  const { state } = useInviteGate();
+  const { openModal } = useInviteModal();
+  const approved = state === "approved";
+
+  // Approved producers go straight to /create. Everyone else (including
+  // not-connected users) opens the invite modal — same content the landing
+  // used to render inline.
+  const sharedClassName = `reveal reveal-delay-${revealDelay} ${inView ? "in-view" : ""} group relative flex min-h-[460px] flex-col items-center justify-center overflow-hidden rounded-2xl p-8 text-center transition-all duration-500 hover:-translate-y-2`;
+  const sharedStyle = {
+    border: "1.5px dashed rgba(0,107,44,0.35)",
+    background:
+      "linear-gradient(135deg, rgba(0,107,44,0.05) 0%, rgba(127,252,151,0.12) 100%)",
+    backdropFilter: "blur(14px) saturate(1.1)",
+    WebkitBackdropFilter: "blur(14px) saturate(1.1)",
+  } as const;
+
+  const Wrapper = approved
+    ? ({ children }: { children: React.ReactNode }) => (
+        <Link href="/create" className={sharedClassName} style={sharedStyle}>
+          {children}
+        </Link>
+      )
+    : ({ children }: { children: React.ReactNode }) => (
+        <button
+          type="button"
+          onClick={openModal}
+          className={`${sharedClassName} cursor-pointer`}
+          style={sharedStyle}
+        >
+          {children}
+        </button>
+      );
 
   return (
-    <Link
-      href="/create"
-      className={`reveal reveal-delay-${revealDelay} ${inView ? "in-view" : ""} group relative flex min-h-[460px] flex-col items-center justify-center overflow-hidden rounded-2xl p-8 text-center transition-all duration-500 hover:-translate-y-2`}
-      style={{
-        border: "1.5px dashed rgba(0,107,44,0.35)",
-        background:
-          "linear-gradient(135deg, rgba(0,107,44,0.05) 0%, rgba(127,252,151,0.12) 100%)",
-        backdropFilter: "blur(14px) saturate(1.1)",
-        WebkitBackdropFilter: "blur(14px) saturate(1.1)",
-      }}
-    >
+    <Wrapper>
       <span
         className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
         style={{
@@ -356,7 +380,7 @@ function CreateCampaignCard({
           <path d="M5 12h14M13 5l7 7-7 7" />
         </svg>
       </span>
-    </Link>
+    </Wrapper>
   );
 }
 

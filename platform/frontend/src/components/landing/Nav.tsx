@@ -6,12 +6,14 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { LanguageSwitcher } from "../LanguageSwitcher";
 import { LandingLogo } from "./LandingLogo";
 import { useInviteGate } from "@/lib/inviteGate";
+import { useInviteModal } from "@/lib/inviteModal";
 
 export function Nav() {
   const t = useTranslations("landing.nav");
   const tNav = useTranslations("nav");
   const tInvite = useTranslations("landing.invite");
   const { state } = useInviteGate();
+  const { openModal } = useInviteModal();
   const approved = state === "approved";
 
   return (
@@ -48,13 +50,14 @@ export function Nav() {
               {tNav("create")}
             </Link>
           ) : (
-            <a
-              href="#invite"
-              className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
+            <button
+              type="button"
+              onClick={openModal}
+              className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black cursor-pointer"
               style={{ fontFamily: "var(--font-header)" }}
             >
               {tInvite("requestSubmit")}
-            </a>
+            </button>
           )}
         </div>
 

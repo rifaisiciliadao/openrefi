@@ -9,6 +9,7 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
 import { ToastProvider } from "@/components/Toast";
 import { InviteGateProvider } from "@/lib/inviteGate";
+import { InviteModalProvider } from "@/lib/inviteModal";
 
 // Base Sepolia: the default `https://sepolia.base.org` RPC frequently returns
 // "block not found" mid-call, which makes viem's simulateContract pre-check
@@ -53,7 +54,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <RainbowKitProvider>
             <ToastProvider>
-              <InviteGateProvider>{children}</InviteGateProvider>
+              <InviteGateProvider>
+                <InviteModalProvider>{children}</InviteModalProvider>
+              </InviteGateProvider>
             </ToastProvider>
           </RainbowKitProvider>
         </QueryClientProvider>
