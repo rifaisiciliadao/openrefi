@@ -15,8 +15,9 @@ jobs:
     name: Foundry project
     runs-on: ubuntu-latest
     # Hard cap so a hung test (public-RPC retry loop, misbehaving invariant,
-    # etc.) can never burn 6h of CI time again. The full suite runs in ~10min.
-    timeout-minutes: 25
+    # etc.) can never burn 6h of CI time again. Full suite runs ~25min on
+    # the ci profile (GROW invariants + auto-alloc/depeg/reserve suites).
+    timeout-minutes: 40
     permissions:
       contents: read
     steps:
