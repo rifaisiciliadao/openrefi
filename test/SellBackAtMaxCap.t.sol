@@ -2,13 +2,18 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
-import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
+
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title SellBackAtMaxCap — regression for the "queue blocked when full" bug
 /// @notice The original `buy()` reverted with MaxCapReached as soon as
@@ -20,7 +25,7 @@ contract SellBackAtMaxCapTest is Test {
     GrowfiCampaignFactory factory;
     MockERC20 usdc;
 
-    GrowfiCampaign campaign;
+    IGrowfiCampaignFull campaign;
     GrowfiCampaignToken campaignToken;
 
     address producer = makeAddr("producer");
@@ -42,28 +47,35 @@ contract SellBackAtMaxCapTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "Olive",
-                tokenSymbol: "OLIVE",
-                yieldName: "oY",
-                yieldSymbol: "oY",
-                pricePerToken: PRICE,
-                minCap: MIN_CAP,
-                maxCap: MAX_CAP,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 365 days,
+                campaignTokenName: "Olive",
+                campaignTokenSymbol: "OLIVE",
+                yieldTokenName: "oY",
+                yieldTokenSymbol: "oY",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: PRICE,
+                    minCap: MIN_CAP,
+                    maxCap: MAX_CAP,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 365 days,
+                    fundingFeeBps: 0, // factory overwrites with FUNDING_FEE_BPS
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         (address c, address ct,,,,,) = factory.campaigns(0);
-        campaign = GrowfiCampaign(c);
+        campaign = IGrowfiCampaignFull(payable(c));
         campaignToken = GrowfiCampaignToken(ct);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
 
         usdc.mint(alice, 10_000e6);
         usdc.mint(bob, 10_000e6);
@@ -82,41 +94,32 @@ contract SellBackAtMaxCapTest is Test {
 
     /// Fill the campaign to exactly maxCap, then verify a new buyer can
     /// still consume an existing sell-back order without hitting MaxCapReached.
-    /// This is the regression for the reported bug.
     function test_buyFromQueueAtMaxCap_doesNotRevert() public {
-        // Alice buys the full maxCap → campaign auto-activates.
-        uint256 aliceSpend = (MAX_CAP * USDC_FIXED_RATE) / 1e18; // 1000 * 144_000 = 144_000_000 (144 USDC)
+        uint256 aliceSpend = (MAX_CAP * USDC_FIXED_RATE) / 1e18;
         vm.prank(alice);
         campaign.buy(address(usdc), aliceSpend);
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active), "must be Active");
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Active), "must be Active");
         assertEq(campaign.currentSupply(), MAX_CAP, "supply == maxCap");
 
-        // Alice queues 100 OLIVE for sell-back.
         vm.prank(alice);
         campaign.sellBack(100e18);
 
-        // Bob tries to buy 100 OLIVE from the queue. Pre-fix this reverted
-        // with MaxCapReached at `if (currentSupply >= maxCap)`.
-        uint256 bobSpend = (100e18 * USDC_FIXED_RATE) / 1e18; // 14_400_000
+        uint256 bobSpend = (100e18 * USDC_FIXED_RATE) / 1e18;
         uint256 bobBalBefore = campaignToken.balanceOf(bob);
         uint256 aliceUsdcBefore = usdc.balanceOf(alice);
         vm.prank(bob);
         campaign.buy(address(usdc), bobSpend);
 
-        // Bob got 100 OLIVE from the queue.
         assertEq(campaignToken.balanceOf(bob) - bobBalBefore, 100e18, "bob receives 100 OLIVE from queue");
-        // Alice received the USDC proportionally — NET of the 3% funding fee.
-        // The seller paid the same fee on her original entry, so this evens out
-        // in USDC terms across the full entry/exit cycle.
+        // Alice gets paid out NET of the 3% funding fee (same fee her own
+        // entry paid → balanced over the full entry/exit cycle).
         uint256 bobFee = bobSpend * 300 / 10_000;
         assertEq(
             usdc.balanceOf(alice) - aliceUsdcBefore,
             bobSpend - bobFee,
             "alice paid out from queue fill (net of funding fee)"
         );
-        // Supply stayed at cap — no new mint.
         assertEq(campaign.currentSupply(), MAX_CAP, "supply unchanged (burn+mint)");
-        // Queue drained.
         assertEq(campaign.getSellBackQueueDepth(), 0, "queue fully consumed");
     }
 
@@ -128,36 +131,29 @@ contract SellBackAtMaxCapTest is Test {
         campaign.buy(address(usdc), aliceSpend);
 
         vm.prank(alice);
-        campaign.sellBack(50e18); // 50 OLIVE in queue
+        campaign.sellBack(50e18);
 
-        // Bob tries to buy 100 OLIVE worth. Should only get 50 from queue.
-        uint256 bobSpend = (100e18 * USDC_FIXED_RATE) / 1e18; // 14_400_000
+        uint256 bobSpend = (100e18 * USDC_FIXED_RATE) / 1e18;
         uint256 bobUsdcBefore = usdc.balanceOf(bob);
         vm.prank(bob);
         campaign.buy(address(usdc), bobSpend);
 
-        // Bob's OLIVE balance: exactly 50 (clamped).
         assertEq(campaignToken.balanceOf(bob), 50e18, "clamped to queue size");
-        // Bob spent half the USDC; the contract only pulled `bobSpend / 2`.
         assertEq(bobUsdcBefore - usdc.balanceOf(bob), bobSpend / 2, "bob charged only for what was available");
-        // Cap unchanged.
         assertEq(campaign.currentSupply(), MAX_CAP);
         assertEq(campaign.getSellBackQueueDepth(), 0);
     }
 
     /// Below maxCap + queue present: queue fills first, then remainder mints.
     function test_buyBelowCapWithQueue_fillsQueueThenMints() public {
-        // Alice buys 600 OLIVE (hits min cap, activates).
         uint256 aliceSpend = (600e18 * USDC_FIXED_RATE) / 1e18;
         vm.prank(alice);
         campaign.buy(address(usdc), aliceSpend);
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Active));
 
-        // Alice queues 100 for sell-back. supply=600, queue=100, room=400.
         vm.prank(alice);
         campaign.sellBack(100e18);
 
-        // Bob buys 200 OLIVE → expects 100 from queue + 100 fresh mint.
         uint256 bobSpend = (200e18 * USDC_FIXED_RATE) / 1e18;
         vm.prank(bob);
         campaign.buy(address(usdc), bobSpend);
@@ -175,7 +171,7 @@ contract SellBackAtMaxCapTest is Test {
 
         uint256 carolSpend = 144_000;
         vm.prank(carol);
-        vm.expectRevert(GrowfiCampaign.MaxCapReached.selector);
+        vm.expectRevert(SaleClassicModule.MaxCapReached.selector);
         campaign.buy(address(usdc), carolSpend);
     }
 }

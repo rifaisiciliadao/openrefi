@@ -6,6 +6,10 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiToken} from "../src/GrowfiToken.sol";
 import {GrowfiTreasury} from "../src/GrowfiTreasury.sol";
 import {GrowfiMinter} from "../src/GrowfiMinter.sol";
@@ -101,35 +105,42 @@ contract GrowfiAutoAllocTest is Test {
         uint256 minCap = 100e18;
 
         GrowfiCampaignFactory.CreateCampaignParams memory p = GrowfiCampaignFactory.CreateCampaignParams({
-            producer: producer,
-            tokenName: name,
-            tokenSymbol: "TKN",
-            yieldName: "Y",
-            yieldSymbol: "y",
-            pricePerToken: price,
-            minCap: minCap,
-            maxCap: maxCap,
-            fundingDeadline: block.timestamp + 30 days,
-            seasonDuration: 1 hours,
-            minProductClaim: 1e18,
-            expectedAnnualHarvestUsd: 1000e18,
-            expectedAnnualHarvest: 100e18,
-            firstHarvestYear: 2027,
-            coverageHarvests: 0
-        });
+                producer: producer,
+                campaignTokenName: name,
+                campaignTokenSymbol: "TKN",
+                yieldTokenName: "Y",
+                yieldTokenSymbol: "y",
+                minProductClaim: 1e18,
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: price,
+                    minCap: minCap,
+                    maxCap: maxCap,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 1 hours,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 1000e18,
+                    expectedAnnualHarvest: 100e18,
+                    firstHarvestYear: 2027,
+                    coverageHarvests: 0
+                })
+            });
         vm.prank(producer);
         campaign = factory.createCampaign(p);
 
         vm.prank(producer);
-        GrowfiCampaign(campaign)
-            .addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, price / 1e12, address(0));
+        IGrowfiCampaignFull(payable(campaign))
+            .addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, price / 1e12, address(0));
 
         // Push past softcap so state -> Active.
         usdc.mint(producer, 200 * ONE_USDC);
         vm.prank(producer);
         usdc.approve(campaign, 200 * ONE_USDC);
         vm.prank(producer);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
     }
 
     // ============================================================
@@ -150,10 +161,10 @@ contract GrowfiAutoAllocTest is Test {
         factory.addGrowfiTreasuryTrackedCampaign(campD);
         vm.stopPrank();
 
-        IERC20 ctA = IERC20(GrowfiCampaign(campA).campaignToken());
-        IERC20 ctB = IERC20(GrowfiCampaign(campB).campaignToken());
-        IERC20 ctC = IERC20(GrowfiCampaign(campC).campaignToken());
-        IERC20 ctD = IERC20(GrowfiCampaign(campD).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken());
+        IERC20 ctB = IERC20(IGrowfiCampaignFull(payable(campB)).campaignToken());
+        IERC20 ctC = IERC20(IGrowfiCampaignFull(payable(campC)).campaignToken());
+        IERC20 ctD = IERC20(IGrowfiCampaignFull(payable(campD)).campaignToken());
 
         uint256 balABefore = ctA.balanceOf(address(growTreasury));
         uint256 balBBefore = ctB.balanceOf(address(growTreasury));
@@ -191,7 +202,7 @@ contract GrowfiAutoAllocTest is Test {
         vm.prank(OWNER);
         factory.setGrowfiTreasuryAutomationEnabled(false);
 
-        IERC20 ctA = IERC20(GrowfiCampaign(campA).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken());
         uint256 balBefore = ctA.balanceOf(address(growTreasury));
         uint256 usdcBefore = usdc.balanceOf(address(growTreasury));
 
@@ -229,8 +240,8 @@ contract GrowfiAutoAllocTest is Test {
         factory.addGrowfiTreasuryTrackedCampaign(campB);
         vm.stopPrank();
 
-        IERC20 ctA = IERC20(GrowfiCampaign(campA).campaignToken());
-        IERC20 ctB = IERC20(GrowfiCampaign(campB).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken());
+        IERC20 ctB = IERC20(IGrowfiCampaignFull(payable(campB)).campaignToken());
 
         // Direct buy $200 -> perCampaign = $100 each.
         // A has only ~10 tokens room ≈ $1 worth (minus fee), so it caps very low.
@@ -251,28 +262,35 @@ contract GrowfiAutoAllocTest is Test {
     function test_autoAlloc_fundingCampaignSkipped() public {
         // Spawn A but DON'T push past softcap.
         GrowfiCampaignFactory.CreateCampaignParams memory p = GrowfiCampaignFactory.CreateCampaignParams({
-            producer: PRODUCER_A,
-            tokenName: "Funding A",
-            tokenSymbol: "TKN",
-            yieldName: "Y",
-            yieldSymbol: "y",
-            pricePerToken: 1e17,
-            minCap: 100e18,
-            maxCap: 10_000e18,
-            fundingDeadline: block.timestamp + 30 days,
-            seasonDuration: 1 hours,
-            minProductClaim: 1e18,
-            expectedAnnualHarvestUsd: 1000e18,
-            expectedAnnualHarvest: 100e18,
-            firstHarvestYear: 2027,
-            coverageHarvests: 0
-        });
+                producer: PRODUCER_A,
+                campaignTokenName: "Funding A",
+                campaignTokenSymbol: "TKN",
+                yieldTokenName: "Y",
+                yieldTokenSymbol: "y",
+                minProductClaim: 1e18,
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 1e17,
+                    minCap: 100e18,
+                    maxCap: 10_000e18,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 1 hours,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 1000e18,
+                    expectedAnnualHarvest: 100e18,
+                    firstHarvestYear: 2027,
+                    coverageHarvests: 0
+                })
+            });
         vm.prank(PRODUCER_A);
         address campA = factory.createCampaign(p);
         vm.prank(OWNER);
         factory.addGrowfiTreasuryTrackedCampaign(campA);
 
-        IERC20 ctA = IERC20(GrowfiCampaign(campA).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken());
         uint256 usdcBefore = usdc.balanceOf(address(growTreasury));
 
         // No Active tracked campaign => Treasury allocator reverts NoActiveTrackedCampaigns
@@ -300,8 +318,8 @@ contract GrowfiAutoAllocTest is Test {
         // Seed Treasury directly (no Token.buy involved).
         usdc.mint(address(growTreasury), 100 * ONE_USDC);
 
-        IERC20 ctA = IERC20(GrowfiCampaign(campA).campaignToken());
-        IERC20 ctB = IERC20(GrowfiCampaign(campB).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken());
+        IERC20 ctB = IERC20(IGrowfiCampaignFull(payable(campB)).campaignToken());
         uint256 balA = ctA.balanceOf(address(growTreasury));
         uint256 balB = ctB.balanceOf(address(growTreasury));
 
@@ -331,10 +349,10 @@ contract GrowfiAutoAllocTest is Test {
         factory.addGrowfiTreasuryTrackedCampaign(campD);
         vm.stopPrank();
 
-        IERC20 ctA = IERC20(GrowfiCampaign(campA).campaignToken());
-        IERC20 ctB = IERC20(GrowfiCampaign(campB).campaignToken());
-        IERC20 ctC = IERC20(GrowfiCampaign(campC).campaignToken());
-        IERC20 ctD = IERC20(GrowfiCampaign(campD).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken());
+        IERC20 ctB = IERC20(IGrowfiCampaignFull(payable(campB)).campaignToken());
+        IERC20 ctC = IERC20(IGrowfiCampaignFull(payable(campC)).campaignToken());
+        IERC20 ctD = IERC20(IGrowfiCampaignFull(payable(campD)).campaignToken());
 
         uint256 a0 = ctA.balanceOf(address(growTreasury));
         uint256 b0 = ctB.balanceOf(address(growTreasury));

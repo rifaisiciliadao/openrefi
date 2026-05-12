@@ -39,6 +39,9 @@ export function Header() {
           <Link href="/" className={linkClass}>
             {t("explore")}
           </Link>
+          <Link href="/feed" className={linkClass}>
+            {t("feed")}
+          </Link>
           <Link href="/portfolio" className={linkClass}>
             {t("portfolio")}
           </Link>
@@ -146,6 +149,13 @@ export function Header() {
               className="rounded-lg px-3 py-3 text-base font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors"
             >
               {t("explore")}
+            </Link>
+            <Link
+              href="/feed"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-3 text-base font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors"
+            >
+              {t("feed")}
             </Link>
             <Link
               href="/portfolio"

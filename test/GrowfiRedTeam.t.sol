@@ -7,6 +7,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiToken} from "../src/GrowfiToken.sol";
 import {GrowfiTreasury} from "../src/GrowfiTreasury.sol";
 import {GrowfiMinter} from "../src/GrowfiMinter.sol";
@@ -121,25 +125,32 @@ contract GrowfiRedTeamTest is Test {
         campaign = factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: PRODUCER,
-                tokenName: string(abi.encodePacked("Test", vm.toString(uint256(uint160(address(this)))))),
-                tokenSymbol: "TST",
-                yieldName: "Yield",
-                yieldSymbol: "YLD",
-                pricePerToken: pricePerToken,
-                minCap: minCap,
-                maxCap: maxCap,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 1 hours,
+                campaignTokenName: "Test",
+                campaignTokenSymbol: "TST",
+                yieldTokenName: "Yield",
+                yieldTokenSymbol: "YLD",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 250e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: pricePerToken,
+                    minCap: minCap,
+                    maxCap: maxCap,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 1 hours,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 250e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         vm.prank(PRODUCER);
-        GrowfiCampaign(campaign)
-            .addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, pricePerToken / 1e12, address(0));
+        IGrowfiCampaignFull(payable(campaign))
+            .addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, pricePerToken / 1e12, address(0));
     }
 
     // ---------- 1. Reentrancy on direct buy ----------
@@ -244,7 +255,7 @@ contract GrowfiRedTeamTest is Test {
         vm.prank(ATTACKER);
         usdc.approve(campaign, 200 * ONE_USDC);
         vm.prank(ATTACKER);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         // Claim escrow → 50 GROW in wallet.
         vm.prank(ATTACKER);
@@ -256,12 +267,12 @@ contract GrowfiRedTeamTest is Test {
 
         // Buy 2: $50 in Active. cumVol $50 → $100. All tier 2 → 50 × 0.7 = 35 GROW direct.
         vm.prank(ATTACKER);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
         uint256 grow2 = growToken.balanceOf(ATTACKER);
 
         // Buy 3: $50 → cumVol $100 → $150. Spans tier 2 ($25) + tier 3 ($25) → 17.5 + 10 = 27.5.
         vm.prank(ATTACKER);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
         uint256 grow3 = growToken.balanceOf(ATTACKER);
 
         // Each successive $50 buy yielded strictly less GROW (monotonic decay).
@@ -349,13 +360,13 @@ contract GrowfiRedTeamTest is Test {
         vm.prank(ATTACKER);
         usdc.approve(campaign, 50 * ONE_USDC);
         vm.prank(ATTACKER);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         assertEq(growMinter.getEscrow(campaign, ATTACKER), 50e18, "escrow accumulated");
 
         // Time passes, deadline elapses without softcap.
         vm.warp(block.timestamp + 31 days);
-        GrowfiCampaign(campaign).triggerBuyback();
+        IGrowfiCampaignFull(payable(campaign)).triggerBuyback();
 
         // Try to claim — voided.
         vm.expectRevert(GrowfiMinter.NotActive.selector);
@@ -374,54 +385,68 @@ contract GrowfiRedTeamTest is Test {
         address campaignA = factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: PRODUCER,
-                tokenName: "CampaignA",
-                tokenSymbol: "CA",
-                yieldName: "YA",
-                yieldSymbol: "yA",
-                pricePerToken: 1e18,
-                minCap: 100e18,
-                maxCap: 200e18,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 1 hours,
+                campaignTokenName: "CampaignA",
+                campaignTokenSymbol: "CA",
+                yieldTokenName: "YA",
+                yieldTokenSymbol: "yA",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 250e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 1e18,
+                    minCap: 100e18,
+                    maxCap: 200e18,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 1 hours,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 250e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         vm.prank(PRODUCER);
-        GrowfiCampaign(campaignA).addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 1e6, address(0));
+        IGrowfiCampaignFull(payable(campaignA)).addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 1e6, address(0));
 
         vm.prank(PRODUCER);
         address campaignB = factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: PRODUCER,
-                tokenName: "CampaignB",
-                tokenSymbol: "CB",
-                yieldName: "YB",
-                yieldSymbol: "yB",
-                pricePerToken: 1e18,
-                minCap: 100e18,
-                maxCap: 200e18,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 1 hours,
+                campaignTokenName: "CampaignB",
+                campaignTokenSymbol: "CB",
+                yieldTokenName: "YB",
+                yieldTokenSymbol: "yB",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 250e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 1e18,
+                    minCap: 100e18,
+                    maxCap: 200e18,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 1 hours,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 250e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         vm.prank(PRODUCER);
-        GrowfiCampaign(campaignB).addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 1e6, address(0));
+        IGrowfiCampaignFull(payable(campaignB)).addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 1e6, address(0));
 
         // Alice buys $50 on Campaign A (escrow).
         usdc.mint(ALICE, 100 * ONE_USDC);
         vm.prank(ALICE);
         usdc.approve(campaignA, 100 * ONE_USDC);
         vm.prank(ALICE);
-        GrowfiCampaign(campaignA).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaignA)).buy(address(usdc), 50 * ONE_USDC);
 
         // She can't claim on Campaign B (different campaign, no escrow there).
         vm.expectRevert(); // either NotActive or NoEscrow

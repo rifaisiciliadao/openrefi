@@ -5,9 +5,12 @@ tags:
   - yield
   - staking
   - grow-token
-status: implemented
+status: defined
 ---
 # Tokenomics — Token design, fees & yield
+
+The buy/sellback/funding-fee logic lives inside the `growfi.sale.classic.v1` default module; the collateral lock/draw logic lives inside `growfi.collateral.v1`. The Campaign host owns only the state machine, the USDC escrow address, and the module registry. The producer/holder cash flows described below are unchanged by this split. See [[07 - Module Framework (Diamond)]] for the module architecture.
+
 
 GrowFi has **two layers** of value capture, deployed together but conceptually independent:
 
@@ -434,7 +437,9 @@ There are **two** protocol fees, applied at different lifecycle moments. Both fl
 ```
 0. CREATE CAMPAIGN
    Producer sets all per-campaign params (price, caps, deadline, season, claim min,
-   v3 commitments). Factory deploys 5 proxies + auto-registers in GrowfiMinter.
+   productive-asset commitments). Factory deploys the per-campaign proxy stack,
+   auto-injects defaultModules (sale + collateral), and registers the campaign
+   in GrowfiMinter.
    → State = Funding
 
 1. FUNDING

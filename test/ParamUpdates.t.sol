@@ -2,21 +2,27 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
+
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
+
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 
 /// @title ParamUpdates — setFundingDeadline / setMinCap / setMaxCap regression
-/// @notice Locks the guard-rails around the 3 new producer-only parameter
+/// @notice Locks the guard-rails around the 3 producer-only parameter
 ///         setters. They skip the impl-redeploy dance but keep the
 ///         invariants that make prior buyers whole.
 contract ParamUpdatesTest is Test {
     GrowfiCampaignFactory factory;
     MockERC20 usdc;
 
-    GrowfiCampaign campaign;
+    IGrowfiCampaignFull campaign;
     GrowfiCampaignToken campaignToken;
 
     address producer = makeAddr("producer");
@@ -40,28 +46,35 @@ contract ParamUpdatesTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "Olive",
-                tokenSymbol: "OLIVE",
-                yieldName: "oY",
-                yieldSymbol: "oY",
-                pricePerToken: PRICE,
-                minCap: MIN_CAP,
-                maxCap: MAX_CAP,
-                fundingDeadline: initialDeadline,
-                seasonDuration: 365 days,
+                campaignTokenName: "Olive",
+                campaignTokenSymbol: "OLIVE",
+                yieldTokenName: "oY",
+                yieldTokenSymbol: "oY",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: PRICE,
+                    minCap: MIN_CAP,
+                    maxCap: MAX_CAP,
+                    fundingDeadline: initialDeadline,
+                    seasonDuration: 365 days,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         (address c, address ct,,,,,) = factory.campaigns(0);
-        campaign = GrowfiCampaign(c);
+        campaign = IGrowfiCampaignFull(payable(c));
         campaignToken = GrowfiCampaignToken(ct);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
 
         usdc.mint(alice, 10_000e6);
         vm.prank(alice);
@@ -79,29 +92,28 @@ contract ParamUpdatesTest is Test {
 
     function test_setFundingDeadline_shortening_reverts() public {
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.DeadlineNotExtended.selector);
+        vm.expectRevert(SaleClassicModule.DeadlineNotExtended.selector);
         campaign.setFundingDeadline(initialDeadline - 1);
     }
 
     function test_setFundingDeadline_pastTimestamp_reverts() public {
         vm.warp(initialDeadline + 1);
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.DeadlineInPast.selector);
+        vm.expectRevert(SaleClassicModule.DeadlineInPast.selector);
         campaign.setFundingDeadline(block.timestamp - 1);
     }
 
     function test_setFundingDeadline_nonProducer_reverts() public {
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
+        vm.expectRevert(SaleClassicModule.OnlyProducer.selector);
         campaign.setFundingDeadline(initialDeadline + 1 days);
     }
 
     function test_setFundingDeadline_afterActivation_reverts() public {
-        // Push the campaign into Active.
         uint256 spend = (MIN_CAP * USDC_FIXED_RATE) / 1e18;
         vm.prank(alice);
         campaign.buy(address(usdc), spend);
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Active));
 
         vm.prank(producer);
         vm.expectRevert();
@@ -117,19 +129,18 @@ contract ParamUpdatesTest is Test {
     }
 
     function test_setMinCap_belowSupply_reverts() public {
-        // Alice buys 200 OLIVE.
         uint256 spend = (200e18 * USDC_FIXED_RATE) / 1e18;
         vm.prank(alice);
         campaign.buy(address(usdc), spend);
 
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.NewMinCapBelowSupply.selector);
+        vm.expectRevert(SaleClassicModule.NewMinCapBelowSupply.selector);
         campaign.setMinCap(150e18);
     }
 
     function test_setMinCap_aboveMaxCap_reverts() public {
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.NewMinCapBelowSupply.selector);
+        vm.expectRevert(SaleClassicModule.NewMinCapBelowSupply.selector);
         campaign.setMinCap(MAX_CAP + 1);
     }
 
@@ -156,11 +167,10 @@ contract ParamUpdatesTest is Test {
         vm.prank(alice);
         campaign.buy(address(usdc), spend);
 
-        // During Funding the new maxCap must stay ≥ minCap; lower minCap first.
         vm.prank(producer);
         campaign.setMinCap(220e18);
         vm.prank(producer);
-        campaign.setMaxCap(300e18); // > 200 already sold, > 220 minCap
+        campaign.setMaxCap(300e18);
         assertEq(campaign.maxCap(), 300e18);
     }
 
@@ -170,12 +180,11 @@ contract ParamUpdatesTest is Test {
         campaign.buy(address(usdc), spend);
 
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.NewMaxCapBelowCommitted.selector);
+        vm.expectRevert(SaleClassicModule.NewMaxCapBelowCommitted.selector);
         campaign.setMaxCap(300e18);
     }
 
     function test_setMaxCap_belowQueueAndSupply_reverts() public {
-        // Activate + queue a sellback.
         uint256 spend = (MIN_CAP * USDC_FIXED_RATE) / 1e18;
         vm.prank(alice);
         campaign.buy(address(usdc), spend);
@@ -186,7 +195,7 @@ contract ParamUpdatesTest is Test {
 
         // currentSupply=500, queue=100 → committed=600
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.NewMaxCapBelowCommitted.selector);
+        vm.expectRevert(SaleClassicModule.NewMaxCapBelowCommitted.selector);
         campaign.setMaxCap(550e18);
     }
 
@@ -194,7 +203,7 @@ contract ParamUpdatesTest is Test {
         uint256 spend = (MIN_CAP * USDC_FIXED_RATE) / 1e18;
         vm.prank(alice);
         campaign.buy(address(usdc), spend);
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Active));
 
         vm.prank(producer);
         campaign.setMaxCap(10_000e18);
@@ -204,7 +213,7 @@ contract ParamUpdatesTest is Test {
     function test_setMaxCap_duringBuyback_reverts() public {
         vm.warp(initialDeadline + 1);
         campaign.triggerBuyback();
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Buyback));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Buyback));
 
         vm.prank(producer);
         vm.expectRevert();
@@ -213,13 +222,13 @@ contract ParamUpdatesTest is Test {
 
     function test_setMaxCap_belowMinCap_duringFunding_reverts() public {
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.NewMaxCapBelowCommitted.selector);
+        vm.expectRevert(SaleClassicModule.NewMaxCapBelowCommitted.selector);
         campaign.setMaxCap(MIN_CAP - 1);
     }
 
     function test_setMaxCap_nonProducer_reverts() public {
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
+        vm.expectRevert(SaleClassicModule.OnlyProducer.selector);
         campaign.setMaxCap(5_000e18);
     }
 }

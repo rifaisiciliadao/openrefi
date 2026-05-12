@@ -45,6 +45,7 @@ type Campaign @entity(immutable: false) {
 
   createdAt: BigInt!
   createdAtBlock: BigInt!
+  createdAtTx: Bytes
   activatedAt: BigInt
 
   acceptedTokens: [AcceptedToken!]! @derivedFrom(field: "campaign")
@@ -52,6 +53,55 @@ type Campaign @entity(immutable: false) {
   positions: [Position!]! @derivedFrom(field: "campaign")
   seasons: [Season!]! @derivedFrom(field: "campaign")
   sellBackOrders: [SellBackOrder!]! @derivedFrom(field: "campaign")
+  modules: [Module!]! @derivedFrom(field: "campaign")
+  repaymentPool: RepaymentPool @derivedFrom(field: "campaign")
+  repayments: [Repayment!]! @derivedFrom(field: "campaign")
+}
+
+# v4 — module attached to a Campaign via the host's fallback router.
+# Records every ModuleAttached/Detached/Enabled event.
+type Module @entity(immutable: false) {
+  id: Bytes!                              # campaign + moduleType
+  campaign: Campaign!
+  moduleType: Bytes!                      # bytes32 type identifier
+  kind: Bytes!                            # bytes32 kind identifier
+  impl: Bytes!                            # current implementation address
+  metadataURI: String!
+  enabled: Boolean!
+  attachedAt: BigInt!
+  attachedAtTx: Bytes
+  detachedAt: BigInt
+  detachedAtTx: Bytes
+}
+
+# v4 — Repayment module per-campaign state (one row per Campaign with the module attached).
+type RepaymentPool @entity(immutable: false) {
+  id: Bytes!                              # campaign address
+  campaign: Campaign!
+  initialized: Boolean!
+  bonusPerCt: BigInt!                     # USDC-6 per 1e18 CT, additive markup on top of principal
+  poolBalance: BigInt!                    # current USDC-6 in the pool
+  totalFunded: BigInt!                    # cumulative producer deposits
+  totalWithdrawn: BigInt!                 # cumulative producer withdrawals
+  totalRedeemed: BigInt!                  # cumulative USDC paid out to holders
+  redeemCount: Int!
+  initializedAt: BigInt
+  lastUpdatedAt: BigInt!
+}
+
+# v4 — individual redeem event from the Repayment module.
+type Repayment @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  campaign: Campaign!
+  holder: Bytes!
+  campaignTokensBurned: BigInt!
+  principalPaid: BigInt!                  # USDC-6
+  bonusPaid: BigInt!                      # USDC-6
+  totalPaid: BigInt!                      # principal + bonus
+  newPoolBalance: BigInt!
+  timestamp: BigInt!
+  block: BigInt!
+  transactionHash: Bytes!
 }
 
 type AcceptedToken @entity(immutable: false) {
@@ -102,7 +152,9 @@ type SellBackOrder @entity(immutable: false) {
   status: String!                         # "pending" | "filled" | "cancelled"
   queuePosition: BigInt!
   requestedAt: BigInt!
+  requestTx: Bytes
   filledAt: BigInt
+  fillTx: Bytes
 }
 
 type Season @entity(immutable: false) {
@@ -141,7 +193,9 @@ type Position @entity(immutable: false) {
   yieldClaimed: BigInt!
   active: Boolean!
   createdAt: BigInt!
+  createdAtTx: Bytes
   unstakedAt: BigInt
+  unstakedAtTx: Bytes
   penaltyBurned: BigInt
 }
 
@@ -157,6 +211,7 @@ type Claim @entity(immutable: false) {
   usdcClaimed: BigInt!
   fulfilled: Boolean!
   claimedAt: BigInt!
+  claimTx: Bytes
 }
 
 type YieldRateSnapshot @entity(immutable: true) {

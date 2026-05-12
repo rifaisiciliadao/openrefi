@@ -2,23 +2,26 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
+
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
 import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
 import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
 import {GrowfiHarvestManager} from "../src/GrowfiHarvestManager.sol";
+
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 
-/// @title CollateralAttacks — adversarial coverage for the v3 collateral mechanic.
-/// @notice Each test simulates a specific attack on `lockCollateral` /
-///         `settleSeasonShortfall` / `depositFromCollateral`. A passing test
-///         means the attack was successfully blocked.
+/// @title CollateralAttacks — adversarial coverage for the collateral mechanic.
 contract CollateralAttacksTest is Test {
     GrowfiCampaignFactory factory;
     MockERC20 usdc;
-    GrowfiCampaign campaign;
+    IGrowfiCampaignFull campaign;
     GrowfiCampaignToken campaignToken;
     GrowfiYieldToken yieldToken;
     GrowfiStakingVault stakingVault;
@@ -36,7 +39,7 @@ contract CollateralAttacksTest is Test {
     uint256 constant MAX_CAP = 100_000e18;
     uint256 constant SEASON_DURATION = 365 days;
     uint256 constant USDC_FIXED_RATE = 144_000;
-    uint256 constant COVERAGE = 3; // pre-fund 3 harvests
+    uint256 constant COVERAGE = 3;
 
     function setUp() public {
         usdc = new MockERC20("USD Coin", "USDC", 6);
@@ -46,32 +49,39 @@ contract CollateralAttacksTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "Olive",
-                tokenSymbol: "OLIVE",
-                yieldName: "oYield",
-                yieldSymbol: "oY",
-                pricePerToken: PRICE_PER_TOKEN,
-                minCap: MIN_CAP,
-                maxCap: MAX_CAP,
-                fundingDeadline: block.timestamp + 90 days,
-                seasonDuration: SEASON_DURATION,
+                campaignTokenName: "Olive",
+                campaignTokenSymbol: "OLIVE",
+                yieldTokenName: "oYield",
+                yieldTokenSymbol: "oY",
                 minProductClaim: 5e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: COVERAGE
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: PRICE_PER_TOKEN,
+                    minCap: MIN_CAP,
+                    maxCap: MAX_CAP,
+                    fundingDeadline: block.timestamp + 90 days,
+                    seasonDuration: SEASON_DURATION,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: COVERAGE
+                })
             })
         );
 
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = GrowfiCampaign(c);
+        campaign = IGrowfiCampaignFull(payable(c));
         campaignToken = GrowfiCampaignToken(ct);
         yieldToken = GrowfiYieldToken(yt);
         stakingVault = GrowfiStakingVault(sv);
         harvestManager = GrowfiHarvestManager(hm);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
 
         usdc.mint(alice, 1_000_000e6);
         usdc.mint(bob, 1_000_000e6);
@@ -87,26 +97,20 @@ contract CollateralAttacksTest is Test {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers — ride the campaign through to a state where settleSeasonShortfall
-    // is reachable. Activate via Alice + Bob, lock collateral, start + end
-    // season 1, report harvest, advance past usdcDeadline.
-    // -------------------------------------------------------------------------
+    // --- Helpers ---
 
     function _activate() internal {
-        // Alice buys to minCap → auto-activate.
-        uint256 alicePay = 60_000 * USDC_FIXED_RATE; // 8.64 USDC * 1000 = 8640 USDC
+        uint256 alicePay = 60_000 * USDC_FIXED_RATE;
         vm.prank(alice);
         campaign.buy(address(usdc), alicePay);
-        // Bob tops up.
         vm.prank(bob);
         campaign.buy(address(usdc), 5_000 * USDC_FIXED_RATE);
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Active));
     }
 
-    function _startSeason(uint256 seasonId) internal {
+    function _startSeason() internal {
         vm.prank(producer);
-        campaign.startSeason(seasonId);
+        campaign.startSeason();
     }
 
     function _stake(address user, uint256 amount) internal returns (uint256 posId) {
@@ -123,9 +127,6 @@ contract CollateralAttacksTest is Test {
         harvestManager.reportHarvest(seasonId, harvestValueUsd18, bytes32(0), 0);
     }
 
-    /// @dev Have `holder` claim their accrued yield and commit a USDC claim
-    ///      so `usdcOwed` actually accumulates on the season — otherwise the
-    ///      shortfall is always zero and there's nothing to settle.
     function _commitUsdcClaim(address holder, uint256 posId, uint256 seasonId) internal {
         vm.startPrank(holder);
         stakingVault.claimYield(posId);
@@ -137,40 +138,36 @@ contract CollateralAttacksTest is Test {
     }
 
     // =========================================================================
-    // ATTACK 1 — Non-producer tries to lock collateral (silent capital injection)
+    // ATTACK 1 — Non-producer tries to lock collateral
     // =========================================================================
     function test_attack_nonProducerCannotLock() public {
         _activate();
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
+        vm.expectRevert(CollateralModule.OnlyProducer.selector);
         campaign.lockCollateral(1_000e6);
     }
 
     // =========================================================================
-    // ATTACK 2 — Producer tries to lock zero (no-op spam)
+    // ATTACK 2 — Lock zero
     // =========================================================================
     function test_attack_lockZeroReverts() public {
         _activate();
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.ZeroAmount.selector);
+        vm.expectRevert(CollateralModule.ZeroAmount.selector);
         campaign.lockCollateral(0);
     }
 
     // =========================================================================
-    // ATTACK 3 — Lock during Funding state is allowed (pre-activation commit
-    //            shown to buyers as a trust signal). Lock during Buyback / Ended
-    //            must revert.
+    // ATTACK 3 — Lock state-machine guards
     // =========================================================================
     function test_lockCollateral_duringFunding_allowed() public {
-        // Still in Funding (no buys yet).
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Funding));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Funding));
         vm.prank(producer);
         campaign.lockCollateral(1_000e6);
         assertEq(campaign.collateralLocked(), 1_000e6);
     }
 
     function test_attack_lockDuringBuyback_blocked() public {
-        // Force Buyback: deadline passes, minCap not reached.
         vm.warp(block.timestamp + 91 days);
         campaign.triggerBuyback();
         vm.prank(producer);
@@ -179,8 +176,7 @@ contract CollateralAttacksTest is Test {
     }
 
     // =========================================================================
-    // ATTACK 4 — Re-lock more than once accumulates correctly (no overflow / no
-    //            silent overwrite).
+    // ATTACK 4 — Lock is additive
     // =========================================================================
     function test_lock_isAdditive() public {
         _activate();
@@ -192,35 +188,31 @@ contract CollateralAttacksTest is Test {
     }
 
     // =========================================================================
-    // ATTACK 5 — There is NO withdraw path. Even producer cannot pull collateral
-    //            back during Active state. (Compile-time guarantee — no
-    //            withdrawCollateral function exists; we still pin it down with
-    //            a balance assertion after multiple failed attempts.)
+    // ATTACK 5 — No withdrawal path
     // =========================================================================
     function test_attack_noWithdrawalPath() public {
         _activate();
         vm.prank(producer);
         campaign.lockCollateral(5_000e6);
         uint256 producerBefore = usdc.balanceOf(producer);
-        // No withdraw exists — emergencyPause + producer pranks all idle.
         assertEq(usdc.balanceOf(producer), producerBefore, "producer balance unchanged");
         assertEq(campaign.collateralLocked(), 5_000e6, "collateral still locked");
     }
 
     // =========================================================================
-    // ATTACK 6 — settleSeasonShortfall called outside coverage window
+    // ATTACK 6 — settleSeasonShortfall outside coverage
     // =========================================================================
     function test_attack_settleSeasonZero_reverts() public {
         _activate();
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.OutOfCoverage.selector);
+        vm.expectRevert(CollateralModule.NotInCoverage.selector);
         campaign.settleSeasonShortfall(0);
     }
 
     function test_attack_settleSeasonBeyondCoverage_reverts() public {
         _activate();
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.OutOfCoverage.selector);
+        vm.expectRevert(CollateralModule.NotInCoverage.selector);
         campaign.settleSeasonShortfall(COVERAGE + 1);
     }
 
@@ -231,61 +223,54 @@ contract CollateralAttacksTest is Test {
         _activate();
         vm.prank(producer);
         campaign.lockCollateral(10_000e6);
-        _startSeason(1);
+        _startSeason();
         _stake(alice, campaignToken.balanceOf(alice));
-        _endAndReport(1, 1_000e18); // reports → starts deadline
-        // Don't warp — deadline is far in the future.
+        _endAndReport(1, 1_000e18);
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.DeadlineNotReached.selector);
+        vm.expectRevert(CollateralModule.DepositWindowOpen.selector);
         campaign.settleSeasonShortfall(1);
     }
 
     // =========================================================================
-    // ATTACK 8 — Settle on a season that was never reported (rage-quit producer)
+    // ATTACK 8 — Settle on unreported season (producer rage-quit)
     // =========================================================================
     function test_attack_settleUnreportedSeason_reverts() public {
         _activate();
         vm.prank(producer);
         campaign.lockCollateral(10_000e6);
-        // No reportHarvest called.
         vm.warp(block.timestamp + 365 days);
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.SeasonNotReported.selector);
+        vm.expectRevert(CollateralModule.SeasonNotReported.selector);
         campaign.settleSeasonShortfall(1);
     }
 
     // =========================================================================
-    // ATTACK 9 — Double-settlement (replay)
+    // ATTACK 9 — Double-settlement
     // =========================================================================
     function test_attack_doubleSettle_reverts() public {
         _activate();
         vm.prank(producer);
         campaign.lockCollateral(10_000e6);
 
-        _startSeason(1);
+        _startSeason();
         _stake(alice, campaignToken.balanceOf(alice));
         _endAndReport(1, 1_000e18);
 
         (,,,,,, uint256 deadline,,,,,) = harvestManager.seasonHarvests(1);
         vm.warp(deadline + 1);
 
-        // First settle: succeeds (regardless of whether there's a draw or not).
         vm.prank(attacker);
         campaign.settleSeasonShortfall(1);
-        // Second attempt must revert.
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.AlreadySettled.selector);
+        vm.expectRevert(CollateralModule.AlreadySettled.selector);
         campaign.settleSeasonShortfall(1);
     }
 
     // =========================================================================
-    // ATTACK 10 — Direct call to GrowfiHarvestManager.depositFromCollateral by anyone
-    //             other than the owning GrowfiCampaign must revert (preventing fake
-    //             "shortfall coverage" from attacker capital).
+    // ATTACK 10 — Direct call to HarvestManager.depositFromCollateral
     // =========================================================================
     function test_attack_directDepositFromCollateral_blocked() public {
         _activate();
-        // Even producer cannot call this — only the GrowfiCampaign proxy.
         vm.prank(producer);
         vm.expectRevert(GrowfiHarvestManager.OnlyCampaign.selector);
         harvestManager.depositFromCollateral(1, 1e6);
@@ -296,8 +281,7 @@ contract CollateralAttacksTest is Test {
     }
 
     // =========================================================================
-    // ATTACK 11 — Re-set the campaign address on GrowfiHarvestManager. Must revert
-    //             because the wiring is one-shot.
+    // ATTACK 11 — Re-set the campaign address on HarvestManager
     // =========================================================================
     function test_attack_resetCampaignOnHm_blocked() public {
         vm.prank(address(factory));
@@ -306,29 +290,26 @@ contract CollateralAttacksTest is Test {
     }
 
     // =========================================================================
-    // ATTACK 12 — Re-set the harvestManager address on GrowfiCampaign. Must revert.
+    // ATTACK 12 — Re-set the harvestManager address on Campaign
     // =========================================================================
     function test_attack_resetHmOnCampaign_blocked() public {
         vm.prank(address(factory));
-        vm.expectRevert(GrowfiCampaign.AlreadySet.selector);
-        campaign.setHarvestManager(address(0xdead));
+        vm.expectRevert(GrowfiCampaign.AlreadyWired.selector);
+        GrowfiCampaign(payable(address(campaign))).setHarvestManager(address(0xdead));
     }
 
     // =========================================================================
-    // ATTACK 13 — settleSeasonShortfall with no shortfall (producer fully
-    //             deposited): function is no-op but still flips the flag so
-    //             a follow-up call reverts AlreadySettled.
+    // ATTACK 13 — Settle with no shortfall: no-op + flag set
     // =========================================================================
     function test_settleNoShortfall_noOpButFlagsSettled() public {
         _activate();
         vm.prank(producer);
         campaign.lockCollateral(10_000e6);
 
-        _startSeason(1);
+        _startSeason();
         _stake(alice, campaignToken.balanceOf(alice));
         _endAndReport(1, 100e18);
 
-        // Producer fully covers usdcOwed: deposit gross sized via remainingDepositGross.
         uint256 gross = harvestManager.remainingDepositGross(1);
         if (gross > 0) {
             vm.startPrank(producer);
@@ -337,7 +318,6 @@ contract CollateralAttacksTest is Test {
             vm.stopPrank();
         }
 
-        // Past deadline.
         (,,,,,, uint256 deadline,,,,,) = harvestManager.seasonHarvests(1);
         vm.warp(deadline + 1);
 
@@ -348,19 +328,17 @@ contract CollateralAttacksTest is Test {
         assertTrue(campaign.seasonShortfallSettled(1), "still flags settled");
 
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.AlreadySettled.selector);
+        vm.expectRevert(CollateralModule.AlreadySettled.selector);
         campaign.settleSeasonShortfall(1);
     }
 
     // =========================================================================
-    // ATTACK 14 — Empty reserve: producer didn't lock anything; settle should
-    //             no-op gracefully without underflow.
+    // ATTACK 14 — Empty reserve: settle should no-op gracefully
     // =========================================================================
     function test_settleNoCollateral_noOp() public {
         _activate();
-        // No lockCollateral.
 
-        _startSeason(1);
+        _startSeason();
         _stake(alice, campaignToken.balanceOf(alice));
         _endAndReport(1, 100e18);
 
@@ -368,26 +346,23 @@ contract CollateralAttacksTest is Test {
         vm.warp(deadline + 1);
 
         vm.prank(attacker);
-        campaign.settleSeasonShortfall(1); // must not revert
+        campaign.settleSeasonShortfall(1);
 
         assertEq(campaign.collateralDrawn(), 0);
         assertTrue(campaign.seasonShortfallSettled(1));
     }
 
     // =========================================================================
-    // ATTACK 15 — Partial coverage: collateral < shortfall. Draw clamps to
-    //             availableCollateral; remainder stays uncovered.
+    // ATTACK 15 — Partial coverage: draw clamps to availableCollateral
     // =========================================================================
     function test_partialCoverage_clampsToAvailable() public {
         _activate();
-        // Lock only 5 USDC (deliberately tiny).
         vm.prank(producer);
         campaign.lockCollateral(5e6);
 
-        _startSeason(1);
+        _startSeason();
         uint256 posId = _stake(alice, campaignToken.balanceOf(alice));
         _endAndReport(1, 5_000e18);
-        // Alice commits a USDC claim → usdcOwed becomes non-zero.
         _commitUsdcClaim(alice, posId, 1);
 
         (,,,,,, uint256 deadline,,,,,) = harvestManager.seasonHarvests(1);
@@ -399,7 +374,6 @@ contract CollateralAttacksTest is Test {
         vm.prank(attacker);
         campaign.settleSeasonShortfall(1);
 
-        // All available collateral was drawn — no over-draw.
         assertEq(campaign.collateralDrawn(), 5e6, "drew exactly available");
         assertLe(campaign.collateralDrawn(), campaign.collateralLocked(), "drawn <= locked");
 
@@ -409,19 +383,14 @@ contract CollateralAttacksTest is Test {
     }
 
     // =========================================================================
-    // ATTACK 16 — Full coverage: draw exactly the gap; nothing left over for
-    //             this season; collateral still has remainder.
+    // ATTACK 16 — Full coverage: draw exactly the gap
     // =========================================================================
     function test_fullCoverage_drawsExactlyShortfall() public {
         _activate();
-        // Lock the full commitment cap. The new model caps lockCollateral
-        // at expectedAnnualHarvestUsd * coverageHarvests / 1e12, so we can
-        // no longer "over-fund" — but with a single season's deposit the
-        // remainder is still positive (covers the other 2 seasons).
         vm.prank(producer);
         campaign.lockCollateral(15_000e6);
 
-        _startSeason(1);
+        _startSeason();
         uint256 posId = _stake(alice, campaignToken.balanceOf(alice));
         _endAndReport(1, 1_000e18);
         _commitUsdcClaim(alice, posId, 1);

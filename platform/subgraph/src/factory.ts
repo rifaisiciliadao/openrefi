@@ -1,7 +1,7 @@
 import { BigInt, Bytes, log } from "@graphprotocol/graph-ts";
 import {
   CampaignCreated as CampaignCreatedEvent,
-  ProtocolFeeRecipientUpdated as ProtocolFeeRecipientUpdatedEvent,
+  ProtocolFeeRecipientSet as ProtocolFeeRecipientSetEvent,
   GrowfiContractsSet as GrowfiContractsSetEvent,
   CampaignHiddenSet as CampaignHiddenSetEvent,
 } from "../generated/CampaignFactory/CampaignFactory";
@@ -69,6 +69,7 @@ export function handleCampaignCreated(event: CampaignCreatedEvent): void {
   campaign.paused = false;
   campaign.createdAt = event.params.createdAt;
   campaign.createdAtBlock = event.block.number;
+  campaign.createdAtTx = event.transaction.hash;
   campaign.metadataVersion = BigInt.zero();
   campaign.hidden = false;
   campaign.save();
@@ -97,13 +98,11 @@ export function handleCampaignCreated(event: CampaignCreatedEvent): void {
   log.info("Campaign created: {}", [campaignAddress.toHexString()]);
 }
 
-export function handleProtocolFeeRecipientUpdated(
-  event: ProtocolFeeRecipientUpdatedEvent,
+export function handleProtocolFeeRecipientSet(
+  event: ProtocolFeeRecipientSetEvent,
 ): void {
-  // Recorded as global event; no entity change required
-  log.info("Protocol fee recipient updated from {} to {}", [
-    event.params.oldRecipient.toHexString(),
-    event.params.newRecipient.toHexString(),
+  log.info("Protocol fee recipient set to {}", [
+    event.params.recipient.toHexString(),
   ]);
 }
 

@@ -40,7 +40,7 @@ contract GrowfiCampaignRegistry {
     ///        `https://growfi-media.fra1.digitaloceanspaces.com/metadata/xyz.json`).
     function setMetadata(address campaign, string calldata uri) external {
         if (!factory.isCampaign(campaign)) revert NotCampaign();
-        if (GrowfiCampaign(campaign).producer() != msg.sender) revert NotProducer();
+        if (GrowfiCampaign(payable(campaign)).producer() != msg.sender) revert NotProducer();
         if (bytes(uri).length == 0) revert EmptyURI();
 
         uint256 newVersion = version[campaign] + 1;

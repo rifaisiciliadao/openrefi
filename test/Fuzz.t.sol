@@ -4,6 +4,10 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
 import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
 import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
@@ -15,7 +19,7 @@ import {Deployer} from "./helpers/Deployer.sol";
 /// @title Fuzz — property-based tests on precision, rounding, and monotonicity
 contract FuzzTest is Test {
     GrowfiCampaignFactory factory;
-    GrowfiCampaign campaign;
+    IGrowfiCampaignFull campaign;
     GrowfiCampaignToken campaignToken;
     GrowfiYieldToken yieldToken;
     GrowfiStakingVault stakingVault;
@@ -41,31 +45,38 @@ contract FuzzTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "Olive",
-                tokenSymbol: "OLIVE",
-                yieldName: "oY",
-                yieldSymbol: "oY",
-                pricePerToken: PRICE_PER_TOKEN,
-                minCap: MIN_CAP,
-                maxCap: MAX_CAP,
-                fundingDeadline: block.timestamp + 90 days,
-                seasonDuration: SEASON_DURATION,
+                campaignTokenName: "Olive",
+                campaignTokenSymbol: "OLIVE",
+                yieldTokenName: "oY",
+                yieldTokenSymbol: "oY",
                 minProductClaim: 5e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: PRICE_PER_TOKEN,
+                    minCap: MIN_CAP,
+                    maxCap: MAX_CAP,
+                    fundingDeadline: block.timestamp + 90 days,
+                    seasonDuration: SEASON_DURATION,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = GrowfiCampaign(c);
+        campaign = IGrowfiCampaignFull(payable(c));
         campaignToken = GrowfiCampaignToken(ct);
         yieldToken = GrowfiYieldToken(yt);
         stakingVault = GrowfiStakingVault(sv);
         harvestManager = GrowfiHarvestManager(hm);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
     }
 
     function _buy(address who, uint256 payAmount) internal returns (uint256 tokensReceived) {
@@ -160,7 +171,7 @@ contract FuzzTest is Test {
         _buy(alice, pay);
 
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
 
         uint256 stakeAmount = 1000e18;
         vm.startPrank(alice);
@@ -195,7 +206,7 @@ contract FuzzTest is Test {
         _buy(alice, pay);
 
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
 
         vm.startPrank(alice);
         campaignToken.approve(address(stakingVault), type(uint256).max);
@@ -229,7 +240,7 @@ contract FuzzTest is Test {
         _buy(bob, pay);
 
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
 
         vm.startPrank(alice);
         campaignToken.approve(address(stakingVault), type(uint256).max);

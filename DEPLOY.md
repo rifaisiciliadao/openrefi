@@ -17,7 +17,7 @@ shape but with separate secrets and a custom domain.
 
 Outside the scope of this deploy (run elsewhere):
 - Subgraph — lives on Goldsky (`growfi/prod` tag), see `CONTRACTS.md`.
-- Contracts — already on Base Sepolia (`CONTRACTS.md`).
+- Contracts — see `CONTRACTS.md` (current v4 deploy is on Ethereum Sepolia; legacy v3.3 still live on Base Sepolia).
 - Media bucket — `growfi-media` on DO Spaces, created out-of-band.
 
 ## One-time setup

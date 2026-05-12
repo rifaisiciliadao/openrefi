@@ -242,6 +242,48 @@ contract GrowfiStakingVault is Initializable, ReentrancyGuard, PausableUpgradeab
         emit YieldRateUpdated(newRate, totalStaked, maxSupply);
     }
 
+    /// @notice Force-unstake a position on behalf of its owner. Callable only
+    ///         by the Campaign (which in turn is delegate-called by modules
+    ///         with a legitimate reason — e.g. the Repayment module pulling
+    ///         a user out of staking before refunding them).
+    /// @dev    Waives the linear penalty (the calling module is expected to
+    ///         compensate the user externally — that's the whole reason for
+    ///         the forced unstake) but forfeits accrued $YIELD the position
+    ///         would have earned this season (consistent with the regular
+    ///         early-unstake path).
+    /// @notice Producer-blessed exit path. The Campaign (delegate-caller)
+    ///         force-unstakes any position; full CT principal AND any
+    ///         accrued $YIELD go to the position owner — no penalty, no
+    ///         forfeit. Used by the RepaymentModule's `redeem`. Forfeit
+    ///         semantics are reserved for the holder-initiated `unstake`.
+    function forceUnstake(uint256 positionId) external nonReentrant onlyCampaign updateReward {
+        Position storage pos = positions[positionId];
+        if (!pos.active) revert PositionNotActive();
+
+        address owner_ = pos.owner;
+        uint256 stakedAmount = pos.amount;
+        uint256 pending = _earned(positionId);
+
+        if (pending > 0) {
+            pos.rewardPerTokenPaid = rewardPerTokenStored;
+            yieldToken.mint(owner_, pending);
+            seasons[pos.seasonId].totalYieldMinted += pending;
+            emit YieldMinted(owner_, positionId, pending, pos.seasonId);
+        }
+
+        pos.active = false;
+        pos.amount = 0;
+        totalStaked -= stakedAmount;
+
+        if (stakedAmount > 0) {
+            IERC20(address(campaignToken)).safeTransfer(owner_, stakedAmount);
+        }
+
+        uint256 newRate = currentYieldRate();
+        emit Unstaked(owner_, positionId, stakedAmount, 0, stakedAmount, 0, totalStaked, newRate);
+        emit YieldRateUpdated(newRate, totalStaked, maxSupply);
+    }
+
     /// @notice Restake a position into the next season. Cannot restake within the same season.
     function restake(uint256 positionId) external nonReentrant whenNotPaused updateReward {
         Position storage pos = positions[positionId];

@@ -43,6 +43,13 @@ export function Nav() {
             {tNav("explore")}
           </a>
           <Link
+            href="/feed"
+            className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
+            style={{ fontFamily: "var(--font-header)" }}
+          >
+            {tNav("feed")}
+          </Link>
+          <Link
             href="/portfolio"
             className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
             style={{ fontFamily: "var(--font-header)" }}
@@ -143,6 +150,14 @@ export function Nav() {
             >
               {tNav("explore")}
             </a>
+            <Link
+              href="/feed"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-3 text-base font-bold tracking-wide text-[#4a4a4a] hover:bg-black/5 hover:text-black transition-colors"
+              style={{ fontFamily: "var(--font-header)" }}
+            >
+              {tNav("feed")}
+            </Link>
             <Link
               href="/portfolio"
               onClick={() => setMobileOpen(false)}

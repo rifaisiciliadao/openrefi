@@ -2,17 +2,16 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {GrowfiCampaign} from "../../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../../src/interfaces/IGrowfiCampaignFull.sol";
 import {GrowfiCampaignToken} from "../../src/GrowfiCampaignToken.sol";
 import {GrowfiYieldToken} from "../../src/GrowfiYieldToken.sol";
 import {GrowfiStakingVault} from "../../src/GrowfiStakingVault.sol";
+import {RepaymentModule} from "../../src/modules/RepaymentModule.sol";
 import {MockERC20} from "../helpers/MockERC20.sol";
 
-/// @title Handler — bounded random actions for invariant testing
-/// @notice Funnels fuzzer into meaningful protocol state transitions.
-///         Every external function here is a potential call target for the invariant runner.
 contract Handler is Test {
-    GrowfiCampaign public campaign;
+    IGrowfiCampaignFull public campaign;
     GrowfiCampaignToken public campaignToken;
     GrowfiYieldToken public yieldToken;
     GrowfiStakingVault public stakingVault;
@@ -23,9 +22,11 @@ contract Handler is Test {
     uint256 public currentSeason;
     bool public seasonActive;
 
-    // Ghost variables for cross-check
-    uint256 public ghost_totalBought; // total $CAMPAIGN tokens purchased
-    uint256 public ghost_totalBurned; // total $CAMPAIGN burned across penalties + buybacks
+    uint256 public ghost_totalBought;
+    uint256 public ghost_totalBurned;
+    uint256 public ghost_totalRedeemed;
+    uint256 public ghost_repaymentPoolFunded;
+    bool public repaymentAttached;
     mapping(bytes32 => uint256) public calls;
 
     modifier countCall(string memory name) {
@@ -34,7 +35,7 @@ contract Handler is Test {
     }
 
     constructor(
-        GrowfiCampaign _campaign,
+        address _campaign,
         GrowfiCampaignToken _campaignToken,
         GrowfiYieldToken _yieldToken,
         GrowfiStakingVault _stakingVault,
@@ -42,7 +43,7 @@ contract Handler is Test {
         address _producer,
         address[] memory _actors
     ) {
-        campaign = _campaign;
+        campaign = IGrowfiCampaignFull(payable(_campaign));
         campaignToken = _campaignToken;
         yieldToken = _yieldToken;
         stakingVault = _stakingVault;
@@ -50,36 +51,29 @@ contract Handler is Test {
         producer = _producer;
         actors = _actors;
 
-        // Pre-fund & approve every actor so the fuzzer doesn't waste runs on setup-level reverts
         for (uint256 i = 0; i < actors.length; i++) {
             usdc.mint(actors[i], 10_000_000e6);
             vm.startPrank(actors[i]);
-            usdc.approve(address(campaign), type(uint256).max);
+            usdc.approve(_campaign, type(uint256).max);
             campaignToken.approve(address(stakingVault), type(uint256).max);
-            campaignToken.approve(address(campaign), type(uint256).max);
+            campaignToken.approve(_campaign, type(uint256).max);
             vm.stopPrank();
         }
     }
 
-    // --- Helpers ---
-
     function _pickActor(uint256 seed) internal view returns (address) {
         return actors[seed % actors.length];
     }
-
-    // --- Time ---
 
     function warp(uint256 secondsAhead) external countCall("warp") {
         secondsAhead = bound(secondsAhead, 1 hours, 30 days);
         vm.warp(block.timestamp + secondsAhead);
     }
 
-    // --- GrowfiCampaign actions ---
-
     function buy(uint256 actorSeed, uint256 payAmount) external countCall("buy") {
-        GrowfiCampaign.State s = campaign.state();
-        if (s != GrowfiCampaign.State.Funding && s != GrowfiCampaign.State.Active) return;
-        payAmount = bound(payAmount, 1_000_000, 5_000e6); // 1 USDC to 5000 USDC
+        CampaignStorage.State s = campaign.state();
+        if (s != CampaignStorage.State.Funding && s != CampaignStorage.State.Active) return;
+        payAmount = bound(payAmount, 1_000_000, 5_000e6);
 
         address actor = _pickActor(actorSeed);
         uint256 supplyBefore = campaignToken.totalSupply();
@@ -91,14 +85,14 @@ contract Handler is Test {
     }
 
     function triggerBuyback() external countCall("triggerBuyback") {
-        if (campaign.state() != GrowfiCampaign.State.Funding) return;
+        if (campaign.state() != CampaignStorage.State.Funding) return;
         if (block.timestamp < campaign.fundingDeadline()) return;
         if (campaign.currentSupply() >= campaign.minCap()) return;
         try campaign.triggerBuyback() {} catch {}
     }
 
     function buyback(uint256 actorSeed) external countCall("buyback") {
-        if (campaign.state() != GrowfiCampaign.State.Buyback) return;
+        if (campaign.state() != CampaignStorage.State.Buyback) return;
         address actor = _pickActor(actorSeed);
         if (campaign.purchases(actor, address(usdc)) == 0) return;
 
@@ -110,7 +104,7 @@ contract Handler is Test {
     }
 
     function sellBack(uint256 actorSeed, uint256 amount) external countCall("sellBack") {
-        if (campaign.state() != GrowfiCampaign.State.Active) return;
+        if (campaign.state() != CampaignStorage.State.Active) return;
         address actor = _pickActor(actorSeed);
         uint256 balance = campaignToken.balanceOf(actor);
         if (balance == 0) return;
@@ -127,30 +121,25 @@ contract Handler is Test {
         try campaign.cancelSellBack() {} catch {}
     }
 
-    // --- Season management ---
-
-    function startSeason(uint256 seasonSeed) external countCall("startSeason") {
-        if (campaign.state() != GrowfiCampaign.State.Active) return;
+    function startSeason(uint256) external countCall("startSeason") {
+        if (campaign.state() != CampaignStorage.State.Active) return;
         if (seasonActive) return;
-        uint256 newSeason = currentSeason + 1 + (seasonSeed % 3);
 
         vm.prank(producer);
-        try campaign.startSeason(newSeason) {
-            currentSeason = newSeason;
+        try campaign.startSeason() {
+            currentSeason = campaign.currentSeasonId();
             seasonActive = true;
         } catch {}
     }
 
     function endSeason() external countCall("endSeason") {
         if (!seasonActive) return;
-        if (campaign.state() != GrowfiCampaign.State.Active) return;
+        if (campaign.state() != CampaignStorage.State.Active) return;
         vm.prank(producer);
         try campaign.endSeason() {
             seasonActive = false;
         } catch {}
     }
-
-    // --- Staking ---
 
     function stake(uint256 actorSeed, uint256 amount) external countCall("stake") {
         if (!seasonActive) return;
@@ -195,9 +184,78 @@ contract Handler is Test {
         try stakingVault.restake(pid) {} catch {}
     }
 
-    // --- Introspection for invariant ---
-
     function actorsLength() external view returns (uint256) {
         return actors.length;
+    }
+
+    // ------------------------------------------------------------------
+    // Repayment module fuzz actions
+    // ------------------------------------------------------------------
+
+    /// @dev Test entry point sets this to true once the Repayment module
+    ///      is attached + initialized. Until then, the fuzz actions
+    ///      below short-circuit.
+    function setRepaymentAttached(bool v) external {
+        repaymentAttached = v;
+    }
+
+    /// @dev Producer adds USDC to the Repayment pool. Bounded to stay
+    ///      below producer's mint capacity in setUp (10M USDC each).
+    function repay_fundPool(uint256 amount) external countCall("repay_fundPool") {
+        if (!repaymentAttached) return;
+        amount = bound(amount, 1e6, 1_000_000e6);
+        usdc.mint(producer, amount);
+        vm.startPrank(producer);
+        usdc.approve(address(campaign), amount);
+        try RepaymentModule(payable(address(campaign))).fundPool(amount) {
+            ghost_repaymentPoolFunded += amount;
+        } catch {}
+        vm.stopPrank();
+    }
+
+    /// @dev Producer adjusts bonus markup.
+    function repay_setBonus(uint256 bonus) external countCall("repay_setBonus") {
+        if (!repaymentAttached) return;
+        bonus = bound(bonus, 0, 1e6); // up to $1 bonus per CT
+        vm.prank(producer);
+        try RepaymentModule(payable(address(campaign))).setBonusPerCt(bonus) {} catch {}
+    }
+
+    /// @dev Producer withdraws from pool. May revert if balance < amount.
+    function repay_withdrawPool(uint256 amount) external countCall("repay_withdrawPool") {
+        if (!repaymentAttached) return;
+        amount = bound(amount, 1, 1_000_000e6);
+        vm.prank(producer);
+        try RepaymentModule(payable(address(campaign))).withdrawUnusedPool(amount) {} catch {}
+    }
+
+    /// @dev Random actor redeems CT for USDC. May force-unstake one of
+    ///      their own positions if they don't have enough free CT.
+    function repay_redeem(uint256 actorSeed, uint256 amount, bool useUnstake) external countCall("repay_redeem") {
+        if (!repaymentAttached) return;
+        address actor = _pickActor(actorSeed);
+
+        // Compose unstake list: maybe one of the actor's own positions
+        uint256[] memory unstakeFirst;
+        if (useUnstake) {
+            uint256[] memory ids = stakingVault.getPositions(actor);
+            if (ids.length > 0) {
+                unstakeFirst = new uint256[](1);
+                unstakeFirst[0] = ids[actorSeed % ids.length];
+            } else {
+                unstakeFirst = new uint256[](0);
+            }
+        } else {
+            unstakeFirst = new uint256[](0);
+        }
+
+        amount = bound(amount, 1, 1_000e18); // cap to bound test runtime
+        uint256 supplyBefore = campaignToken.totalSupply();
+
+        vm.prank(actor);
+        try RepaymentModule(payable(address(campaign))).redeem(amount, unstakeFirst) {
+            ghost_totalBurned += supplyBefore - campaignToken.totalSupply();
+            ghost_totalRedeemed += supplyBefore - campaignToken.totalSupply();
+        } catch {}
     }
 }

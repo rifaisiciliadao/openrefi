@@ -1,10 +1,12 @@
-import { baseSepolia, base } from "wagmi/chains";
+import { baseSepolia, base, sepolia, mainnet } from "wagmi/chains";
 
 const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? baseSepolia.id);
 
 const EXPLORERS: Record<number, string> = {
   [baseSepolia.id]: "https://sepolia.basescan.org",
   [base.id]: "https://basescan.org",
+  [sepolia.id]: "https://sepolia.etherscan.io",
+  [mainnet.id]: "https://etherscan.io",
 };
 
 export function explorerBase(chainId: number = CHAIN_ID): string {

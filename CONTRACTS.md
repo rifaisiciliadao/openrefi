@@ -1,6 +1,88 @@
 # GrowFi — Deployments
 
-## Base Sepolia (chain 84532)
+## Ethereum Sepolia (chain 11155111) — v4 module architecture + GROW system
+
+**Deployed:** 2026-05-12 · **Deployer/owner:** `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33`
+
+> First v4 deployment on an L1 testnet, ahead of the Ethereum mainnet
+> target. Module-based Campaign architecture (host + delegatecall router
+> + Sale/Collateral/Repayment modules) replaces the v3 monolith. GROW
+> system (Token + Treasury + Minter + FeeSplitter + StakingPool) wired
+> in a separate broadcast on top.
+>
+> Seed campaigns: Olive Sicily ($0.144/CT, 350k maxCap) +
+> Vineyard of Etna ($0.10/CT, 500k maxCap). Both Active, tracked in
+> the Treasury with `automationEnabled=true`.
+>
+> Subgraph: `growfi/4.0.1` on Goldsky (NOT tagged `prod` — `prod` still
+> points at Base Sepolia v3.3).
+
+### Core v4 (campaign factory + module impls + registries)
+
+| Contract | Address | Notes |
+|---|---|---|
+| **CampaignFactory** (proxy) | [`0xa4DEd8Ab35e89bCAF1f7DFeb7aB2c1ED533b3f05`](https://sepolia.etherscan.io/address/0xa4DEd8Ab35e89bCAF1f7DFeb7aB2c1ED533b3f05) | v4 permissionless factory. `FUNDING_FEE_BPS=300`, `HARVEST_PROTOCOL_FEE_BPS=200`. Deploy block `10838711`. |
+| CampaignFactory impl | [`0x3fA41528a22645Bef478E9eBae83981C02e98f74`](https://sepolia.etherscan.io/address/0x3fA41528a22645Bef478E9eBae83981C02e98f74) | |
+| **Campaign host** impl | [`0x0DBE11aD9c2bf4126FE8D422e7374dE47600A2ca`](https://sepolia.etherscan.io/address/0x0DBE11aD9c2bf4126FE8D422e7374dE47600A2ca) | Delegatecall router, namespaced storage, module attach/detach/enabled lifecycle. |
+| CampaignToken impl | [`0x81C4e22EC9198f2983217C483e4027cf49E940db`](https://sepolia.etherscan.io/address/0x81C4e22EC9198f2983217C483e4027cf49E940db) | |
+| StakingVault impl | [`0x092Ed1e0845f6817e24316A730E98ec074e5F017`](https://sepolia.etherscan.io/address/0x092Ed1e0845f6817e24316A730E98ec074e5F017) | `forceUnstake` now mints accrued YIELD to owner (no forfeit) — producer-blessed exit path used by `RepaymentModule.redeem`. |
+| YieldToken impl | [`0x8d434e38dd91D9b738f8803dbD18b815720BEDad`](https://sepolia.etherscan.io/address/0x8d434e38dd91D9b738f8803dbD18b815720BEDad) | |
+| HarvestManager impl | [`0x38da3922d3Bc3281F57946618404F0E341777F68`](https://sepolia.etherscan.io/address/0x38da3922d3Bc3281F57946618404F0E341777F68) | |
+| **SaleClassicModule** impl | [`0x17eb232C3D25c90794761B85ddad8e5E38f0ED8a`](https://sepolia.etherscan.io/address/0x17eb232C3D25c90794761B85ddad8e5E38f0ED8a) | Default auto-attached on every `createCampaign`. Buy/sellback/buyback/setMaxCap etc. |
+| **CollateralModule** impl | [`0xF2EAb14F7288E7d4E611C44F2784dfF6394ec476`](https://sepolia.etherscan.io/address/0xF2EAb14F7288E7d4E611C44F2784dfF6394ec476) | Default auto-attached. `lockCollateral`, `depositUSDC`, `settleSeasonShortfall`. |
+| **RepaymentModule** impl | [`0x90e6280684a9F00B5241912176F9F0dC5552698d`](https://sepolia.etherscan.io/address/0x90e6280684a9F00B5241912176F9F0dC5552698d) | Whitelisted but NOT default. Producer attaches post-create. Refund = principal (from on-chain `pricePerToken`) + producer-set `bonusPerCt`. |
+| CampaignRegistry | [`0xAef1Cb97C9a8CC2d06d6C662F6655009DED1E1BE`](https://sepolia.etherscan.io/address/0xAef1Cb97C9a8CC2d06d6C662F6655009DED1E1BE) | `(campaign → metadataURI)` + monotonic version. |
+| ProducerRegistry | [`0x8DDc90F40Bf8847672EA5B256d93607F42Fd540E`](https://sepolia.etherscan.io/address/0x8DDc90F40Bf8847672EA5B256d93607F42Fd540E) | KYC role + producer-self-served profile. |
+
+### Stablecoins (testnet mocks, public mint)
+
+| Contract | Address | Decimals | Treasury accepted |
+|---|---|---:|:-:|
+| MockUSDC | [`0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E`](https://sepolia.etherscan.io/address/0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E) | 6 | ✅ |
+| MockUSDT | [`0x7c47aa550061117f8440128c6b829da5bf88de06`](https://sepolia.etherscan.io/address/0x7c47aa550061117f8440128c6b829da5bf88de06) | 6 | ✅ |
+| MockDAI | [`0x3540ea8a6fa084a31321e790b89a6fbe677ae00e`](https://sepolia.etherscan.io/address/0x3540ea8a6fa084a31321e790b89a6fbe677ae00e) | 18 | ✅ |
+
+Each peg feed is a `MockOracle($1, 8-dec)` deployed alongside the
+stablecoin and wired with 24h heartbeat + 95-105% depeg band.
+
+### GROW system (deployed 2026-05-12 on top of v4 core, block 10838846)
+
+| Contract | Address | Notes |
+|---|---|---|
+| **GrowfiToken** (proxy) | [`0x9bB4f9C41ed922282C181f2f3e01d8384c960b44`](https://sepolia.etherscan.io/address/0x9bB4f9C41ed922282C181f2f3e01d8384c960b44) | Genesis: 0 to deployer, 100k to Treasury reserve (excluded from `circulating`). Boot reference price $0.10, 10% markup. |
+| **GrowfiTreasury** (proxy) | [`0xB71D13F80ceAed17A179B4e0D9eb1e8410DeaDDd`](https://sepolia.etherscan.io/address/0xB71D13F80ceAed17A179B4e0D9eb1e8410DeaDDd) | `automationEnabled=true`. Tracks Olive + Etna. Treasury excluded from Minter emission (no recursion). |
+| **GrowfiMinter** (proxy) | [`0xD99c1985B257a4A55bA8D0836Fab536389cdd24C`](https://sepolia.etherscan.io/address/0xD99c1985B257a4A55bA8D0836Fab536389cdd24C) | 3-tier bonding curve 1.0×/0.7×/0.4× over cumulative USD per campaign. |
+| **GrowfiFeeSplitter** (proxy) | [`0xF1a8527E00916588f4Bb137cE450E8459b6BD436`](https://sepolia.etherscan.io/address/0xF1a8527E00916588f4Bb137cE450E8459b6BD436) | 30% Treasury / 70% Ops. Set as `factory.protocolFeeRecipient`. |
+| **GrowfiStakingPool** (proxy) | [`0xD1D8491370A8CF597bEcFc49D3253BfFAF34CDc8`](https://sepolia.etherscan.io/address/0xD1D8491370A8CF597bEcFc49D3253BfFAF34CDc8) | Stake $GROW, earn USDC via `Treasury.claimUsdcAndDistribute`. |
+
+### Seed campaigns (smoke 2026-05-12)
+
+| Campaign | Address | Token | Price |
+|---|---|---|---:|
+| Olive Sicily | [`0x3280d078424FDE86fdE23688561FF377278071de`](https://sepolia.etherscan.io/address/0x3280d078424FDE86fdE23688561FF377278071de) | `OLIVE` | $0.144 |
+| Vineyard of Etna | [`0xd99EB722e7D4499f95A60FEEB19Cd1057bad8F2c`](https://sepolia.etherscan.io/address/0xd99EB722e7D4499f95A60FEEB19Cd1057bad8F2c) | `ETNA` | $0.10 |
+
+### Frontend env (Sepolia ETH)
+
+```ini
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_FACTORY_ADDRESS=0xa4DEd8Ab35e89bCAF1f7DFeb7aB2c1ED533b3f05
+NEXT_PUBLIC_USDC_ADDRESS=0x32C344Dc9713d904442d0E5B0d2b7994E52B0d4E
+NEXT_PUBLIC_USDT_ADDRESS=0x7c47aa550061117f8440128c6b829da5bf88de06
+NEXT_PUBLIC_DAI_ADDRESS=0x3540ea8a6fa084a31321e790b89a6fbe677ae00e
+NEXT_PUBLIC_REGISTRY_ADDRESS=0xAef1Cb97C9a8CC2d06d6C662F6655009DED1E1BE
+NEXT_PUBLIC_PRODUCER_REGISTRY_ADDRESS=0x8DDc90F40Bf8847672EA5B256d93607F42Fd540E
+NEXT_PUBLIC_GROW_TOKEN=0x9bB4f9C41ed922282C181f2f3e01d8384c960b44
+NEXT_PUBLIC_GROW_TREASURY=0xB71D13F80ceAed17A179B4e0D9eb1e8410DeaDDd
+NEXT_PUBLIC_GROW_MINTER=0xD99c1985B257a4A55bA8D0836Fab536389cdd24C
+NEXT_PUBLIC_GROW_FEE_SPLITTER=0xF1a8527E00916588f4Bb137cE450E8459b6BD436
+NEXT_PUBLIC_GROW_STAKING_POOL=0xD1D8491370A8CF597bEcFc49D3253BfFAF34CDc8
+NEXT_PUBLIC_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/4.0.1/gn
+```
+
+---
+
+## Base Sepolia (chain 84532) — legacy v3.3 (archived)
 
 **Deployed:** 2026-04-28 (v3.3 fresh demo redeploy) · **Deployer/owner:** `0xFF6bdef4fB646EE44e29FE8FC0862B02F0Ba8a33`
 

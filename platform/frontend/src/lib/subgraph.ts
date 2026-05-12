@@ -691,6 +691,287 @@ export function useSubgraphMeta() {
  * name once the producer signs setMetadata; a same-name attempt during
  * that window will succeed, but that's a vanishingly small race.
  */
+// -----------------------------------------------------------------------
+// Public activity feed + leaderboard
+//
+// `useFeed` batches the 5 user-facing event streams (Purchase, Position,
+// Claim, SellBackOrder, Campaign created) in one GraphQL round-trip,
+// normalizes them into a discriminated union sorted by timestamp desc.
+// `useLeaderboard` reads the pre-aggregated `User` entity from the
+// subgraph (totalInvested + purchasesCount) ordered by spend.
+// -----------------------------------------------------------------------
+
+type CampaignRef = { id: string; metadataURI: string | null; metadataVersion: string };
+
+export type FeedItem =
+  | {
+      kind: "buy";
+      id: string;
+      timestamp: number;
+      user: string;
+      campaign: CampaignRef;
+      paymentAmount: string;
+      paymentToken: string;
+      campaignTokensOut: string;
+      txHash: string | null;
+    }
+  | {
+      kind: "sellback";
+      id: string;
+      timestamp: number;
+      user: string;
+      campaign: CampaignRef;
+      amount: string;
+      status: string;
+      txHash: string | null;
+    }
+  | {
+      kind: "stake";
+      id: string;
+      timestamp: number;
+      user: string;
+      campaign: CampaignRef;
+      amount: string;
+      txHash: string | null;
+    }
+  | {
+      kind: "unstake";
+      id: string;
+      timestamp: number;
+      user: string;
+      campaign: CampaignRef;
+      amount: string;
+      penaltyBurned: string | null;
+      txHash: string | null;
+    }
+  | {
+      kind: "claim";
+      id: string;
+      timestamp: number;
+      user: string;
+      campaign: CampaignRef;
+      redemptionType: string;
+      yieldBurned: string;
+      productAmount: string;
+      usdcAmount: string;
+      txHash: string | null;
+    }
+  | {
+      kind: "campaign";
+      id: string;
+      timestamp: number;
+      user: string;
+      campaign: CampaignRef;
+      txHash: string | null;
+    };
+
+const FEED_CAMPAIGN_FIELDS = "id metadataURI metadataVersion";
+
+export function useFeed(limit = 50) {
+  return useQuery({
+    queryKey: ["subgraph", "feed", limit],
+    queryFn: async (): Promise<FeedItem[]> => {
+      const data = await gql<{
+        purchases: Array<{
+          id: string;
+          buyer: string;
+          paymentAmount: string;
+          paymentToken: string;
+          campaignTokensOut: string;
+          timestamp: string;
+          transactionHash: string;
+          campaign: { id: string; metadataURI: string | null; metadataVersion: string };
+        }>;
+        sellBackOrders: Array<{
+          id: string;
+          user: string;
+          amount: string;
+          status: string;
+          requestedAt: string;
+          requestTx: string | null;
+          campaign: { id: string; metadataURI: string | null; metadataVersion: string };
+        }>;
+        stakes: Array<{
+          id: string;
+          user: string;
+          amount: string;
+          createdAt: string;
+          createdAtTx: string | null;
+          unstakedAt: string | null;
+          penaltyBurned: string | null;
+          campaign: { id: string; metadataURI: string | null; metadataVersion: string };
+        }>;
+        unstakes: Array<{
+          id: string;
+          user: string;
+          amount: string;
+          unstakedAt: string;
+          unstakedAtTx: string | null;
+          penaltyBurned: string | null;
+          campaign: { id: string; metadataURI: string | null; metadataVersion: string };
+        }>;
+        claims: Array<{
+          id: string;
+          user: string;
+          redemptionType: string;
+          yieldBurned: string;
+          productAmount: string;
+          usdcAmount: string;
+          claimedAt: string;
+          claimTx: string | null;
+          campaign: { id: string; metadataURI: string | null; metadataVersion: string };
+        }>;
+        campaigns: Array<{
+          id: string;
+          producer: string;
+          createdAt: string;
+          createdAtTx: string | null;
+          metadataURI: string | null;
+          metadataVersion: string;
+        }>;
+      }>(
+        `query Feed($limit: Int!) {
+          purchases(first: $limit, orderBy: timestamp, orderDirection: desc) {
+            id buyer paymentAmount paymentToken campaignTokensOut timestamp transactionHash
+            campaign { ${FEED_CAMPAIGN_FIELDS} }
+          }
+          sellBackOrders(first: $limit, orderBy: requestedAt, orderDirection: desc) {
+            id user amount status requestedAt requestTx
+            campaign { ${FEED_CAMPAIGN_FIELDS} }
+          }
+          stakes: positions(first: $limit, orderBy: createdAt, orderDirection: desc) {
+            id user amount createdAt createdAtTx unstakedAt penaltyBurned
+            campaign { ${FEED_CAMPAIGN_FIELDS} }
+          }
+          unstakes: positions(first: $limit, where: { active: false, unstakedAt_not: null }, orderBy: unstakedAt, orderDirection: desc) {
+            id user amount unstakedAt unstakedAtTx penaltyBurned
+            campaign { ${FEED_CAMPAIGN_FIELDS} }
+          }
+          claims(first: $limit, orderBy: claimedAt, orderDirection: desc) {
+            id user redemptionType yieldBurned productAmount usdcAmount claimedAt claimTx
+            campaign { ${FEED_CAMPAIGN_FIELDS} }
+          }
+          campaigns(first: $limit, where: { hidden: false }, orderBy: createdAt, orderDirection: desc) {
+            id producer createdAt createdAtTx metadataURI metadataVersion
+          }
+        }`,
+        { limit },
+      );
+
+      const items: FeedItem[] = [];
+
+      for (const p of data.purchases) {
+        items.push({
+          kind: "buy",
+          id: `buy-${p.id}`,
+          timestamp: Number(p.timestamp),
+          user: p.buyer,
+          campaign: p.campaign,
+          paymentAmount: p.paymentAmount,
+          paymentToken: p.paymentToken,
+          campaignTokensOut: p.campaignTokensOut,
+          txHash: p.transactionHash,
+        });
+      }
+      for (const s of data.sellBackOrders) {
+        items.push({
+          kind: "sellback",
+          id: `sellback-${s.id}`,
+          timestamp: Number(s.requestedAt),
+          user: s.user,
+          campaign: s.campaign,
+          amount: s.amount,
+          status: s.status,
+          txHash: s.requestTx,
+        });
+      }
+      for (const p of data.stakes) {
+        items.push({
+          kind: "stake",
+          id: `stake-${p.id}`,
+          timestamp: Number(p.createdAt),
+          user: p.user,
+          campaign: p.campaign,
+          amount: p.amount,
+          txHash: p.createdAtTx,
+        });
+      }
+      for (const p of data.unstakes) {
+        items.push({
+          kind: "unstake",
+          id: `unstake-${p.id}`,
+          timestamp: Number(p.unstakedAt),
+          user: p.user,
+          campaign: p.campaign,
+          amount: p.amount,
+          penaltyBurned: p.penaltyBurned,
+          txHash: p.unstakedAtTx,
+        });
+      }
+      for (const c of data.claims) {
+        items.push({
+          kind: "claim",
+          id: `claim-${c.id}`,
+          timestamp: Number(c.claimedAt),
+          user: c.user,
+          campaign: c.campaign,
+          redemptionType: c.redemptionType,
+          yieldBurned: c.yieldBurned,
+          productAmount: c.productAmount,
+          usdcAmount: c.usdcAmount,
+          txHash: c.claimTx,
+        });
+      }
+      for (const c of data.campaigns) {
+        items.push({
+          kind: "campaign",
+          id: `campaign-${c.id}`,
+          timestamp: Number(c.createdAt),
+          user: c.producer,
+          campaign: {
+            id: c.id,
+            metadataURI: c.metadataURI,
+            metadataVersion: c.metadataVersion,
+          },
+          txHash: c.createdAtTx,
+        });
+      }
+
+      items.sort((a, b) => b.timestamp - a.timestamp);
+      return items.slice(0, limit);
+    },
+    refetchInterval: 30_000,
+  });
+}
+
+export interface LeaderboardEntry {
+  id: string;                // wallet address
+  totalInvested: string;     // USD-18 sum across all buys
+  purchasesCount: number;
+  firstSeenAt: string;
+}
+
+export function useLeaderboard(limit = 20) {
+  return useQuery({
+    queryKey: ["subgraph", "leaderboard", limit],
+    queryFn: async (): Promise<LeaderboardEntry[]> => {
+      const data = await gql<{ users: LeaderboardEntry[] }>(
+        `query Leaderboard($limit: Int!) {
+          users(first: $limit, orderBy: totalInvested, orderDirection: desc, where: { totalInvested_gt: 0 }) {
+            id
+            totalInvested
+            purchasesCount
+            firstSeenAt
+          }
+        }`,
+        { limit },
+      );
+      return data.users;
+    },
+    refetchInterval: 30_000,
+  });
+}
+
 export async function findCampaignByName(
   candidate: string,
 ): Promise<string | null> {

@@ -74,3 +74,8 @@ Gross Harvest → 30% producer (off-chain) → 70% reported → 2% protocol → 
 - [[04 - Research Notes]] — L2 ecosystem research, references
 - [[05 - Math & Formulas]] — Mathematical foundations for contracts
 - [[06 - Simulation - Olive Oil Campaign]] — 100-tree olive oil campaign simulation
+- [[07 - Module Framework (Diamond)]] — Module-host architecture spec
+
+## Architecture in one paragraph
+
+The Campaign contract is a **minimal host** that delegates all behavior to **modules** via `delegatecall`. Sale, collateral, repayment, dMRV/Silvi integration and any future capability live in independent module contracts whitelisted by the factory. The Campaign core contains only the state machine, the module registry, USDC escrow, and the fallback router. Default modules (sale, collateral) are auto-injected at deploy time; producers can attach optional modules later. See [[07 - Module Framework (Diamond)]] for the full spec.

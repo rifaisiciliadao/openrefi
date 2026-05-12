@@ -1,11 +1,44 @@
 {
   "nav": {
     "explore": "Explorar",
+    "feed": "Feed",
     "create": "Crear Campaña",
     "portfolio": "Mi Portfolio",
     "profile": "Perfil",
     "connectWallet": "Conectar Wallet",
     "connect": "Conectar"
+  },
+  "feed": {
+    "title": "Feed Comunidad",
+    "subtitle": "Cada acción onchain en cada campaña — en vivo.",
+    "refresh": "Actualizar",
+    "activity": {
+      "title": "Actividad",
+      "empty": "Sin actividad aún. Sé el primero en respaldar una campaña.",
+      "verbs": {
+        "bought": "invirtió",
+        "sellback": "pidió sellback de",
+        "staked": "stakeó",
+        "unstaked": "retiró del stake",
+        "redeemedProduct": "canjeó producto",
+        "redeemedUsdc": "canjeó",
+        "launched": "lanzó una nueva campaña"
+      },
+      "prepositions": {
+        "in": "en",
+        "from": "de"
+      }
+    },
+    "leaderboard": {
+      "title": "Top respaldadores",
+      "empty": "Sin respaldadores aún."
+    },
+    "relative": {
+      "justNow": "ahora",
+      "minutesAgo": "hace {n}m",
+      "hoursAgo": "hace {n}h",
+      "daysAgo": "hace {n}d"
+    }
   },
   "home": {
     "badge": "Finanzas Regenerativas",

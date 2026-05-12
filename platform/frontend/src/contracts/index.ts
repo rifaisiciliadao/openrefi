@@ -89,6 +89,40 @@ export const addresses: Record<number, ChainAddresses> = {
     growStakingPool:
       process.env.NEXT_PUBLIC_GROW_STAKING_POOL as Address | undefined,
   },
+  // Ethereum Sepolia (L1 testnet, pre-mainnet target)
+  11155111: {
+    factory: (process.env.NEXT_PUBLIC_FACTORY_ADDRESS as Address) || ZERO,
+    usdc: (process.env.NEXT_PUBLIC_USDC_ADDRESS as Address) || ZERO,
+    usdt: process.env.NEXT_PUBLIC_USDT_ADDRESS as Address | undefined,
+    dai: process.env.NEXT_PUBLIC_DAI_ADDRESS as Address | undefined,
+    registry: (process.env.NEXT_PUBLIC_REGISTRY_ADDRESS as Address) || ZERO,
+    producerRegistry:
+      (process.env.NEXT_PUBLIC_PRODUCER_REGISTRY_ADDRESS as Address) || ZERO,
+    growToken: process.env.NEXT_PUBLIC_GROW_TOKEN as Address | undefined,
+    growTreasury: process.env.NEXT_PUBLIC_GROW_TREASURY as Address | undefined,
+    growMinter: process.env.NEXT_PUBLIC_GROW_MINTER as Address | undefined,
+    growFeeSplitter:
+      process.env.NEXT_PUBLIC_GROW_FEE_SPLITTER as Address | undefined,
+    growStakingPool:
+      process.env.NEXT_PUBLIC_GROW_STAKING_POOL as Address | undefined,
+  },
+  // Ethereum Mainnet (production target)
+  1: {
+    factory: (process.env.NEXT_PUBLIC_FACTORY_ADDRESS as Address) || ZERO,
+    usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // real USDC on mainnet
+    usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // real USDT
+    dai: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // real DAI
+    registry: (process.env.NEXT_PUBLIC_REGISTRY_ADDRESS as Address) || ZERO,
+    producerRegistry:
+      (process.env.NEXT_PUBLIC_PRODUCER_REGISTRY_ADDRESS as Address) || ZERO,
+    growToken: process.env.NEXT_PUBLIC_GROW_TOKEN as Address | undefined,
+    growTreasury: process.env.NEXT_PUBLIC_GROW_TREASURY as Address | undefined,
+    growMinter: process.env.NEXT_PUBLIC_GROW_MINTER as Address | undefined,
+    growFeeSplitter:
+      process.env.NEXT_PUBLIC_GROW_FEE_SPLITTER as Address | undefined,
+    growStakingPool:
+      process.env.NEXT_PUBLIC_GROW_STAKING_POOL as Address | undefined,
+  },
   // Base Mainnet (future)
   8453: {
     factory:

@@ -417,7 +417,7 @@ After `coverageHarvests` seasons settle, any positive
 `collateralLocked − collateralDrawn` stays in the contract. It does not
 return to the producer (one-way commitment, see Tokenomics §Producer
 Collateral). Distribution of the residual to current $CAMPAIGN holders is
-deferred (TODO v3.1 — pro-rata bonus injected as a synthetic harvest through
+deferred (TODO — pro-rata bonus injected as a synthetic harvest through
 HarvestManager). The locked-forever option is accepted as the conservative
 default until the distribution mechanic is audited.
 
@@ -435,6 +435,6 @@ default until the distribution mechanic is audited.
 - **Pause does not block holder protection**: `settleSeasonShortfall` is
   intentionally NOT `whenNotPaused` (consistent with `unstake` and `buyback`).
 - **Producer rage-quit (never reports)**: `usdcDeadline[s]` is unset → settlement
-  reverts with `SeasonNotReported`. Mitigation is out-of-band for v3
-  (deferred to v3.1: deterministic `season-end + GRACE` deadline that lets
-  anyone trigger a default report).
+  reverts with `SeasonNotReported`. Mitigation is out-of-band for now
+  (TODO: deterministic `season-end + GRACE` deadline that lets anyone trigger
+  a default report).

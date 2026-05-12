@@ -1,11 +1,44 @@
 {
   "nav": {
     "explore": "Explore",
+    "feed": "Feed",
     "create": "Create Campaign",
     "portfolio": "My Portfolio",
     "profile": "Profile",
     "connectWallet": "Connect Wallet",
     "connect": "Connect"
+  },
+  "feed": {
+    "title": "Community Feed",
+    "subtitle": "Every onchain action across every campaign — live.",
+    "refresh": "Refresh",
+    "activity": {
+      "title": "Activity",
+      "empty": "No activity yet. Be the first to back a campaign.",
+      "verbs": {
+        "bought": "invested",
+        "sellback": "requested sellback of",
+        "staked": "staked",
+        "unstaked": "unstaked",
+        "redeemedProduct": "redeemed product",
+        "redeemedUsdc": "redeemed",
+        "launched": "launched a new campaign"
+      },
+      "prepositions": {
+        "in": "in",
+        "from": "from"
+      }
+    },
+    "leaderboard": {
+      "title": "Top backers",
+      "empty": "No backers yet."
+    },
+    "relative": {
+      "justNow": "just now",
+      "minutesAgo": "{n}m ago",
+      "hoursAgo": "{n}h ago",
+      "daysAgo": "{n}d ago"
+    }
   },
   "home": {
     "badge": "Regenerative Finance",

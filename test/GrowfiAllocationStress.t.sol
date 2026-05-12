@@ -6,6 +6,10 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiToken} from "../src/GrowfiToken.sol";
 import {GrowfiTreasury} from "../src/GrowfiTreasury.sol";
 import {GrowfiMinter} from "../src/GrowfiMinter.sol";
@@ -93,28 +97,35 @@ contract GrowfiAllocationStressTest is Test {
         camp = factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: PRODUCER,
-                tokenName: name,
-                tokenSymbol: "T",
-                yieldName: "Y",
-                yieldSymbol: "y",
-                pricePerToken: price,
-                minCap: minCap,
-                maxCap: maxCap,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 1 hours,
+                campaignTokenName: name,
+                campaignTokenSymbol: "T",
+                yieldTokenName: "Y",
+                yieldTokenSymbol: "y",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 250e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: price,
+                    minCap: minCap,
+                    maxCap: maxCap,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 1 hours,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 250e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         vm.prank(PRODUCER);
-        GrowfiCampaign(camp).addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, price / 1e12, address(0));
+        IGrowfiCampaignFull(payable(camp)).addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, price / 1e12, address(0));
         vm.prank(PRODUCER);
-        GrowfiCampaign(camp).addAcceptedToken(address(usdt), GrowfiCampaign.PricingMode.Fixed, price / 1e12, address(0));
+        IGrowfiCampaignFull(payable(camp)).addAcceptedToken(address(usdt), SaleClassicModule.PricingMode.Fixed, price / 1e12, address(0));
         vm.prank(PRODUCER);
-        GrowfiCampaign(camp).addAcceptedToken(address(dai), GrowfiCampaign.PricingMode.Fixed, price, address(0));
+        IGrowfiCampaignFull(payable(camp)).addAcceptedToken(address(dai), SaleClassicModule.PricingMode.Fixed, price, address(0));
 
         // Activate via producer self-funding (uses USDC, the canonical token in the deploy)
         uint256 selfFund = (minCap * price) / 1e30; // USDC raw amount
@@ -123,7 +134,7 @@ contract GrowfiAllocationStressTest is Test {
             vm.prank(PRODUCER);
             usdc.approve(camp, selfFund);
             vm.prank(PRODUCER);
-            GrowfiCampaign(camp).buy(address(usdc), selfFund);
+            IGrowfiCampaignFull(payable(camp)).buy(address(usdc), selfFund);
         }
     }
 
@@ -135,24 +146,31 @@ contract GrowfiAllocationStressTest is Test {
         camp = factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: PRODUCER,
-                tokenName: name,
-                tokenSymbol: "T",
-                yieldName: "Y",
-                yieldSymbol: "y",
-                pricePerToken: price,
-                minCap: minCap,
-                maxCap: maxCap,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 1 hours,
+                campaignTokenName: name,
+                campaignTokenSymbol: "T",
+                yieldTokenName: "Y",
+                yieldTokenSymbol: "y",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 250e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: price,
+                    minCap: minCap,
+                    maxCap: maxCap,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 1 hours,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 250e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         vm.prank(PRODUCER);
-        GrowfiCampaign(camp).addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, price / 1e12, address(0));
+        IGrowfiCampaignFull(payable(camp)).addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, price / 1e12, address(0));
     }
 
     function _track(address camp) internal {
@@ -180,7 +198,7 @@ contract GrowfiAllocationStressTest is Test {
 
         // Each got 1 token
         for (uint256 i; i < 20; ++i) {
-            IERC20 ct = IERC20(GrowfiCampaign(camps[i]).campaignToken());
+            IERC20 ct = IERC20(GrowfiCampaign(payable(camps[i])).campaignToken());
             assertEq(ct.balanceOf(address(growTreasury)), 1e18, "each campaign got $1 -> 1 token");
         }
     }
@@ -192,7 +210,7 @@ contract GrowfiAllocationStressTest is Test {
         // Build a Buyback campaign: create, don't reach softcap, warp past deadline, trigger buyback.
         address campBuyback = _create("BuybackS", 100e18, 200e18, 1e18);
         skip(31 days);
-        GrowfiCampaign(campBuyback).triggerBuyback();
+        IGrowfiCampaignFull(payable(campBuyback)).triggerBuyback();
 
         _track(campActive);
         _track(campFunding);
@@ -204,9 +222,9 @@ contract GrowfiAllocationStressTest is Test {
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 300 * ONE_USDC);
 
         // All to the Active one (Funding + Buyback skipped)
-        IERC20 ctA = IERC20(GrowfiCampaign(campActive).campaignToken());
-        IERC20 ctF = IERC20(GrowfiCampaign(campFunding).campaignToken());
-        IERC20 ctB = IERC20(GrowfiCampaign(campBuyback).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campActive)).campaignToken());
+        IERC20 ctF = IERC20(IGrowfiCampaignFull(payable(campFunding)).campaignToken());
+        IERC20 ctB = IERC20(IGrowfiCampaignFull(payable(campBuyback)).campaignToken());
 
         assertEq(ctA.balanceOf(address(growTreasury)), 300e18);
         assertEq(ctF.balanceOf(address(growTreasury)), 0);
@@ -221,7 +239,7 @@ contract GrowfiAllocationStressTest is Test {
         vm.prank(PRODUCER);
         usdc.approve(campA, 50 * ONE_USDC);
         vm.prank(PRODUCER);
-        GrowfiCampaign(campA).buy(address(usdc), 50 * ONE_USDC); // now full at maxCap
+        IGrowfiCampaignFull(payable(campA)).buy(address(usdc), 50 * ONE_USDC); // now full at maxCap
 
         address campB = _createAndActivate("RoomB", 50e18, 1000e18, 1e18);
 
@@ -233,8 +251,8 @@ contract GrowfiAllocationStressTest is Test {
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 200 * ONE_USDC);
 
-        IERC20 ctA = IERC20(GrowfiCampaign(campA).campaignToken());
-        IERC20 ctB = IERC20(GrowfiCampaign(campB).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken());
+        IERC20 ctB = IERC20(IGrowfiCampaignFull(payable(campB)).campaignToken());
 
         // A is excluded from activeCount in the first pass (full -> mintableRoom == 0).
         // activeCount = 1, perCampaign = $200/1 = $200 -> B gets the full $200.
@@ -258,8 +276,8 @@ contract GrowfiAllocationStressTest is Test {
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 1_000 * ONE_USDC);
 
-        IERC20 ctA = IERC20(GrowfiCampaign(campA).campaignToken());
-        IERC20 ctB = IERC20(GrowfiCampaign(campB).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken());
+        IERC20 ctB = IERC20(IGrowfiCampaignFull(payable(campB)).campaignToken());
 
         // Each capped at 10 tokens. Treasury keeps 980 USDC.
         assertEq(ctA.balanceOf(address(growTreasury)), 10e18);
@@ -287,9 +305,9 @@ contract GrowfiAllocationStressTest is Test {
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 30 * ONE_USDC);
 
         // Each gets $10. Tokens out: cheap=20, mid=10, exp=2.
-        assertEq(IERC20(GrowfiCampaign(campCheap).campaignToken()).balanceOf(address(growTreasury)), 20e18);
-        assertEq(IERC20(GrowfiCampaign(campMid).campaignToken()).balanceOf(address(growTreasury)), 10e18);
-        assertEq(IERC20(GrowfiCampaign(campExp).campaignToken()).balanceOf(address(growTreasury)), 2e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campCheap)).campaignToken()).balanceOf(address(growTreasury)), 20e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campMid)).campaignToken()).balanceOf(address(growTreasury)), 10e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campExp)).campaignToken()).balanceOf(address(growTreasury)), 2e18);
     }
 
     /// @dev Same allocation works with USDT (6-dec, scale=1e12) — same outcome as USDC.
@@ -302,7 +320,7 @@ contract GrowfiAllocationStressTest is Test {
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdt), 100 * ONE_USDC);
 
-        IERC20 ct = IERC20(GrowfiCampaign(camp).campaignToken());
+        IERC20 ct = IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken());
         assertEq(ct.balanceOf(address(growTreasury)), 100e18);
     }
 
@@ -316,7 +334,7 @@ contract GrowfiAllocationStressTest is Test {
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(dai), 100 * ONE_DAI);
 
-        IERC20 ct = IERC20(GrowfiCampaign(camp).campaignToken());
+        IERC20 ct = IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken());
         assertEq(ct.balanceOf(address(growTreasury)), 100e18);
     }
 
@@ -335,7 +353,7 @@ contract GrowfiAllocationStressTest is Test {
         // Pause one of them
         // Find its index
         uint256 idx;
-        for (uint256 i; i < factory.getCampaignCount(); ++i) {
+        for (uint256 i; i < factory.campaignsLength(); ++i) {
             (address campAddr,,,,,,) = factory.campaigns(i);
             if (campAddr == campPaused) {
                 idx = i;
@@ -351,8 +369,8 @@ contract GrowfiAllocationStressTest is Test {
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 200 * ONE_USDC);
 
-        IERC20 ctOk = IERC20(GrowfiCampaign(campOk).campaignToken());
-        IERC20 ctPaused = IERC20(GrowfiCampaign(campPaused).campaignToken());
+        IERC20 ctOk = IERC20(IGrowfiCampaignFull(payable(campOk)).campaignToken());
+        IERC20 ctPaused = IERC20(IGrowfiCampaignFull(payable(campPaused)).campaignToken());
 
         // perCampaign = 100 USDC. OK got 100 tokens. Paused got 0 (buy reverted, caught).
         assertEq(ctOk.balanceOf(address(growTreasury)), 100e18);
@@ -434,7 +452,7 @@ contract GrowfiAllocationStressTest is Test {
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 100 * ONE_USDC);
 
-        IERC20 ct = IERC20(GrowfiCampaign(camp).campaignToken());
+        IERC20 ct = IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken());
         assertEq(ct.balanceOf(address(growTreasury)), 300e18);
     }
 
@@ -451,8 +469,8 @@ contract GrowfiAllocationStressTest is Test {
         // First allocation: both get $100
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 200 * ONE_USDC);
-        assertEq(IERC20(GrowfiCampaign(campA).campaignToken()).balanceOf(address(growTreasury)), 100e18);
-        assertEq(IERC20(GrowfiCampaign(campB).campaignToken()).balanceOf(address(growTreasury)), 100e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken()).balanceOf(address(growTreasury)), 100e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campB)).campaignToken()).balanceOf(address(growTreasury)), 100e18);
 
         // Untrack B
         vm.prank(OWNER);
@@ -461,8 +479,8 @@ contract GrowfiAllocationStressTest is Test {
         // Second allocation: only A receives the $200 budget
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 200 * ONE_USDC);
-        assertEq(IERC20(GrowfiCampaign(campA).campaignToken()).balanceOf(address(growTreasury)), 300e18);
-        assertEq(IERC20(GrowfiCampaign(campB).campaignToken()).balanceOf(address(growTreasury)), 100e18); // unchanged
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken()).balanceOf(address(growTreasury)), 300e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campB)).campaignToken()).balanceOf(address(growTreasury)), 100e18); // unchanged
     }
 
     // ============================================================
@@ -490,7 +508,7 @@ contract GrowfiAllocationStressTest is Test {
 
         // Each got $10
         for (uint256 i; i < 50; ++i) {
-            assertEq(IERC20(GrowfiCampaign(camps[i]).campaignToken()).balanceOf(address(growTreasury)), 10e18);
+            assertEq(IERC20(GrowfiCampaign(payable(camps[i])).campaignToken()).balanceOf(address(growTreasury)), 10e18);
         }
     }
 
@@ -534,7 +552,7 @@ contract GrowfiAllocationStressTest is Test {
         // Now works
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 100 * ONE_USDC);
-        assertEq(IERC20(GrowfiCampaign(camp).campaignToken()).balanceOf(address(growTreasury)), 100e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken()).balanceOf(address(growTreasury)), 100e18);
     }
 
     /// @dev Manual allocateToCampaign always works regardless of switch.
@@ -552,7 +570,7 @@ contract GrowfiAllocationStressTest is Test {
         vm.prank(OWNER);
         factory.allocateGrowfiTreasury(camp, address(usdc), 100 * ONE_USDC);
 
-        assertEq(IERC20(GrowfiCampaign(camp).campaignToken()).balanceOf(address(growTreasury)), 100e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken()).balanceOf(address(growTreasury)), 100e18);
     }
 
     // ============================================================
@@ -580,7 +598,7 @@ contract GrowfiAllocationStressTest is Test {
     }
 
     function test_hide_revertsForNonCampaign() public {
-        vm.expectRevert("Not a campaign");
+        vm.expectRevert(GrowfiCampaignFactory.UnknownCampaign.selector);
         vm.prank(OWNER);
         factory.setCampaignHidden(ATTACKER, true);
     }
@@ -598,15 +616,15 @@ contract GrowfiAllocationStressTest is Test {
         usdc.mint(address(growTreasury), 100 * ONE_USDC);
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 100 * ONE_USDC);
-        assertEq(IERC20(GrowfiCampaign(camp).campaignToken()).balanceOf(address(growTreasury)), 100e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken()).balanceOf(address(growTreasury)), 100e18);
 
         // External user can still buy on the hidden campaign (knows the address)
         usdc.mint(ATTACKER, 50 * ONE_USDC);
         vm.prank(ATTACKER);
         usdc.approve(camp, 50 * ONE_USDC);
         vm.prank(ATTACKER);
-        GrowfiCampaign(camp).buy(address(usdc), 50 * ONE_USDC);
-        IERC20 ct = IERC20(GrowfiCampaign(camp).campaignToken());
+        IGrowfiCampaignFull(payable(camp)).buy(address(usdc), 50 * ONE_USDC);
+        IERC20 ct = IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken());
         assertEq(ct.balanceOf(ATTACKER), 50e18, "buy works regardless of hidden flag");
     }
 
@@ -625,17 +643,17 @@ contract GrowfiAllocationStressTest is Test {
         // First allocation: capped at 10 tokens
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 1_000 * ONE_USDC);
-        assertEq(IERC20(GrowfiCampaign(camp).campaignToken()).balanceOf(address(growTreasury)), 10e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken()).balanceOf(address(growTreasury)), 10e18);
 
         // Producer raises maxCap to 100
         vm.prank(PRODUCER);
-        GrowfiCampaign(camp).setMaxCap(100e18);
+        IGrowfiCampaignFull(payable(camp)).setMaxCap(100e18);
 
         // Second allocation: 30 more tokens of room (60 -> 100, treasury already had 10)
         // Wait — currentSupply = 60 (50 producer + 10 treasury), maxCap now = 100, room = 40.
         // Treasury has remaining $940 in cash. perCampaign = $940/1 = $940. Capped at 40 tokens.
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 940 * ONE_USDC);
-        assertEq(IERC20(GrowfiCampaign(camp).campaignToken()).balanceOf(address(growTreasury)), 50e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken()).balanceOf(address(growTreasury)), 50e18);
     }
 }

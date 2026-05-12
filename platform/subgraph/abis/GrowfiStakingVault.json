@@ -203,6 +203,19 @@
   },
   {
     "type": "function",
+    "name": "forceUnstake",
+    "inputs": [
+      {
+        "name": "positionId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "getPositions",
     "inputs": [
       {

@@ -4,6 +4,10 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
 import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
 import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
@@ -32,7 +36,7 @@ contract AuditFixesTest is Test {
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
 
-    GrowfiCampaign campaign;
+    IGrowfiCampaignFull campaign;
     GrowfiCampaignToken campaignToken;
     GrowfiStakingVault stakingVault;
 
@@ -50,25 +54,32 @@ contract AuditFixesTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "Olive",
-                tokenSymbol: "OLIVE",
-                yieldName: "oYield",
-                yieldSymbol: "oY",
-                pricePerToken: 0.144e18, // $0.144 per $CAMPAIGN
-                minCap: 50_000e18,
-                maxCap: 1_000_000e18,
-                fundingDeadline: block.timestamp + 90 days,
-                seasonDuration: 365 days,
+                campaignTokenName: "Olive",
+                campaignTokenSymbol: "OLIVE",
+                yieldTokenName: "oYield",
+                yieldTokenSymbol: "oY",
                 minProductClaim: 5e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 0.144e18,
+                    minCap: 50_000e18,
+                    maxCap: 1_000_000e18,
+                    fundingDeadline: block.timestamp + 90 days,
+                    seasonDuration: 365 days,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
 
         (address c, address ct,, address sv,,,) = factory.campaigns(0);
-        campaign = GrowfiCampaign(c);
+        campaign = IGrowfiCampaignFull(payable(c));
         campaignToken = GrowfiCampaignToken(ct);
         stakingVault = GrowfiStakingVault(sv);
     }
@@ -81,7 +92,7 @@ contract AuditFixesTest is Test {
     ///         number of $CAMPAIGN tokens as the fixed-rate equivalent.
     function test_H01_oracleMode_6decimalToken_usdc() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Oracle, 0, address(usdcOracle));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Oracle, 0, address(usdcOracle));
 
         usdc.mint(alice, 1_000e6); // 1000 USDC
         vm.prank(alice);
@@ -98,7 +109,7 @@ contract AuditFixesTest is Test {
     ///         number of $CAMPAIGN tokens.
     function test_H01_oracleMode_8decimalToken_wbtc() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(wbtc), GrowfiCampaign.PricingMode.Oracle, 0, address(wbtcOracle));
+        campaign.addAcceptedToken(address(wbtc), SaleClassicModule.PricingMode.Oracle, 0, address(wbtcOracle));
 
         wbtc.mint(alice, 10e8); // 10 WBTC
         vm.prank(alice);
@@ -117,7 +128,7 @@ contract AuditFixesTest is Test {
     /// @notice 18-decimal WETH oracle path must keep its original behaviour.
     function test_H01_oracleMode_18decimalToken_weth() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(weth), GrowfiCampaign.PricingMode.Oracle, 0, address(wethOracle));
+        campaign.addAcceptedToken(address(weth), SaleClassicModule.PricingMode.Oracle, 0, address(wethOracle));
 
         weth.mint(alice, 10e18);
         vm.prank(alice);
@@ -136,7 +147,7 @@ contract AuditFixesTest is Test {
     ///         oracle mode.
     function test_H01_getPrice_oracleMode_6decimalToken() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Oracle, 0, address(usdcOracle));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Oracle, 0, address(usdcOracle));
 
         // 1000 $CAMPAIGN @ $0.144 = $144. Oracle is $1/USDC → 144 USDC native (144e6).
         uint256 price = campaign.getPrice(address(usdc), 1000e18);
@@ -149,7 +160,7 @@ contract AuditFixesTest is Test {
         MockOracle feed = new MockOracle(1e8, 8);
         vm.prank(producer);
         vm.expectRevert();
-        campaign.addAcceptedToken(address(weird), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
+        campaign.addAcceptedToken(address(weird), SaleClassicModule.PricingMode.Oracle, 0, address(feed));
     }
 
     // ===================================================================
@@ -163,23 +174,30 @@ contract AuditFixesTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: bobProducer,
-                tokenName: "Wheat",
-                tokenSymbol: "WHEAT",
-                yieldName: "wY",
-                yieldSymbol: "wY",
-                pricePerToken: 0.1e18,
-                minCap: 1_000e18,
-                maxCap: 10_000e18,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 180 days,
+                campaignTokenName: "Wheat",
+                campaignTokenSymbol: "WHEAT",
+                yieldTokenName: "wY",
+                yieldTokenSymbol: "wY",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 0.1e18,
+                    minCap: 1_000e18,
+                    maxCap: 10_000e18,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 180 days,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
-        assertEq(factory.getCampaignCount(), 2);
+        assertEq(factory.campaignsLength(), 2);
     }
 
     function test_duplicateName_reverts() public {
@@ -191,20 +209,27 @@ contract AuditFixesTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: bob,
-                tokenName: "Olive",
-                tokenSymbol: "OLIVE2",
-                yieldName: "Olive Yield",
-                yieldSymbol: "oY2",
-                pricePerToken: 0.1e18,
-                minCap: 1_000e18,
-                maxCap: 10_000e18,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 180 days,
+                campaignTokenName: "Olive",
+                campaignTokenSymbol: "OLIVE2",
+                yieldTokenName: "Olive Yield",
+                yieldTokenSymbol: "oY2",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 0.1e18,
+                    minCap: 1_000e18,
+                    maxCap: 10_000e18,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 180 days,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
 
@@ -213,23 +238,30 @@ contract AuditFixesTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "Olive Phase 2",
-                tokenSymbol: "OLIVE2",
-                yieldName: "Olive Yield",
-                yieldSymbol: "oY2",
-                pricePerToken: 0.1e18,
-                minCap: 1_000e18,
-                maxCap: 10_000e18,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 180 days,
+                campaignTokenName: "Olive Phase 2",
+                campaignTokenSymbol: "OLIVE2",
+                yieldTokenName: "Olive Yield",
+                yieldTokenSymbol: "oY2",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 0.1e18,
+                    minCap: 1_000e18,
+                    maxCap: 10_000e18,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 180 days,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
-        assertEq(factory.getCampaignCount(), 2);
+        assertEq(factory.campaignsLength(), 2);
     }
 
     function test_emptyName_reverts() public {
@@ -238,20 +270,27 @@ contract AuditFixesTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "",
-                tokenSymbol: "X",
-                yieldName: "x",
-                yieldSymbol: "x",
-                pricePerToken: 0.1e18,
-                minCap: 1_000e18,
-                maxCap: 10_000e18,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 180 days,
+                campaignTokenName: "",
+                campaignTokenSymbol: "X",
+                yieldTokenName: "x",
+                yieldTokenSymbol: "x",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 0.1e18,
+                    minCap: 1_000e18,
+                    maxCap: 10_000e18,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 180 days,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
     }
@@ -262,25 +301,25 @@ contract AuditFixesTest is Test {
 
     function test_M07_sellBackOrderCap() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 144_000, address(0));
         usdc.mint(alice, 10_000e6);
         vm.prank(alice);
         usdc.approve(address(campaign), type(uint256).max);
         vm.prank(alice);
         campaign.buy(address(usdc), 7_200e6);
 
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Active));
 
         vm.prank(alice);
         campaignToken.approve(address(campaign), type(uint256).max);
 
-        uint256 cap = campaign.MAX_OPEN_SELLBACK_ORDERS_PER_USER();
+        uint256 cap = 50; // SaleClassicModule.MAX_OPEN_SELLBACK_ORDERS_PER_USER
         for (uint256 i = 0; i < cap; i++) {
             vm.prank(alice);
             campaign.sellBack(1);
         }
         vm.prank(alice);
-        vm.expectRevert(GrowfiCampaign.TooManyOpenSellBackOrders.selector);
+        vm.expectRevert(SaleClassicModule.TooManyOpenSellBackOrders.selector);
         campaign.sellBack(1);
 
         // Cancel resets the counter.
@@ -296,14 +335,14 @@ contract AuditFixesTest is Test {
 
     function test_M04_reportHarvest_pausable() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 144_000, address(0));
         usdc.mint(alice, 10_000e6);
         vm.prank(alice);
         usdc.approve(address(campaign), type(uint256).max);
         vm.prank(alice);
         campaign.buy(address(usdc), 7_200e6);
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.warp(block.timestamp + 365 days);
         vm.prank(producer);
         campaign.endSeason();
@@ -329,14 +368,14 @@ contract AuditFixesTest is Test {
 
     function test_M03_unstake_worksWhilePaused() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 144_000, address(0));
         usdc.mint(alice, 10_000e6);
         vm.prank(alice);
         usdc.approve(address(campaign), type(uint256).max);
         vm.prank(alice);
         campaign.buy(address(usdc), 7_200e6);
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
 
         (,,, address sv,,,) = factory.campaigns(0);
         GrowfiStakingVault vault = GrowfiStakingVault(sv);
@@ -369,12 +408,12 @@ contract AuditFixesTest is Test {
         // Fill to cap with 10 distinct tokens.
         for (uint256 i = 0; i < 10; i++) {
             MockERC20 t = new MockERC20("T", "T", 18);
-            campaign.addAcceptedToken(address(t), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
+            campaign.addAcceptedToken(address(t), SaleClassicModule.PricingMode.Oracle, 0, address(feed));
         }
         // 11th add must revert.
         MockERC20 over = new MockERC20("Over", "O", 18);
-        vm.expectRevert(GrowfiCampaign.TooManyAcceptedTokens.selector);
-        campaign.addAcceptedToken(address(over), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
+        vm.expectRevert(SaleClassicModule.TooManyAcceptedTokens.selector);
+        campaign.addAcceptedToken(address(over), SaleClassicModule.PricingMode.Oracle, 0, address(feed));
 
         // Remove the first one, slot must be freed.
         address[] memory accepted = campaign.getAcceptedTokens();
@@ -382,7 +421,7 @@ contract AuditFixesTest is Test {
         assertEq(campaign.getAcceptedTokens().length, 9, "M-01: slot not freed");
 
         // New add now succeeds.
-        campaign.addAcceptedToken(address(over), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
+        campaign.addAcceptedToken(address(over), SaleClassicModule.PricingMode.Oracle, 0, address(feed));
         assertEq(campaign.getAcceptedTokens().length, 10);
         vm.stopPrank();
     }
@@ -393,21 +432,28 @@ contract AuditFixesTest is Test {
         vm.expectRevert("producer must be caller");
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
-                producer: bob, // caller is alice, not bob
-                tokenName: "X",
-                tokenSymbol: "X",
-                yieldName: "Y",
-                yieldSymbol: "Y",
-                pricePerToken: 0.1e18,
-                minCap: 1_000e18,
-                maxCap: 10_000e18,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 180 days,
+                producer: bob,
+                campaignTokenName: "X",
+                campaignTokenSymbol: "X",
+                yieldTokenName: "Y",
+                yieldTokenSymbol: "Y",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 0.1e18,
+                    minCap: 1_000e18,
+                    maxCap: 10_000e18,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 180 days,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
     }
@@ -419,7 +465,7 @@ contract AuditFixesTest is Test {
     /// @dev Helper to deploy a campaign wired to a given sequencer feed.
     function _deployCampaignWithSequencer(address sequencerFeed)
         internal
-        returns (GrowfiCampaign, MockERC20, MockOracle)
+        returns (IGrowfiCampaignFull, MockERC20, MockOracle)
     {
         GrowfiCampaignFactory f = Deployer.deployProtocol(owner, feeRecipient, address(usdc), sequencerFeed);
         address newProducer = makeAddr("producer2");
@@ -427,28 +473,35 @@ contract AuditFixesTest is Test {
         f.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: newProducer,
-                tokenName: "X",
-                tokenSymbol: "X",
-                yieldName: "Y",
-                yieldSymbol: "Y",
-                pricePerToken: 0.144e18,
-                minCap: 10_000e18,
-                maxCap: 100_000e18,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 180 days,
+                campaignTokenName: "X",
+                campaignTokenSymbol: "X",
+                yieldTokenName: "Y",
+                yieldTokenSymbol: "Y",
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 0.144e18,
+                    minCap: 10_000e18,
+                    maxCap: 100_000e18,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 180 days,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         (address c,,,,,,) = f.campaigns(0);
-        GrowfiCampaign camp = GrowfiCampaign(c);
+        IGrowfiCampaignFull camp = IGrowfiCampaignFull(payable(c));
         MockERC20 token = new MockERC20("T", "T", 6);
         MockOracle feed = new MockOracle(1e8, 8);
         vm.prank(newProducer);
-        camp.addAcceptedToken(address(token), GrowfiCampaign.PricingMode.Oracle, 0, address(feed));
+        camp.addAcceptedToken(address(token), SaleClassicModule.PricingMode.Oracle, 0, address(feed));
         token.mint(alice, 10_000e6);
         vm.prank(alice);
         token.approve(address(camp), type(uint256).max);
@@ -458,9 +511,9 @@ contract AuditFixesTest is Test {
     /// @notice When the sequencer is reported DOWN, buys revert.
     function test_H02_sequencerDown_blocksBuy() public {
         MockSequencerFeed seq = new MockSequencerFeed(1, block.timestamp); // down
-        (GrowfiCampaign camp, MockERC20 tok,) = _deployCampaignWithSequencer(address(seq));
+        (IGrowfiCampaignFull camp, MockERC20 tok,) = _deployCampaignWithSequencer(address(seq));
         vm.prank(alice);
-        vm.expectRevert(GrowfiCampaign.SequencerDown.selector);
+        vm.expectRevert(SaleClassicModule.SequencerDown.selector);
         camp.buy(address(tok), 100e6);
     }
 
@@ -468,9 +521,9 @@ contract AuditFixesTest is Test {
     function test_H02_sequencerGracePeriod_blocksBuy() public {
         uint256 recoveredAt = block.timestamp;
         MockSequencerFeed seq = new MockSequencerFeed(0, recoveredAt); // up, just now
-        (GrowfiCampaign camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(seq));
+        (IGrowfiCampaignFull camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(seq));
         vm.prank(alice);
-        vm.expectRevert(GrowfiCampaign.SequencerGracePeriod.selector);
+        vm.expectRevert(SaleClassicModule.SequencerGracePeriod.selector);
         camp.buy(address(tok), 100e6);
 
         // After grace period, buy should succeed. Warp invalidates the oracle
@@ -483,23 +536,23 @@ contract AuditFixesTest is Test {
 
     /// @notice When sequencer feed is address(0) (L1 deployment), no check.
     function test_H02_noSequencerFeed_buysSucceed() public {
-        (GrowfiCampaign camp, MockERC20 tok,) = _deployCampaignWithSequencer(address(0));
+        (IGrowfiCampaignFull camp, MockERC20 tok,) = _deployCampaignWithSequencer(address(0));
         vm.prank(alice);
         camp.buy(address(tok), 100e6); // must not revert
     }
 
     /// @notice Oracle with stale answeredInRound must revert.
     function test_H02_staleRound_revertsBuy() public {
-        (GrowfiCampaign camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(0));
+        (IGrowfiCampaignFull camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(0));
         feed.setRoundData(10, 5); // answeredInRound(5) < roundId(10)
         vm.prank(alice);
-        vm.expectRevert(GrowfiCampaign.StaleOraclePrice.selector);
+        vm.expectRevert(SaleClassicModule.StaleOraclePrice.selector);
         camp.buy(address(tok), 100e6);
     }
 
     /// @notice Oracle with startedAt == 0 must revert.
     function test_H02_unstartedRound_revertsBuy() public {
-        (GrowfiCampaign camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(0));
+        (IGrowfiCampaignFull camp, MockERC20 tok, MockOracle feed) = _deployCampaignWithSequencer(address(0));
         // MockOracle returns startedAt = block.timestamp; simulate startedAt=0 via
         // updatedAt manipulation on a different path — instead we check that a
         // fresh feed with normal state works, and rely on a dedicated unit below.
@@ -517,10 +570,10 @@ contract AuditFixesTest is Test {
     ///      for USDC at harvest. Returns the campaign+harvest pair.
     function _runToHarvest()
         internal
-        returns (GrowfiCampaign camp, GrowfiHarvestManager hm, uint256 aliceYield, uint256 holderPoolUsdc6)
+        returns (IGrowfiCampaignFull camp, GrowfiHarvestManager hm, uint256 aliceYield, uint256 holderPoolUsdc6)
     {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 144_000, address(0));
 
         // Fund past minCap → auto-activate. 50_000 $CAMPAIGN @ 0.144 USDC = 7200 USDC.
         usdc.mint(alice, 7200e6);
@@ -530,7 +583,7 @@ contract AuditFixesTest is Test {
         campaign.buy(address(usdc), 7200e6);
 
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
 
         (,,, address sv, address hmAddr,,) = factory.campaigns(0);
         GrowfiStakingVault vault = GrowfiStakingVault(sv);
@@ -573,7 +626,7 @@ contract AuditFixesTest is Test {
 
     /// @notice Each depositUSDC call routes 2% of the amount to protocolFeeRecipient.
     function test_M05_depositUSDC_routesFeeToRecipient() public {
-        (GrowfiCampaign camp, GrowfiHarvestManager hm,, uint256 depositAmount) = _runToHarvest();
+        (IGrowfiCampaignFull camp, GrowfiHarvestManager hm,, uint256 depositAmount) = _runToHarvest();
         camp; // silence unused
 
         uint256 feeBefore = usdc.balanceOf(feeRecipient);
@@ -599,7 +652,7 @@ contract AuditFixesTest is Test {
     ///         oversubscribe the USDC pool.
     function test_M06_forgottenClaim_noOversubscription() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 144_000, address(0));
 
         usdc.mint(alice, 10_000e6);
         usdc.mint(bob, 10_000e6);
@@ -615,7 +668,7 @@ contract AuditFixesTest is Test {
         campaign.buy(address(usdc), 3_600e6);
 
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
 
         (,,, address sv, address hmAddr,,) = factory.campaigns(0);
         GrowfiStakingVault vault = GrowfiStakingVault(sv);
@@ -674,7 +727,7 @@ contract AuditFixesTest is Test {
 
     function test_previewBuy_matchesActualBuy_fixedMode() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 144_000, address(0));
 
         (uint256 tokensOut, uint256 effPay,, uint256 fee) = campaign.previewBuy(address(usdc), 144e6);
         assertEq(tokensOut, 1000e18, "previewBuy fixed-mode wrong tokensOut");
@@ -691,7 +744,7 @@ contract AuditFixesTest is Test {
 
     function test_previewBuy_capsAtMaxCap() public {
         vm.prank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 144_000, address(0));
         // overshoot: try to buy more than maxCap (1M @ 0.144 = 144k USDC)
         uint256 huge = 200_000e6;
         (uint256 tokensOut, uint256 effPay,, uint256 fee) = campaign.previewBuy(address(usdc), huge);

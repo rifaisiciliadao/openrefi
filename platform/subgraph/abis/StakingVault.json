@@ -90,7 +90,7 @@
       {
         "name": "",
         "type": "address",
-        "internalType": "contract CampaignToken"
+        "internalType": "contract GrowfiCampaignToken"
       }
     ],
     "stateMutability": "view"
@@ -200,6 +200,19 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "forceUnstake",
+    "inputs": [
+      {
+        "name": "positionId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -566,7 +579,7 @@
       {
         "name": "",
         "type": "address",
-        "internalType": "contract YieldToken"
+        "internalType": "contract GrowfiYieldToken"
       }
     ],
     "stateMutability": "view"

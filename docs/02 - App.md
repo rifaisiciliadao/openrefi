@@ -8,6 +8,8 @@ status: defined
 ---
 # App — Frontend & Subgraph
 
+The campaign page renders a dynamic **Modules** tab driven by the subgraph `CampaignModule` entity: each `kind` maps to a frontend component, and attached modules surface their own UI automatically. The base pages (Explore, Portfolio, Feed, Grower, Create) are static — they read core Campaign state and the universal sale/collateral default modules without per-module rendering. See [[07 - Module Framework (Diamond)]] for the on-chain module spec.
+
 ## Architecture Overview
 
 ```

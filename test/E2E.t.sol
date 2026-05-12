@@ -4,6 +4,10 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
 import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
 import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
@@ -25,7 +29,7 @@ contract E2ETest is Test {
     MockERC20 weth;
     MockOracle wethOracle;
 
-    GrowfiCampaign campaign;
+    IGrowfiCampaignFull campaign;
     GrowfiCampaignToken campaignToken;
     GrowfiYieldToken yieldToken;
     GrowfiStakingVault stakingVault;
@@ -62,25 +66,32 @@ contract E2ETest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "Olive Tree",
-                tokenSymbol: "OLIVE",
-                yieldName: "Olive Yield",
-                yieldSymbol: "oYIELD",
-                pricePerToken: PRICE_PER_TOKEN,
-                minCap: MIN_CAP,
-                maxCap: MAX_CAP,
-                fundingDeadline: block.timestamp + 90 days,
-                seasonDuration: SEASON_DURATION,
+                campaignTokenName: "Olive Tree",
+                campaignTokenSymbol: "OLIVE",
+                yieldTokenName: "Olive Yield",
+                yieldTokenSymbol: "oYIELD",
                 minProductClaim: MIN_PRODUCT_CLAIM,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: PRICE_PER_TOKEN,
+                    minCap: MIN_CAP,
+                    maxCap: MAX_CAP,
+                    fundingDeadline: block.timestamp + 90 days,
+                    seasonDuration: SEASON_DURATION,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
 
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = GrowfiCampaign(c);
+        campaign = IGrowfiCampaignFull(payable(c));
         campaignToken = GrowfiCampaignToken(ct);
         yieldToken = GrowfiYieldToken(yt);
         stakingVault = GrowfiStakingVault(sv);
@@ -88,8 +99,8 @@ contract E2ETest is Test {
 
         // Producer configures both USDC (fixed) and WETH (oracle) as accepted payments
         vm.startPrank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
-        campaign.addAcceptedToken(address(weth), GrowfiCampaign.PricingMode.Oracle, 0, address(wethOracle));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(weth), SaleClassicModule.PricingMode.Oracle, 0, address(wethOracle));
         vm.stopPrank();
 
         // Fund investors
@@ -131,7 +142,7 @@ contract E2ETest is Test {
         vm.prank(alice);
         campaign.buy(address(usdc), alicePayUsdc);
         assertEq(campaignToken.balanceOf(alice), 20_000e18, "alice 20k");
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Funding));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Funding));
 
         // Bob buys 15k OLIVE with WETH via oracle
         // tokensOut = paymentAmount * oraclePrice / pricePerToken
@@ -148,7 +159,7 @@ contract E2ETest is Test {
         campaign.buy(address(usdc), charliePay);
 
         assertGt(campaign.currentSupply(), MIN_CAP, "minCap reached");
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active), "auto-activated");
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Active), "auto-activated");
 
         // Protocol fee was taken (2% of escrowed funds)
         uint256 feeRecipientUsdc = usdc.balanceOf(feeRecipient);
@@ -178,7 +189,7 @@ contract E2ETest is Test {
         console.log("=== PHASE 3: SEASON 1 STAKING ===");
 
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
 
         // Alice stakes 20k (full holdings)
         vm.prank(alice);
@@ -369,7 +380,7 @@ contract E2ETest is Test {
         console.log("=== PHASE 9: SEASON 2 ===");
 
         vm.prank(producer);
-        campaign.startSeason(2);
+        campaign.startSeason();
 
         // Charlie and Dave restake their still-active positions
         vm.prank(charlie);
@@ -411,7 +422,7 @@ contract E2ETest is Test {
         // End campaign
         vm.prank(producer);
         campaign.endCampaign();
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Ended));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Ended));
 
         console.log("=== E2E COMPLETED ===");
     }

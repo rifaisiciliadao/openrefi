@@ -47,6 +47,7 @@ export function handleStaked(event: StakedEvent): void {
   pos.yieldClaimed = BigInt.zero();
   pos.active = true;
   pos.createdAt = event.block.timestamp;
+  pos.createdAtTx = event.transaction.hash;
   pos.save();
 
   campaign.totalStaked = event.params.newTotalStaked;
@@ -62,6 +63,7 @@ export function handleUnstaked(event: UnstakedEvent): void {
   if (pos != null) {
     pos.active = false;
     pos.unstakedAt = event.block.timestamp;
+    pos.unstakedAtTx = event.transaction.hash;
     pos.penaltyBurned = event.params.penaltyAmount;
     pos.save();
   }

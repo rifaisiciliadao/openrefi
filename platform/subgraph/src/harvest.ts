@@ -72,6 +72,7 @@ export function handleProductRedeemed(event: ProductRedeemedEvent): void {
   claim.productAmount = event.params.productAmount;
   claim.fulfilled = true;
   claim.claimedAt = event.block.timestamp;
+  claim.claimTx = event.transaction.hash;
   claim.save();
 }
 
@@ -99,6 +100,7 @@ export function handleUSDCCommitted(event: USDCCommittedEvent): void {
   claim.yieldBurned = event.params.yieldBurned;
   claim.usdcAmount = event.params.usdcAmount;
   claim.claimedAt = event.block.timestamp;
+  claim.claimTx = event.transaction.hash;
   claim.save();
 
   const season = Season.load(seasonKey);

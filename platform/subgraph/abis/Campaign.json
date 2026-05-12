@@ -5,1111 +5,284 @@
     "stateMutability": "nonpayable"
   },
   {
-    "type": "function",
-    "name": "MAX_ACCEPTED_TOKENS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
+    "type": "error",
+    "name": "AlreadyAccepted",
+    "inputs": []
   },
   {
-    "type": "function",
-    "name": "MAX_OPEN_SELLBACK_ORDERS_PER_USER",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
+    "type": "error",
+    "name": "AlreadyFunded",
+    "inputs": []
   },
   {
-    "type": "function",
-    "name": "SEQUENCER_GRACE_PERIOD",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
+    "type": "error",
+    "name": "AlreadyInitialized",
+    "inputs": []
   },
   {
-    "type": "function",
-    "name": "acceptedTokenList",
+    "type": "error",
+    "name": "AlreadySettled",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AlreadyWired",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BootstrapClosed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BootstrapStillOpen",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "CollateralCapExceeded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DeadlineInPast",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DeadlineNotExtended",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DepositWindowClosed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DepositWindowOpen",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FundingNotExpired",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ImplNotApproved",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidState",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "KindHasNoSelectors",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MaxCapReached",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MinCapAlreadyReached",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MinCapNotReached",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ModuleDisabled",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NegativeOraclePrice",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NewMaxCapBelowCommitted",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NewMinCapBelowSupply",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoSellBackPending",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInCoverage",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NothingToRefund",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyFactoryBootstrap",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyFactory",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnlyProducer",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OracleDecimalsTooHigh",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "PaymentDecimalsTooHigh",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "PoolBalanceUnderflow",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "PoolInsufficient",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "PrincipalNotSet",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Reentrant",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SafeERC20FailedOperation",
     "inputs": [
       {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
+        "name": "token",
         "type": "address",
         "internalType": "address"
       }
-    ],
-    "stateMutability": "view"
+    ]
   },
   {
-    "type": "function",
-    "name": "activateCampaign",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    "type": "error",
+    "name": "SeasonNotReported",
+    "inputs": []
   },
   {
-    "type": "function",
-    "name": "addAcceptedToken",
+    "type": "error",
+    "name": "SelectorAlreadyTaken",
     "inputs": [
       {
-        "name": "tokenAddress",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "pricingMode",
-        "type": "uint8",
-        "internalType": "enum Campaign.PricingMode"
-      },
-      {
-        "name": "fixedRate",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "oracleFeed",
-        "type": "address",
-        "internalType": "address"
+        "name": "selector",
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    ]
   },
   {
-    "type": "function",
-    "name": "buy",
+    "type": "error",
+    "name": "SequencerDown",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SequencerGracePeriod",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "StaleOraclePrice",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TokenNotAccepted",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TooManyAcceptedTokens",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TooManyOpenSellBackOrders",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TypeAlreadyAttached",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TypeNotAttached",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnknownSelector",
     "inputs": [
       {
-        "name": "paymentToken",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "paymentAmount",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "selector",
+        "type": "bytes4",
+        "internalType": "bytes4"
       }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    ]
   },
   {
-    "type": "function",
-    "name": "buyback",
-    "inputs": [
-      {
-        "name": "paymentToken",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    "type": "error",
+    "name": "ZeroAddress",
+    "inputs": []
   },
   {
-    "type": "function",
-    "name": "campaignToken",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract CampaignToken"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "cancelSellBack",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "collateralDrawn",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "collateralLocked",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "coverageHarvests",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "currentSupply",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "depositUSDC",
-    "inputs": [
-      {
-        "name": "seasonId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "walletCap",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "emergencyPause",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "emergencyUnpause",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "endCampaign",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "endSeason",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "expectedAnnualHarvest",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "expectedAnnualHarvestUsd",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "factory",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "firstHarvestYear",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "fundingDeadline",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "fundingFeeBps",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getAcceptedTokens",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address[]",
-        "internalType": "address[]"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getPrice",
-    "inputs": [
-      {
-        "name": "paymentToken",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "campaignAmount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getSellBackQueueDepth",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "harvestManager",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract HarvestManager"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "initialize",
-    "inputs": [
-      {
-        "name": "p",
-        "type": "tuple",
-        "internalType": "struct Campaign.InitParams",
-        "components": [
-          {
-            "name": "producer",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "factory",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "pricePerToken",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "minCap",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "maxCap",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "fundingDeadline",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "seasonDuration",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "protocolFeeBps",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "fundingFeeBps",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "expectedAnnualHarvestUsd",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "expectedAnnualHarvest",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "firstHarvestYear",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "coverageHarvests",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "protocolFeeRecipient",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "sequencerUptimeFeed",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "usdc",
-            "type": "address",
-            "internalType": "address"
-          }
-        ]
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "initializeV2",
-    "inputs": [
-      {
-        "name": "fundingFeeBps_",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "initializeV3",
-    "inputs": [
-      {
-        "name": "expectedAnnualHarvestUsd_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "expectedAnnualHarvest_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "firstHarvestYear_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "coverageHarvests_",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "usdc_",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "lockCollateral",
-    "inputs": [
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "maxCap",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "maxCollateral",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "minCap",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "openSellBackCount",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "paused",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "pendingSellBack",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "previewBuy",
-    "inputs": [
-      {
-        "name": "paymentToken",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "paymentAmount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "tokensOut",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "effectivePayment",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "oraclePrice",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "fundingFee",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "pricePerToken",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "producer",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "protocolFeeBps",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "protocolFeeRecipient",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "purchasedTokens",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "purchases",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "removeAcceptedToken",
-    "inputs": [
-      {
-        "name": "tokenAddress",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "seasonDuration",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "seasonShortfallSettled",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "sellBack",
-    "inputs": [
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "sellBackQueue",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "seller",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "sellBackQueueHead",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "sequencerUptimeFeed",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract AggregatorV3Interface"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "setCampaignToken",
-    "inputs": [
-      {
-        "name": "campaignToken_",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setFundingDeadline",
-    "inputs": [
-      {
-        "name": "newDeadline",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setHarvestManager",
-    "inputs": [
-      {
-        "name": "harvestManager_",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setMaxCap",
-    "inputs": [
-      {
-        "name": "newMaxCap",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setMinCap",
-    "inputs": [
-      {
-        "name": "newMinCap",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setStakingVault",
-    "inputs": [
-      {
-        "name": "stakingVault_",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setYieldToken",
-    "inputs": [
-      {
-        "name": "yieldToken_",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "settleSeasonShortfall",
-    "inputs": [
-      {
-        "name": "seasonId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "stakingVault",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract StakingVault"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "startSeason",
-    "inputs": [
-      {
-        "name": "seasonId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "state",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint8",
-        "internalType": "enum Campaign.State"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "tokenConfigs",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "pricingMode",
-        "type": "uint8",
-        "internalType": "enum Campaign.PricingMode"
-      },
-      {
-        "name": "fixedRate",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "oracleFeed",
-        "type": "address",
-        "internalType": "contract AggregatorV3Interface"
-      },
-      {
-        "name": "paymentDecimals",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "active",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "triggerBuyback",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "usdc",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "userSellBackIndices",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
+    "type": "error",
+    "name": "ZeroAmount",
+    "inputs": []
   },
   {
     "type": "event",
     "name": "AcceptedTokenAdded",
     "inputs": [
       {
-        "name": "tokenAddress",
+        "name": "token",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -1146,12 +319,18 @@
     "name": "AcceptedTokenRemoved",
     "inputs": [
       {
-        "name": "tokenAddress",
+        "name": "token",
         "type": "address",
         "indexed": true,
         "internalType": "address"
       }
     ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BootstrapClosedEvent",
+    "inputs": [],
     "anonymous": false
   },
   {
@@ -1202,7 +381,7 @@
         "internalType": "uint256"
       },
       {
-        "name": "minCap_",
+        "name": "minCap",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1231,13 +410,13 @@
   },
   {
     "type": "event",
-    "name": "CampaignPaused",
+    "name": "CampaignEnded",
     "inputs": [
       {
-        "name": "paused",
-        "type": "bool",
+        "name": "timestamp",
+        "type": "uint256",
         "indexed": false,
-        "internalType": "bool"
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1257,6 +436,37 @@
         "type": "uint8",
         "indexed": false,
         "internalType": "uint8"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CollateralInitialized",
+    "inputs": [
+      {
+        "name": "expectedAnnualHarvestUsd",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "expectedAnnualHarvest",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "firstHarvestYear",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "coverageHarvests",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1408,13 +618,288 @@
   },
   {
     "type": "event",
-    "name": "Paused",
+    "name": "ModuleAttached",
     "inputs": [
       {
-        "name": "account",
+        "name": "moduleType",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "impl",
         "type": "address",
-        "indexed": false,
+        "indexed": true,
         "internalType": "address"
+      },
+      {
+        "name": "kind",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "metadataURI",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ModuleDetached",
+    "inputs": [
+      {
+        "name": "moduleType",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "previousImpl",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ModuleEnabledSet",
+    "inputs": [
+      {
+        "name": "moduleType",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "enabled",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ModuleSelectorCleared",
+    "inputs": [
+      {
+        "name": "selector",
+        "type": "bytes4",
+        "indexed": true,
+        "internalType": "bytes4"
+      },
+      {
+        "name": "moduleType",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ModuleSelectorRegistered",
+    "inputs": [
+      {
+        "name": "selector",
+        "type": "bytes4",
+        "indexed": true,
+        "internalType": "bytes4"
+      },
+      {
+        "name": "moduleType",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PausedSet",
+    "inputs": [
+      {
+        "name": "paused",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Repaid",
+    "inputs": [
+      {
+        "name": "holder",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "campaignTokensBurned",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "principalPaid",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "bonusPaid",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newPoolBalance",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalClaimedByUser",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RepaymentBonusSet",
+    "inputs": [
+      {
+        "name": "oldBonusPerCt",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newBonusPerCt",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RepaymentInitialized",
+    "inputs": [
+      {
+        "name": "initialBonusPerCt",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RepaymentPoolFunded",
+    "inputs": [
+      {
+        "name": "producer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newPoolBalance",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RepaymentPoolWithdrawn",
+    "inputs": [
+      {
+        "name": "producer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newPoolBalance",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SaleClassicInitialized",
+    "inputs": [
+      {
+        "name": "pricePerToken",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "minCap",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxCap",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "fundingDeadline",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "seasonDuration",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "fundingFeeBps",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1550,228 +1035,1373 @@
     "anonymous": false
   },
   {
-    "type": "event",
-    "name": "Unpaused",
+    "type": "fallback",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "activateCampaign",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "addAcceptedToken",
     "inputs": [
       {
-        "name": "account",
+        "name": "token",
         "type": "address",
-        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "mode",
+        "type": "uint8",
+        "internalType": "enum SaleClassicModule.PricingMode"
+      },
+      {
+        "name": "fixedRate",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "oracleFeed",
+        "type": "address",
         "internalType": "address"
       }
     ],
-    "anonymous": false
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "AlreadyFunded",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "AlreadySet",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "AlreadySettled",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "CollateralCapExceeded",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "DeadlineInPast",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "DeadlineNotExtended",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "DeadlineNotReached",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "DepositWindowClosed",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "EnforcedPause",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "ExpectedPause",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "FundingNotExpired",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidCoverageHarvests",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidInitialization",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidState",
+    "type": "function",
+    "name": "attachModuleAsFactory",
     "inputs": [
       {
-        "name": "expected",
-        "type": "uint8",
-        "internalType": "enum Campaign.State"
+        "name": "moduleType",
+        "type": "bytes32",
+        "internalType": "bytes32"
       },
       {
-        "name": "actual",
-        "type": "uint8",
-        "internalType": "enum Campaign.State"
+        "name": "kind",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "impl",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "metadataURI",
+        "type": "string",
+        "internalType": "string"
       }
-    ]
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "InvalidYearlyReturn",
-    "inputs": []
+    "type": "function",
+    "name": "attachModule",
+    "inputs": [
+      {
+        "name": "moduleType",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "kind",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "impl",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "metadataURI",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "MaxCapReached",
-    "inputs": []
+    "type": "function",
+    "name": "availableCollateral",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "MinCapAlreadyReached",
-    "inputs": []
+    "type": "function",
+    "name": "bonusPerCt",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "MinCapNotReached",
-    "inputs": []
+    "type": "function",
+    "name": "buyback",
+    "inputs": [
+      {
+        "name": "paymentToken",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "NegativeOraclePrice",
-    "inputs": []
+    "type": "function",
+    "name": "buy",
+    "inputs": [
+      {
+        "name": "paymentToken",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "paymentAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "NewMaxCapBelowCommitted",
-    "inputs": []
+    "type": "function",
+    "name": "campaignToken",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "NewMinCapBelowSupply",
-    "inputs": []
+    "type": "function",
+    "name": "cancelSellBack",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "NoCollateralAvailable",
-    "inputs": []
+    "type": "function",
+    "name": "claimedByUser",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "NoSellBackPending",
-    "inputs": []
+    "type": "function",
+    "name": "closeBootstrap",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "NotInitializing",
-    "inputs": []
+    "type": "function",
+    "name": "collateralDrawn",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "NothingToRefund",
-    "inputs": []
+    "type": "function",
+    "name": "collateralLocked",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "OnlyFactory",
-    "inputs": []
+    "type": "function",
+    "name": "coverageHarvests",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "OnlyProducer",
-    "inputs": []
+    "type": "function",
+    "name": "currentSeasonId",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "OutOfCoverage",
-    "inputs": []
+    "type": "function",
+    "name": "currentSupply",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "PaymentDecimalsTooHigh",
-    "inputs": []
+    "type": "function",
+    "name": "depositUSDC",
+    "inputs": [
+      {
+        "name": "seasonId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "walletCap",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "ReentrancyGuardReentrantCall",
-    "inputs": []
+    "type": "function",
+    "name": "detachModule",
+    "inputs": [
+      {
+        "name": "moduleType",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "SafeERC20FailedOperation",
+    "type": "function",
+    "name": "endCampaign",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "endSeason",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "expectedAnnualHarvestUsd",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "expectedAnnualHarvest",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "factoryBootstrap",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "factorySetPaused",
+    "inputs": [
+      {
+        "name": "paused_",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "factory",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "firstHarvestYear",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "fundPool",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "fundingDeadline",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "fundingFeeBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getAcceptedTokens",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPrice",
+    "inputs": [
+      {
+        "name": "paymentToken",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "campaignAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSellBackQueueDepth",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "growMinter",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "harvestManager",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "initializeCollateral",
+    "inputs": [
+      {
+        "name": "p",
+        "type": "tuple",
+        "internalType": "struct CollateralModule.InitParams",
+        "components": [
+          {
+            "name": "expectedAnnualHarvestUsd",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "expectedAnnualHarvest",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "firstHarvestYear",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "coverageHarvests",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "initializeRepaymentByProducer",
+    "inputs": [
+      {
+        "name": "initialBonusPerCt",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "initializeRepayment",
+    "inputs": [
+      {
+        "name": "p",
+        "type": "tuple",
+        "internalType": "struct RepaymentModule.InitParams",
+        "components": [
+          {
+            "name": "initialBonusPerCt",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "initializeSaleClassic",
+    "inputs": [
+      {
+        "name": "p",
+        "type": "tuple",
+        "internalType": "struct SaleClassicModule.InitParams",
+        "components": [
+          {
+            "name": "pricePerToken",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "minCap",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxCap",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fundingDeadline",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "seasonDuration",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fundingFeeBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sequencerUptimeFeed",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "growMinter",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "initialize",
+    "inputs": [
+      {
+        "name": "p",
+        "type": "tuple",
+        "internalType": "struct GrowfiCampaign.InitParams",
+        "components": [
+          {
+            "name": "producer",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "factory",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "usdc",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "protocolFeeRecipient",
+            "type": "address",
+            "internalType": "address"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "lockCollateral",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "maxCap",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxCollateral",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "minCap",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "moduleSlot",
+    "inputs": [
+      {
+        "name": "moduleType",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "impl",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "kind",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "metadataURI",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "attachedAt",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "enabled",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "moduleTypeAt",
+    "inputs": [
+      {
+        "name": "i",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "moduleTypeCount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "paused",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "payoutPerCt",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pendingSellBack",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "poolBalance",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewBuy",
+    "inputs": [
+      {
+        "name": "paymentToken",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "paymentAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "tokensOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "effectivePayment",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "oraclePrice",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "fundingFee",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pricePerToken",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "principalPerCt",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "producer",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "protocolFeeRecipient",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "purchasedTokens",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "purchases",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "quoteRepayment",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "redeem",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "unstakeFirst",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "removeAcceptedToken",
     "inputs": [
       {
         "name": "token",
         "type": "address",
         "internalType": "address"
       }
-    ]
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "SeasonNotReported",
-    "inputs": []
+    "type": "function",
+    "name": "seasonDuration",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "SequencerDown",
-    "inputs": []
+    "type": "function",
+    "name": "seasonShortfallSettled",
+    "inputs": [
+      {
+        "name": "seasonId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "SequencerGracePeriod",
-    "inputs": []
+    "type": "function",
+    "name": "selectorToType",
+    "inputs": [
+      {
+        "name": "selector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "type": "error",
-    "name": "StaleOraclePrice",
-    "inputs": []
+    "type": "function",
+    "name": "sellBack",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "TokenNotAccepted",
-    "inputs": []
+    "type": "function",
+    "name": "setBonusPerCt",
+    "inputs": [
+      {
+        "name": "newBonusPerCt",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "TooManyAcceptedTokens",
-    "inputs": []
+    "type": "function",
+    "name": "setCampaignToken",
+    "inputs": [
+      {
+        "name": "campaignToken_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "TooManyOpenSellBackOrders",
-    "inputs": []
+    "type": "function",
+    "name": "setFundingDeadline",
+    "inputs": [
+      {
+        "name": "newDeadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    "type": "error",
-    "name": "ZeroAmount",
-    "inputs": []
+    "type": "function",
+    "name": "setHarvestManager",
+    "inputs": [
+      {
+        "name": "harvestManager_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setMaxCap",
+    "inputs": [
+      {
+        "name": "newMaxCap",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setMinCap",
+    "inputs": [
+      {
+        "name": "newMinCap",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setModuleEnabled",
+    "inputs": [
+      {
+        "name": "moduleType",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "enabled",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setPaused",
+    "inputs": [
+      {
+        "name": "paused_",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setStakingVault",
+    "inputs": [
+      {
+        "name": "stakingVault_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setYieldToken",
+    "inputs": [
+      {
+        "name": "yieldToken_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "settleSeasonShortfall",
+    "inputs": [
+      {
+        "name": "seasonId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "stakingVault",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "startSeason",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "state",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "enum CampaignStorage.State"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "tokenConfig",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct SaleClassicModule.TokenConfig",
+        "components": [
+          {
+            "name": "pricingMode",
+            "type": "uint8",
+            "internalType": "enum SaleClassicModule.PricingMode"
+          },
+          {
+            "name": "fixedRate",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "oracleFeed",
+            "type": "address",
+            "internalType": "contract AggregatorV3Interface"
+          },
+          {
+            "name": "paymentDecimals",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "active",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "triggerBuyback",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "usdc",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "withdrawUnusedPool",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "yieldToken",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
   }
 ]

@@ -1,6 +1,6 @@
 {
   "name": "growfi-subgraph",
-  "version": "3.3.0",
+  "version": "4.0.1",
   "description": "GrowFi subgraph — indexes CampaignFactory + dynamic Campaign/StakingVault/HarvestManager templates",
   "private": true,
   "scripts": {

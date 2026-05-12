@@ -67,7 +67,7 @@
       {
         "name": "redemptionType",
         "type": "uint8",
-        "internalType": "enum HarvestManager.RedemptionType"
+        "internalType": "enum GrowfiHarvestManager.RedemptionType"
       },
       {
         "name": "amount",
@@ -463,7 +463,7 @@
       {
         "name": "",
         "type": "address",
-        "internalType": "contract StakingVault"
+        "internalType": "contract GrowfiStakingVault"
       }
     ],
     "stateMutability": "view"
@@ -489,7 +489,7 @@
       {
         "name": "",
         "type": "address",
-        "internalType": "contract YieldToken"
+        "internalType": "contract GrowfiYieldToken"
       }
     ],
     "stateMutability": "view"

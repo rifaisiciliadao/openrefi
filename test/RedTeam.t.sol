@@ -4,6 +4,10 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
 import {GrowfiYieldToken} from "../src/GrowfiYieldToken.sol";
 import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
@@ -22,7 +26,7 @@ contract RedTeamTest is Test {
     MockERC20 weth;
     MockOracle wethOracle;
 
-    GrowfiCampaign campaign;
+    IGrowfiCampaignFull campaign;
     GrowfiCampaignToken campaignToken;
     GrowfiYieldToken yieldToken;
     GrowfiStakingVault stakingVault;
@@ -52,33 +56,40 @@ contract RedTeamTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "Olive",
-                tokenSymbol: "OLIVE",
-                yieldName: "oYield",
-                yieldSymbol: "oY",
-                pricePerToken: PRICE_PER_TOKEN,
-                minCap: MIN_CAP,
-                maxCap: MAX_CAP,
-                fundingDeadline: block.timestamp + 90 days,
-                seasonDuration: SEASON_DURATION,
+                campaignTokenName: "Olive",
+                campaignTokenSymbol: "OLIVE",
+                yieldTokenName: "oYield",
+                yieldTokenSymbol: "oY",
                 minProductClaim: 5e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: PRICE_PER_TOKEN,
+                    minCap: MIN_CAP,
+                    maxCap: MAX_CAP,
+                    fundingDeadline: block.timestamp + 90 days,
+                    seasonDuration: SEASON_DURATION,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
 
         (address c, address ct, address yt, address sv, address hm,,) = factory.campaigns(0);
-        campaign = GrowfiCampaign(c);
+        campaign = IGrowfiCampaignFull(payable(c));
         campaignToken = GrowfiCampaignToken(ct);
         yieldToken = GrowfiYieldToken(yt);
         stakingVault = GrowfiStakingVault(sv);
         harvestManager = GrowfiHarvestManager(hm);
 
         vm.startPrank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
-        campaign.addAcceptedToken(address(weth), GrowfiCampaign.PricingMode.Oracle, 0, address(wethOracle));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, USDC_FIXED_RATE, address(0));
+        campaign.addAcceptedToken(address(weth), SaleClassicModule.PricingMode.Oracle, 0, address(wethOracle));
         vm.stopPrank();
 
         usdc.mint(alice, 100_000e6);
@@ -105,7 +116,7 @@ contract RedTeamTest is Test {
         uint256 pay = 60_000 * USDC_FIXED_RATE;
         vm.prank(alice);
         campaign.buy(address(usdc), pay);
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Active));
     }
 
     // =========================================================================
@@ -143,8 +154,8 @@ contract RedTeamTest is Test {
         // Factory already called setCampaignToken during createCampaign
         // Even if factory could somehow re-call it, the one-time guard must block
         vm.prank(address(factory));
-        vm.expectRevert(GrowfiCampaign.AlreadySet.selector);
-        campaign.setCampaignToken(address(0xdead));
+        vm.expectRevert(GrowfiCampaign.AlreadyWired.selector);
+        GrowfiCampaign(payable(address(campaign))).setCampaignToken(address(0xdead));
     }
 
     function test_attack_resetStakingVaultOnToken() public {
@@ -174,7 +185,7 @@ contract RedTeamTest is Test {
     function test_attack_forgeMerkleProof() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(alice);
         stakingVault.stake(60_000e18);
         vm.warp(block.timestamp + 365 days);
@@ -213,7 +224,7 @@ contract RedTeamTest is Test {
     function test_attack_doubleRedemption() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(alice);
         stakingVault.stake(60_000e18);
         vm.warp(block.timestamp + 365 days);
@@ -248,7 +259,7 @@ contract RedTeamTest is Test {
     function test_attack_redeemAfterWindow() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(alice);
         stakingVault.stake(60_000e18);
         vm.warp(block.timestamp + 365 days);
@@ -274,7 +285,7 @@ contract RedTeamTest is Test {
     function test_attack_lateUSDCDeposit() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(alice);
         stakingVault.stake(60_000e18);
         vm.warp(block.timestamp + 365 days);
@@ -307,7 +318,7 @@ contract RedTeamTest is Test {
 
         // Attacker never bought anything → NothingToRefund
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.NothingToRefund.selector);
+        vm.expectRevert(SaleClassicModule.NothingToRefund.selector);
         campaign.buyback(address(usdc));
     }
 
@@ -330,7 +341,7 @@ contract RedTeamTest is Test {
     function test_attack_oracleNegativePrice() public {
         wethOracle.setPrice(-1); // malicious oracle reports negative
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.NegativeOraclePrice.selector);
+        vm.expectRevert(SaleClassicModule.NegativeOraclePrice.selector);
         campaign.buy(address(weth), 1e18);
     }
 
@@ -341,7 +352,7 @@ contract RedTeamTest is Test {
         // Advance time 2h without updating oracle
         vm.warp(block.timestamp + 2 hours);
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.StaleOraclePrice.selector);
+        vm.expectRevert(SaleClassicModule.StaleOraclePrice.selector);
         campaign.buy(address(weth), 1e18);
     }
 
@@ -351,7 +362,7 @@ contract RedTeamTest is Test {
     function test_attack_unstakeOthersPosition() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(alice);
         uint256 pos = stakingVault.stake(60_000e18);
 
@@ -372,19 +383,20 @@ contract RedTeamTest is Test {
     }
 
     // =========================================================================
-    // ATTACK 15 — Season replay: reuse a seasonId that was already used
+    // ATTACK 15 — Season replay: with auto-increment, ids cannot be re-used by design
     // =========================================================================
     function test_attack_reusedSeasonId() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
+        assertEq(campaign.currentSeasonId(), 1, "first season is 1");
         vm.prank(producer);
         campaign.endSeason();
 
-        // Try to re-start the same seasonId → SeasonAlreadyUsed
+        // Auto-increment prevents id re-use; the next call yields 2.
         vm.prank(producer);
-        vm.expectRevert(GrowfiStakingVault.SeasonAlreadyUsed.selector);
-        campaign.startSeason(1);
+        campaign.startSeason();
+        assertEq(campaign.currentSeasonId(), 2, "auto-increment hands out fresh ids");
     }
 
     // =========================================================================
@@ -393,7 +405,7 @@ contract RedTeamTest is Test {
     function test_attack_duplicateHarvestReport() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.warp(block.timestamp + 365 days);
         vm.prank(producer);
         campaign.endSeason();
@@ -424,7 +436,7 @@ contract RedTeamTest is Test {
     function test_attack_pauseAsAttacker() public {
         vm.prank(attacker);
         vm.expectRevert(GrowfiCampaign.OnlyFactory.selector);
-        campaign.emergencyPause();
+        GrowfiCampaign(payable(address(campaign))).factorySetPaused(true);
 
         vm.prank(attacker);
         vm.expectRevert(GrowfiStakingVault.OnlyFactory.selector);
@@ -460,7 +472,7 @@ contract RedTeamTest is Test {
     function test_attack_cancelSellBackNoPending() public {
         _activateCampaign();
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.NoSellBackPending.selector);
+        vm.expectRevert(SaleClassicModule.NoSellBackPending.selector);
         campaign.cancelSellBack();
     }
 
@@ -471,10 +483,10 @@ contract RedTeamTest is Test {
         uint256 pay = 10_000 * USDC_FIXED_RATE;
         vm.prank(alice);
         campaign.buy(address(usdc), pay);
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Funding));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Funding));
 
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.MinCapNotReached.selector);
+        vm.expectRevert(SaleClassicModule.MinCapNotReached.selector);
         campaign.activateCampaign();
     }
 
@@ -484,7 +496,7 @@ contract RedTeamTest is Test {
     function test_attack_claimUsdcWithoutDeposit() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(alice);
         stakingVault.stake(60_000e18);
         vm.warp(block.timestamp + 365 days);
@@ -511,7 +523,7 @@ contract RedTeamTest is Test {
     // =========================================================================
     function test_attack_zeroBuy() public {
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.ZeroAmount.selector);
+        vm.expectRevert(SaleClassicModule.ZeroAmount.selector);
         campaign.buy(address(usdc), 0);
     }
 
@@ -522,7 +534,7 @@ contract RedTeamTest is Test {
         MockERC20 attackerToken = new MockERC20("Fake", "FAKE", 18);
         vm.prank(attacker);
         vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
-        campaign.addAcceptedToken(address(attackerToken), GrowfiCampaign.PricingMode.Fixed, 1, address(0));
+        campaign.addAcceptedToken(address(attackerToken), SaleClassicModule.PricingMode.Fixed, 1, address(0));
     }
 
     // =========================================================================
@@ -535,7 +547,7 @@ contract RedTeamTest is Test {
         rogue.approve(address(campaign), type(uint256).max);
 
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.TokenNotAccepted.selector);
+        vm.expectRevert(SaleClassicModule.TokenNotAccepted.selector);
         campaign.buy(address(rogue), 100e18);
     }
 
@@ -554,7 +566,7 @@ contract RedTeamTest is Test {
 
         // Attacker tries to buy more
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.MaxCapReached.selector);
+        vm.expectRevert(SaleClassicModule.MaxCapReached.selector);
         campaign.buy(address(usdc), USDC_FIXED_RATE);
     }
 
@@ -564,7 +576,7 @@ contract RedTeamTest is Test {
     function test_attack_restakeSameSeason() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(alice);
         uint256 pos = stakingVault.stake(10_000e18);
 
@@ -579,11 +591,11 @@ contract RedTeamTest is Test {
     function test_attack_doubleStartSeason() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
 
         vm.prank(producer);
         vm.expectRevert(GrowfiStakingVault.SeasonAlreadyActive.selector);
-        campaign.startSeason(2);
+        campaign.startSeason();
     }
 
     // =========================================================================
@@ -593,7 +605,7 @@ contract RedTeamTest is Test {
         // Even if yield exists on an account, random user can't burn
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(alice);
         stakingVault.stake(60_000e18);
         vm.warp(block.timestamp + 30 days);
@@ -624,7 +636,7 @@ contract RedTeamTest is Test {
         // Producer cannot pull the USDC — no admin function on GrowfiCampaign for that
         // Only path to release is _activate() or buyback(). Attacker calls whatever is callable.
         vm.prank(producer);
-        vm.expectRevert(GrowfiCampaign.MinCapNotReached.selector);
+        vm.expectRevert(SaleClassicModule.MinCapNotReached.selector);
         campaign.activateCampaign();
 
         // Funds remain escrowed
@@ -637,7 +649,7 @@ contract RedTeamTest is Test {
     function test_attack_endSeasonAsAttacker() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(attacker);
         vm.expectRevert(GrowfiCampaign.OnlyProducer.selector);
         campaign.endSeason();
@@ -666,7 +678,7 @@ contract RedTeamTest is Test {
         campaign.buy(address(usdc), pay);
 
         vm.prank(attacker);
-        vm.expectRevert(GrowfiCampaign.FundingNotExpired.selector);
+        vm.expectRevert(SaleClassicModule.FundingNotExpired.selector);
         campaign.triggerBuyback();
     }
 
@@ -679,13 +691,13 @@ contract RedTeamTest is Test {
         strangeToken.mint(attacker, 10e18);
 
         vm.prank(producer);
-        campaign.addAcceptedToken(address(strangeToken), GrowfiCampaign.PricingMode.Oracle, 0, address(badOracle));
+        campaign.addAcceptedToken(address(strangeToken), SaleClassicModule.PricingMode.Oracle, 0, address(badOracle));
 
         vm.prank(attacker);
         strangeToken.approve(address(campaign), type(uint256).max);
 
         vm.prank(attacker);
-        vm.expectRevert("Oracle decimals > 18");
+        vm.expectRevert(SaleClassicModule.OracleDecimalsTooHigh.selector);
         campaign.buy(address(strangeToken), 1e18);
     }
 
@@ -695,7 +707,7 @@ contract RedTeamTest is Test {
     function test_attack_maxPositionsGriefing() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
 
         // Alice stakes 50 small positions
         vm.startPrank(alice);
@@ -716,7 +728,7 @@ contract RedTeamTest is Test {
     function test_attack_dustRedemption() public {
         _activateCampaign();
         vm.prank(producer);
-        campaign.startSeason(1);
+        campaign.startSeason();
         vm.prank(alice);
         stakingVault.stake(60_000e18);
         vm.warp(block.timestamp + 365 days);

@@ -11,7 +11,7 @@ import {
   SellBackRequested as SellBackRequestedEvent,
   SellBackFilled as SellBackFilledEvent,
   SellBackCancelled as SellBackCancelledEvent,
-  CampaignPaused as CampaignPausedEvent,
+  PausedSet as PausedSetEvent,
   FundingDeadlineUpdated as FundingDeadlineUpdatedEvent,
   MinCapUpdated as MinCapUpdatedEvent,
   MaxCapUpdated as MaxCapUpdatedEvent,
@@ -151,11 +151,11 @@ export function handleCollateralShortfallSettled(
 
 export function handleAcceptedTokenAdded(event: AcceptedTokenAddedEvent): void {
   const campaignAddress = event.address;
-  const id = campaignAddress.concat(event.params.tokenAddress);
+  const id = campaignAddress.concat(event.params.token);
 
   const token = new AcceptedToken(id);
   token.campaign = campaignAddress;
-  token.tokenAddress = event.params.tokenAddress;
+  token.tokenAddress = event.params.token;
   token.symbol = event.params.symbol;
   token.pricingMode = event.params.pricingMode == 0 ? "Fixed" : "Oracle";
   token.fixedRate = event.params.fixedRate;
@@ -168,7 +168,7 @@ export function handleAcceptedTokenAdded(event: AcceptedTokenAddedEvent): void {
 export function handleAcceptedTokenRemoved(
   event: AcceptedTokenRemovedEvent,
 ): void {
-  const id = event.address.concat(event.params.tokenAddress);
+  const id = event.address.concat(event.params.token);
   const token = AcceptedToken.load(id);
   if (token != null) {
     token.active = false;
@@ -244,7 +244,7 @@ export function handleSellBackCancelled(event: SellBackCancelledEvent): void {
   ]);
 }
 
-export function handleCampaignPaused(event: CampaignPausedEvent): void {
+export function handlePausedSet(event: PausedSetEvent): void {
   const campaign = Campaign.load(event.address);
   if (campaign == null) return;
   campaign.paused = event.params.paused;

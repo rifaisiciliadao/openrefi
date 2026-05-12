@@ -2,15 +2,25 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
+
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
+
 import {MockERC20} from "./helpers/MockERC20.sol";
 import {Deployer} from "./helpers/Deployer.sol";
 
 /// @title GasBounds — regression tests for unbounded-loop DoS vectors
 contract GasBoundsTest is Test {
+    // SaleClassicModule's accepted-tokens whitelist is bounded at 10 entries.
+    // Mirrors the module constant so tests don't reach into module internals.
+    uint256 internal constant MAX_ACCEPTED_TOKENS = 10;
+
     GrowfiCampaignFactory factory;
-    GrowfiCampaign campaign;
+    IGrowfiCampaignFull campaign;
     MockERC20 usdc;
     address protocolOwner = makeAddr("protocolOwner");
     address feeRecipient = makeAddr("feeRecipient");
@@ -23,63 +33,66 @@ contract GasBoundsTest is Test {
         factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: producer,
-                tokenName: "Olive",
-                tokenSymbol: "OLIVE",
-                yieldName: "oY",
-                yieldSymbol: "oY",
-                pricePerToken: 0.144e18,
-                minCap: 10_000e18,
-                maxCap: 100_000e18,
-                fundingDeadline: block.timestamp + 90 days,
-                seasonDuration: 365 days,
+                campaignTokenName: "Olive",
+                campaignTokenSymbol: "OLIVE",
+                yieldTokenName: "oY",
+                yieldTokenSymbol: "oY",
                 minProductClaim: 5e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 1_000e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: 0.144e18,
+                    minCap: 10_000e18,
+                    maxCap: 100_000e18,
+                    fundingDeadline: block.timestamp + 90 days,
+                    seasonDuration: 365 days,
+                    fundingFeeBps: 0, // overwritten to FUNDING_FEE_BPS by the factory
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 1_000e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
         (address c,,,,,,) = factory.campaigns(0);
-        campaign = GrowfiCampaign(c);
+        campaign = IGrowfiCampaignFull(payable(c));
     }
 
     /// @dev The producer can add up to MAX_ACCEPTED_TOKENS (10) payment tokens.
     function test_addUpToCap() public {
-        uint256 cap = campaign.MAX_ACCEPTED_TOKENS();
         vm.startPrank(producer);
-        for (uint256 i = 0; i < cap; i++) {
+        for (uint256 i = 0; i < MAX_ACCEPTED_TOKENS; i++) {
             MockERC20 t = new MockERC20("T", "T", 18);
-            campaign.addAcceptedToken(address(t), GrowfiCampaign.PricingMode.Fixed, 1e18, address(0));
+            campaign.addAcceptedToken(address(t), SaleClassicModule.PricingMode.Fixed, 1e18, address(0));
         }
         vm.stopPrank();
-        assertEq(campaign.getAcceptedTokens().length, cap);
+        assertEq(campaign.getAcceptedTokens().length, MAX_ACCEPTED_TOKENS);
     }
 
     /// @dev Adding an 11th token must revert with TooManyAcceptedTokens.
     function test_cannotExceedCap() public {
-        uint256 cap = campaign.MAX_ACCEPTED_TOKENS();
         vm.startPrank(producer);
-        for (uint256 i = 0; i < cap; i++) {
+        for (uint256 i = 0; i < MAX_ACCEPTED_TOKENS; i++) {
             MockERC20 t = new MockERC20("T", "T", 18);
-            campaign.addAcceptedToken(address(t), GrowfiCampaign.PricingMode.Fixed, 1e18, address(0));
+            campaign.addAcceptedToken(address(t), SaleClassicModule.PricingMode.Fixed, 1e18, address(0));
         }
         MockERC20 extra = new MockERC20("X", "X", 18);
-        vm.expectRevert(GrowfiCampaign.TooManyAcceptedTokens.selector);
-        campaign.addAcceptedToken(address(extra), GrowfiCampaign.PricingMode.Fixed, 1e18, address(0));
+        vm.expectRevert(SaleClassicModule.TooManyAcceptedTokens.selector);
+        campaign.addAcceptedToken(address(extra), SaleClassicModule.PricingMode.Fixed, 1e18, address(0));
         vm.stopPrank();
     }
 
     /// @dev Activation with MAX_ACCEPTED_TOKENS entries must still fit in a sane gas budget.
     function test_activationGasBoundedAtMaxTokens() public {
-        uint256 cap = campaign.MAX_ACCEPTED_TOKENS();
-
         // Register the campaign's own USDC as token 1
         vm.startPrank(producer);
-        campaign.addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, 144_000, address(0));
+        campaign.addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, 144_000, address(0));
         // Fill remaining slots with inert fixed-rate tokens (no balance → no transfer)
-        for (uint256 i = 1; i < cap; i++) {
+        for (uint256 i = 1; i < MAX_ACCEPTED_TOKENS; i++) {
             MockERC20 t = new MockERC20("T", "T", 18);
-            campaign.addAcceptedToken(address(t), GrowfiCampaign.PricingMode.Fixed, 1e18, address(0));
+            campaign.addAcceptedToken(address(t), SaleClassicModule.PricingMode.Fixed, 1e18, address(0));
         }
         vm.stopPrank();
 
@@ -97,6 +110,6 @@ contract GasBoundsTest is Test {
 
         // Sanity: under 1M gas even with the full loop. (In practice ~500-700k.)
         assertLt(gasUsed, 1_000_000, "activation gas explosion");
-        assertEq(uint8(campaign.state()), uint8(GrowfiCampaign.State.Active));
+        assertEq(uint8(campaign.state()), uint8(CampaignStorage.State.Active));
     }
 }

@@ -6,6 +6,10 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {GrowfiCampaignFactory} from "../src/GrowfiCampaignFactory.sol";
 import {GrowfiCampaign} from "../src/GrowfiCampaign.sol";
+import {CampaignStorage} from "../src/host/CampaignStorage.sol";
+import {IGrowfiCampaignFull} from "../src/interfaces/IGrowfiCampaignFull.sol";
+import {SaleClassicModule} from "../src/modules/SaleClassicModule.sol";
+import {CollateralModule} from "../src/modules/CollateralModule.sol";
 import {GrowfiCampaignToken} from "../src/GrowfiCampaignToken.sol";
 import {GrowfiStakingVault} from "../src/GrowfiStakingVault.sol";
 import {GrowfiToken} from "../src/GrowfiToken.sol";
@@ -144,27 +148,34 @@ contract GrowfiIntegrationTest is Test {
         campaign = factory.createCampaign(
             GrowfiCampaignFactory.CreateCampaignParams({
                 producer: PRODUCER,
-                tokenName: name,
-                tokenSymbol: symbol,
-                yieldName: string(abi.encodePacked(symbol, " Yield")),
-                yieldSymbol: string(abi.encodePacked("y", symbol)),
-                pricePerToken: pricePerToken,
-                minCap: minCap,
-                maxCap: maxCap,
-                fundingDeadline: block.timestamp + 30 days,
-                seasonDuration: 1 hours,
+                campaignTokenName: name,
+                campaignTokenSymbol: symbol,
+                yieldTokenName: string(abi.encodePacked(symbol, " Yield")),
+                yieldTokenSymbol: string(abi.encodePacked("y", symbol)),
                 minProductClaim: 1e18,
-                expectedAnnualHarvestUsd: 5_000e18,
-                expectedAnnualHarvest: 250e18,
-                firstHarvestYear: 2030,
-                coverageHarvests: 0
+                sale: SaleClassicModule.InitParams({
+                    pricePerToken: pricePerToken,
+                    minCap: minCap,
+                    maxCap: maxCap,
+                    fundingDeadline: block.timestamp + 30 days,
+                    seasonDuration: 1 hours,
+                    fundingFeeBps: 0,
+                    sequencerUptimeFeed: address(0),
+                    growMinter: address(0)
+                }),
+                collateral: CollateralModule.InitParams({
+                    expectedAnnualHarvestUsd: 5_000e18,
+                    expectedAnnualHarvest: 250e18,
+                    firstHarvestYear: 2030,
+                    coverageHarvests: 0
+                })
             })
         );
 
         // Producer whitelists USDC as a payment token on the campaign.
         vm.prank(PRODUCER);
-        GrowfiCampaign(campaign)
-            .addAcceptedToken(address(usdc), GrowfiCampaign.PricingMode.Fixed, pricePerToken / 1e12, address(0));
+        IGrowfiCampaignFull(payable(campaign))
+            .addAcceptedToken(address(usdc), SaleClassicModule.PricingMode.Fixed, pricePerToken / 1e12, address(0));
     }
 
     function _approveAndFundUsdc(address user, uint256 amount, address spender) internal {
@@ -186,7 +197,7 @@ contract GrowfiIntegrationTest is Test {
         assertEq(uint256(status), uint256(GrowfiMinter.CampaignStatus.Pending), "minter status: Pending");
 
         // Verify the campaign cached the minter at init.
-        assertEq(GrowfiCampaign(campaign).growMinter(), address(growMinter), "campaign cached growMinter");
+        assertEq(IGrowfiCampaignFull(payable(campaign)).growMinter(), address(growMinter), "campaign cached growMinter");
 
         // ALICE buys $50 worth (50 tokens at $1) -- all in tier 1 → 50 GROW escrowed.
         // She actually pays $50 + 3% fee = $51.55... no wait: fee is skimmed from gross.
@@ -204,7 +215,7 @@ contract GrowfiIntegrationTest is Test {
         // GROW: cumBuyVolumeUsd advances by 50e18 (the USD value of the mint), tier 1 rate → 50 GROW.
         _approveAndFundUsdc(ALICE, 50 * ONE_USDC, campaign);
         vm.prank(ALICE);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         assertEq(growMinter.getEscrow(campaign, ALICE), 50e18, "Alice escrow = 50 GROW");
         assertEq(growToken.balanceOf(ALICE), 0, "Alice's wallet still empty (escrowed)");
@@ -213,7 +224,7 @@ contract GrowfiIntegrationTest is Test {
         // BOB buys another $50 -- reaches softcap, auto-activates. His buy is also tier 1 (cum hits exactly $100).
         _approveAndFundUsdc(BOB, 50 * ONE_USDC, campaign);
         vm.prank(BOB);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         // Status is now Active.
         (status,,,) = growMinter.getCampaignState(campaign);
@@ -238,7 +249,7 @@ contract GrowfiIntegrationTest is Test {
         // Alice buys $50 → reaches softcap → activates. Tier 1 only.
         _approveAndFundUsdc(ALICE, 50 * ONE_USDC, campaign);
         vm.prank(ALICE);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         // Status should be Active now.
         (GrowfiMinter.CampaignStatus status,,,) = growMinter.getCampaignState(campaign);
@@ -253,7 +264,7 @@ contract GrowfiIntegrationTest is Test {
         // Wait: minCap = 50, so tier1 USD = 50. Bob's buy advances from $50 to $75, all tier 2 → 17.5 GROW.
         _approveAndFundUsdc(BOB, 25 * ONE_USDC, campaign);
         vm.prank(BOB);
-        GrowfiCampaign(campaign).buy(address(usdc), 25 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 25 * ONE_USDC);
 
         // Direct mint to wallet (status = Active).
         assertEq(growToken.balanceOf(BOB), 175e17, "Bob = 25 USD * 0.7 = 17.5 GROW direct");
@@ -268,7 +279,7 @@ contract GrowfiIntegrationTest is Test {
         // Alice buys $50 -- pre-softcap, escrowed.
         _approveAndFundUsdc(ALICE, 50 * ONE_USDC, campaign);
         vm.prank(ALICE);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         assertEq(growMinter.getEscrow(campaign, ALICE), 50e18);
 
@@ -276,7 +287,7 @@ contract GrowfiIntegrationTest is Test {
         vm.warp(block.timestamp + 31 days);
 
         // Anyone triggers buyback (failed campaign).
-        GrowfiCampaign(campaign).triggerBuyback();
+        IGrowfiCampaignFull(payable(campaign)).triggerBuyback();
 
         // Status: Failed, GROW escrow voided in semantic terms (claim now reverts).
         (GrowfiMinter.CampaignStatus status,,,) = growMinter.getCampaignState(campaign);
@@ -290,7 +301,7 @@ contract GrowfiIntegrationTest is Test {
 
         // Alice can still claim her USDC refund via the existing buyback path.
         vm.prank(ALICE);
-        GrowfiCampaign(campaign).buyback(address(usdc));
+        IGrowfiCampaignFull(payable(campaign)).buyback(address(usdc));
         // Refund is NET (post 3% fee), so Alice gets $48.50 back, fee stays in feeSplitter.
         assertEq(usdc.balanceOf(ALICE), 4850 * ONE_USDC / 100);
     }
@@ -303,7 +314,7 @@ contract GrowfiIntegrationTest is Test {
         // Alice buys $100 -- fee 3% = $3 lands in feeSplitter.
         _approveAndFundUsdc(ALICE, 100 * ONE_USDC, campaign);
         vm.prank(ALICE);
-        GrowfiCampaign(campaign).buy(address(usdc), 100 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 100 * ONE_USDC);
 
         assertEq(usdc.balanceOf(address(feeSplitter)), 3 * ONE_USDC, "fee splitter has $3");
 
@@ -357,7 +368,7 @@ contract GrowfiIntegrationTest is Test {
         // So $200 buy: tier1 = $50 × 1.0 = 50, tier2 = $75 × 0.7 = 52.5, tier3 = $75 × 0.4 = 30. Total 132.5.
         _approveAndFundUsdc(ALICE, 200 * ONE_USDC, campA);
         vm.prank(ALICE);
-        GrowfiCampaign(campA).buy(address(usdc), 200 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campA)).buy(address(usdc), 200 * ONE_USDC);
 
         // Alice claims her escrow on A (but only $50 was tier-1 pre-softcap; the rest was post-softcap direct mint)
         // Actually: the buy crossed softcap so $50 went to escrow at tier1, and $150 went direct to wallet
@@ -372,7 +383,7 @@ contract GrowfiIntegrationTest is Test {
         // Now buy $50 on B -- fresh curve, all tier 1 → 50 GROW (escrowed pre-softcap)
         _approveAndFundUsdc(ALICE, 50 * ONE_USDC, campB);
         vm.prank(ALICE);
-        GrowfiCampaign(campB).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campB)).buy(address(usdc), 50 * ONE_USDC);
 
         // B reached softcap → claim
         vm.prank(ALICE);
@@ -398,7 +409,7 @@ contract GrowfiIntegrationTest is Test {
         // Alice reaches softcap → activate.
         _approveAndFundUsdc(ALICE, 50 * ONE_USDC, campaign);
         vm.prank(ALICE);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         // Alice claims her escrow.
         vm.prank(ALICE);
@@ -406,17 +417,17 @@ contract GrowfiIntegrationTest is Test {
         uint256 aliceGrow0 = growToken.balanceOf(ALICE);
 
         // Alice queues a 50-token sellback (still has the campaignToken from her buy).
-        IERC20 ct = IERC20(GrowfiCampaign(campaign).campaignToken());
+        IERC20 ct = IERC20(IGrowfiCampaignFull(payable(campaign)).campaignToken());
         vm.prank(ALICE);
         ct.approve(campaign, 50e18);
         vm.prank(ALICE);
-        GrowfiCampaign(campaign).sellBack(50e18);
+        IGrowfiCampaignFull(payable(campaign)).sellBack(50e18);
 
         // Bob now buys $25. Queue has 50 tokens; $25 fills 25 of them at price 1.0 = 25 tokens.
         // No fresh mint; supply unchanged. recordBuy(BOB, 50e18, 50e18) → no delta → no GROW.
         _approveAndFundUsdc(BOB, 25 * ONE_USDC, campaign);
         vm.prank(BOB);
-        GrowfiCampaign(campaign).buy(address(usdc), 25 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 25 * ONE_USDC);
 
         assertEq(growToken.balanceOf(BOB), 0, "queue fill alone shouldn't emit GROW to Bob");
 
@@ -424,7 +435,7 @@ contract GrowfiIntegrationTest is Test {
         // The fresh mint advances cumBuyVolumeUsd by ~$25 (only the fresh portion contributes).
         _approveAndFundUsdc(CAROL, 50 * ONE_USDC, campaign);
         vm.prank(CAROL);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         // Carol got GROW only for the fresh-mint portion. cumVol was $50 → ~$75 (only $25 of fresh).
         // Tier 2 rate (cumVol $50–$75 in tier 2 since softcap=$50) → $25 × 0.7 = 17.5 GROW.
@@ -456,7 +467,7 @@ contract GrowfiIntegrationTest is Test {
             address c = i == 0 ? campA : (i == 1 ? campB : campC);
             _approveAndFundUsdc(PRODUCER, 50 * ONE_USDC, c);
             vm.prank(PRODUCER);
-            GrowfiCampaign(c).buy(address(usdc), 50 * ONE_USDC);
+            IGrowfiCampaignFull(payable(c)).buy(address(usdc), 50 * ONE_USDC);
         }
 
         _enableAutomationAndTrack(campA);
@@ -469,16 +480,16 @@ contract GrowfiIntegrationTest is Test {
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 300 * ONE_USDC);
 
         // Each campaign got $100 → 100 CampaignToken
-        assertEq(IERC20(GrowfiCampaign(campA).campaignToken()).balanceOf(address(growTreasury)), 100e18);
-        assertEq(IERC20(GrowfiCampaign(campB).campaignToken()).balanceOf(address(growTreasury)), 100e18);
-        assertEq(IERC20(GrowfiCampaign(campC).campaignToken()).balanceOf(address(growTreasury)), 100e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken()).balanceOf(address(growTreasury)), 100e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campB)).campaignToken()).balanceOf(address(growTreasury)), 100e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campC)).campaignToken()).balanceOf(address(growTreasury)), 100e18);
     }
 
     function test_acrossTracked_revertsWhenAutomationOff() public {
         address camp = _createCampaign(50e18, 1000e18, 1e18);
         _approveAndFundUsdc(PRODUCER, 50 * ONE_USDC, camp);
         vm.prank(PRODUCER);
-        GrowfiCampaign(camp).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(camp)).buy(address(usdc), 50 * ONE_USDC);
 
         // Tracked but automation disabled
         vm.prank(address(factory));
@@ -510,7 +521,7 @@ contract GrowfiIntegrationTest is Test {
         // Activate only the first
         _approveAndFundUsdc(PRODUCER, 50 * ONE_USDC, campActive);
         vm.prank(PRODUCER);
-        GrowfiCampaign(campActive).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campActive)).buy(address(usdc), 50 * ONE_USDC);
 
         _enableAutomationAndTrack(campActive);
         _enableAutomationAndTrack(campFunding);
@@ -521,8 +532,8 @@ contract GrowfiIntegrationTest is Test {
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 200 * ONE_USDC);
 
         // All went to the Active one (Funding skipped)
-        assertEq(IERC20(GrowfiCampaign(campActive).campaignToken()).balanceOf(address(growTreasury)), 200e18);
-        assertEq(IERC20(GrowfiCampaign(campFunding).campaignToken()).balanceOf(address(growTreasury)), 0);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campActive)).campaignToken()).balanceOf(address(growTreasury)), 200e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(campFunding)).campaignToken()).balanceOf(address(growTreasury)), 0);
     }
 
     function test_acrossTracked_capsAtRemainingMintableRoom() public {
@@ -530,7 +541,7 @@ contract GrowfiIntegrationTest is Test {
         address camp = _createCampaign(50e18, 100e18, 1e18);
         _approveAndFundUsdc(PRODUCER, 80 * ONE_USDC, camp);
         vm.prank(PRODUCER);
-        GrowfiCampaign(camp).buy(address(usdc), 80 * ONE_USDC); // 20 tokens room left
+        IGrowfiCampaignFull(payable(camp)).buy(address(usdc), 80 * ONE_USDC); // 20 tokens room left
 
         _enableAutomationAndTrack(camp);
 
@@ -541,7 +552,7 @@ contract GrowfiIntegrationTest is Test {
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 500 * ONE_USDC);
 
         // Capped: only 20 USDC actually spent (the remaining capacity)
-        assertEq(IERC20(GrowfiCampaign(camp).campaignToken()).balanceOf(address(growTreasury)), 20e18);
+        assertEq(IERC20(IGrowfiCampaignFull(payable(camp)).campaignToken()).balanceOf(address(growTreasury)), 20e18);
         // Remainder stays in Treasury
         assertEq(usdc.balanceOf(address(growTreasury)), 980 * ONE_USDC);
     }
@@ -600,7 +611,7 @@ contract GrowfiIntegrationTest is Test {
         address campaign = _createCampaign(50e18, 200e18, 1e18);
         _approveAndFundUsdc(PRODUCER, 50 * ONE_USDC, campaign);
         vm.prank(PRODUCER);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         // ============================================================
         // Phase 3: Multisig adds the campaign to Treasury's tracked list, then allocates
@@ -611,14 +622,14 @@ contract GrowfiIntegrationTest is Test {
         vm.prank(address(factory));
         growTreasury.allocateToCampaign(campaign, address(usdc), 50 * ONE_USDC);
 
-        IERC20 ct = IERC20(GrowfiCampaign(campaign).campaignToken());
+        IERC20 ct = IERC20(IGrowfiCampaignFull(payable(campaign)).campaignToken());
         assertEq(ct.balanceOf(address(growTreasury)), 50e18, "treasury holds 50 CampaignTokens");
 
         // ============================================================
         // Phase 4: Producer starts season; Treasury stakes
         // ============================================================
         vm.prank(PRODUCER);
-        GrowfiCampaign(campaign).startSeason(1);
+        IGrowfiCampaignFull(payable(campaign)).startSeason();
 
         vm.prank(address(factory));
         uint256 positionId = growTreasury.stakeOnCampaign(campaign, 50e18);
@@ -633,12 +644,12 @@ contract GrowfiIntegrationTest is Test {
         // Phase 6: Producer ends season; Treasury claims YIELD
         // ============================================================
         vm.prank(PRODUCER);
-        GrowfiCampaign(campaign).endSeason();
+        IGrowfiCampaignFull(payable(campaign)).endSeason();
 
         vm.prank(address(factory));
         growTreasury.claimYieldFromCampaign(campaign, positionId);
 
-        GrowfiStakingVault vault = GrowfiStakingVault(GrowfiCampaign(campaign).stakingVault());
+        GrowfiStakingVault vault = GrowfiStakingVault(IGrowfiCampaignFull(payable(campaign)).stakingVault());
         GrowfiYieldToken yt = GrowfiYieldToken(address(vault.yieldToken()));
         uint256 treasuryYield = yt.balanceOf(address(growTreasury));
         assertGt(treasuryYield, 0, "treasury earned YIELD");
@@ -652,7 +663,7 @@ contract GrowfiIntegrationTest is Test {
         uint256 totalProductUnits = 100e18;
         bytes32 root = keccak256(abi.encodePacked(address(growTreasury), uint256(1), uint256(0)));
 
-        GrowfiHarvestManager hm = GrowfiHarvestManager(GrowfiCampaign(campaign).harvestManager());
+        GrowfiHarvestManager hm = GrowfiHarvestManager(IGrowfiCampaignFull(payable(campaign)).harvestManager());
         vm.prank(PRODUCER);
         hm.reportHarvest(1, totalValueUSD, root, totalProductUnits);
 
@@ -671,7 +682,7 @@ contract GrowfiIntegrationTest is Test {
         vm.prank(PRODUCER);
         usdc.approve(address(campaign), owed);
         vm.prank(PRODUCER);
-        GrowfiCampaign(campaign).depositUSDC(1, owed);
+        IGrowfiCampaignFull(payable(campaign)).depositUSDC(1, owed);
 
         // ============================================================
         // Phase 10: Anyone (BOB, permissionless) calls claimUsdcAndDistribute
@@ -742,11 +753,11 @@ contract GrowfiIntegrationTest is Test {
 
         // Producer also accepts USDT and DAI on each campaign
         vm.startPrank(PRODUCER);
-        GrowfiCampaign(campA).addAcceptedToken(address(usdt), GrowfiCampaign.PricingMode.Fixed, 1e6, address(0));
-        GrowfiCampaign(campA).addAcceptedToken(address(dai), GrowfiCampaign.PricingMode.Fixed, 1e18, address(0));
-        GrowfiCampaign(campB).addAcceptedToken(address(usdt), GrowfiCampaign.PricingMode.Fixed, 5e5, address(0));
-        GrowfiCampaign(campB).addAcceptedToken(address(dai), GrowfiCampaign.PricingMode.Fixed, 5e17, address(0));
-        GrowfiCampaign(campC).addAcceptedToken(address(dai), GrowfiCampaign.PricingMode.Fixed, 2e18, address(0));
+        IGrowfiCampaignFull(payable(campA)).addAcceptedToken(address(usdt), SaleClassicModule.PricingMode.Fixed, 1e6, address(0));
+        IGrowfiCampaignFull(payable(campA)).addAcceptedToken(address(dai), SaleClassicModule.PricingMode.Fixed, 1e18, address(0));
+        IGrowfiCampaignFull(payable(campB)).addAcceptedToken(address(usdt), SaleClassicModule.PricingMode.Fixed, 5e5, address(0));
+        IGrowfiCampaignFull(payable(campB)).addAcceptedToken(address(dai), SaleClassicModule.PricingMode.Fixed, 5e17, address(0));
+        IGrowfiCampaignFull(payable(campC)).addAcceptedToken(address(dai), SaleClassicModule.PricingMode.Fixed, 2e18, address(0));
         vm.stopPrank();
 
         // ===== Phase 3: Multi-actor multi-token buys =====
@@ -755,28 +766,28 @@ contract GrowfiIntegrationTest is Test {
         vm.prank(EVE);
         usdc.approve(campA, 50 * ONE_USDC);
         vm.prank(EVE);
-        GrowfiCampaign(campA).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campA)).buy(address(usdc), 50 * ONE_USDC);
 
         // Frank buys $50 USDT on A (post-softcap, direct GROW mint at tier 2)
         usdt.mint(FRANK, 50 * ONE_USDC);
         vm.prank(FRANK);
         usdt.approve(campA, 50 * ONE_USDC);
         vm.prank(FRANK);
-        GrowfiCampaign(campA).buy(address(usdt), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campA)).buy(address(usdt), 50 * ONE_USDC);
 
         // Eve buys $30 DAI on campB → 60 tokens, below 100 softcap → still Funding (escrow)
         dai.mint(EVE, 30 * ONE_DAI);
         vm.prank(EVE);
         dai.approve(campB, 30 * ONE_DAI);
         vm.prank(EVE);
-        GrowfiCampaign(campB).buy(address(dai), 30 * ONE_DAI);
+        IGrowfiCampaignFull(payable(campB)).buy(address(dai), 30 * ONE_DAI);
 
         // Frank buys $80 USDC on campC (= 40 tokens at $2/each, > 30 softcap → Active)
         usdc.mint(FRANK, 80 * ONE_USDC);
         vm.prank(FRANK);
         usdc.approve(campC, 80 * ONE_USDC);
         vm.prank(FRANK);
-        GrowfiCampaign(campC).buy(address(usdc), 80 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campC)).buy(address(usdc), 80 * ONE_USDC);
 
         // ===== Phase 4: Eve claims her escrow on campA (Active) and campB stays escrowed =====
         vm.prank(EVE);
@@ -846,8 +857,8 @@ contract GrowfiIntegrationTest is Test {
         vm.prank(OWNER);
         factory.allocateAcrossTrackedGrowfiTreasury(address(usdc), 1_000 * ONE_USDC);
 
-        IERC20 ctA = IERC20(GrowfiCampaign(campA).campaignToken());
-        IERC20 ctC = IERC20(GrowfiCampaign(campC).campaignToken());
+        IERC20 ctA = IERC20(IGrowfiCampaignFull(payable(campA)).campaignToken());
+        IERC20 ctC = IERC20(IGrowfiCampaignFull(payable(campC)).campaignToken());
         assertGt(ctA.balanceOf(address(growTreasury)), 0, "treasury got CT from campA");
         assertGt(ctC.balanceOf(address(growTreasury)), 0, "treasury got CT from campC");
 
@@ -896,7 +907,7 @@ contract GrowfiIntegrationTest is Test {
         // Trigger softcap via Alice (so the campaign is Active and accepts payment to producer).
         _approveAndFundUsdc(ALICE, 50 * ONE_USDC, campaign);
         vm.prank(ALICE);
-        GrowfiCampaign(campaign).buy(address(usdc), 50 * ONE_USDC);
+        IGrowfiCampaignFull(payable(campaign)).buy(address(usdc), 50 * ONE_USDC);
 
         // Multisig tracks the campaign, then allocates manually.
         vm.prank(address(factory));
@@ -906,7 +917,7 @@ contract GrowfiIntegrationTest is Test {
         growTreasury.allocateToCampaign(campaign, address(usdc), 50 * ONE_USDC);
 
         // Treasury now holds CampaignToken instead of $50 USDC.
-        IERC20 ct = IERC20(GrowfiCampaign(campaign).campaignToken());
+        IERC20 ct = IERC20(IGrowfiCampaignFull(payable(campaign)).campaignToken());
         assertGt(ct.balanceOf(address(growTreasury)), 0);
 
         // Treasury's allocation buy was excluded → no GROW emitted to it.

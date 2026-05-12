@@ -69,10 +69,11 @@ export function DirectBuyGrowPanel() {
   const notify = useTxNotify();
   const { writeContractAsync } = useWriteContract();
 
-  /// Faucet visible on local anvil + Base Sepolia only — both Mock contracts
-  /// have a public `mint`. Mainnet stablecoins do NOT, so the button is gated.
+  /// Faucet visible on testnets where the stablecoins are MockUSDC/MockStablecoin
+  /// (public mint). Mainnet stablecoins do NOT have public mint, so the button
+  /// is gated. Allow: anvil (31337), Base Sepolia (84532), ETH Sepolia (11155111).
   const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 84532);
-  const faucetEnabled = chainId === 31337 || chainId === 84532;
+  const faucetEnabled = chainId === 31337 || chainId === 84532 || chainId === 11155111;
 
   const stableOptions = useMemo<StableOption[]>(() => {
     const out: StableOption[] = [];
@@ -272,9 +273,7 @@ export function DirectBuyGrowPanel() {
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
       <h2 className="mb-1 text-xl font-semibold text-zinc-900">{t("title")}</h2>
-      <p className="mb-4 text-sm text-zinc-500">
-        {t("blurb", { markup: markupPct })}
-      </p>
+      <p className="mb-4 text-sm text-zinc-500">{t("blurb")}</p>
 
       {!saleActive && (
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
@@ -289,9 +288,6 @@ export function DirectBuyGrowPanel() {
         </div>
         <div className="font-mono text-zinc-900">
           {salePrice === 0n ? "—" : `$${formatUnits(salePrice, 18)}`}
-        </div>
-        <div className="mt-0.5 text-[11px] text-zinc-500">
-          {t("salePriceHint", { markup: markupPct })}
         </div>
       </div>
 

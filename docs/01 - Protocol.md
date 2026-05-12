@@ -7,186 +7,164 @@ status: defined
 ---
 # Protocol — Smart Contracts
 
+The on-chain stack is split into a small **core** of stable contracts plus a set of **modules** that the Campaign host delegatecalls into. The full module spec is in [[07 - Module Framework (Diamond)]]; this document covers what each contract owns.
+
 ## Contract Architecture
 
 ### Core Contracts
 
 #### 1. `CampaignFactory`
-Registry and deployer for new campaigns.
+Registry, deployer, and module whitelist authority.
 
-- `createCampaign(params)` → deploys all campaign contracts
-- Stores all campaign addresses
-- Collects protocol fee (small % of raised funds)
-- Owner: protocol multisig
-- Enforces protocol constants: dynamic yield rate (5→1 linear decay), linear penalty, 90-day USDC deposit window, 30% producer share (off-chain), 2% protocol fee (on-chain), 1,000 tokens per asset
+- `createCampaign(params)` → deploys the per-campaign proxy stack (Campaign host + CampaignToken + YieldToken + StakingVault + HarvestManager), initializes them in dependency order, and auto-injects every module listed in `defaultModules[]` into the new Campaign during a one-shot bootstrap window.
+- Maintains the **module whitelist**: `approvedModuleImpls[kind][impl]` and `moduleKindSelectors[kind]`, both `onlyOwner`. A Campaign cannot attach a module whose impl is not on this whitelist.
+- Maintains the **default modules list**: `defaultModules[]` (each entry: `type`, `kind`, `impl`, `metadataURI`). Editable by the factory owner; changes propagate only to future Campaigns.
+- Stores all campaign addresses (`isCampaign[address] → bool`).
+- Enforces protocol-wide invariants set at create-time: `nameTaken` uniqueness, `minSeasonDuration` floor, the L2 sequencer-uptime feed reference, the canonical USDC address used by collateral flows.
+- Owner: protocol multisig.
 
-#### 2. `Campaign`
-Handles token sales with multi-token support, escrow, and cap management.
+#### 2. `Campaign` (host)
 
-**State (core):**
-- `pricePerToken` — base price denominated in USD (e.g., $0.144)
-- `minCap` — minimum tokens that must be sold for campaign to proceed
-- `maxCap` — maximum tokens mintable (= maxSupply)
-- `currentSupply` — tokens minted so far
-- `fundingDeadline` — deadline to reach minCap
-- `seasonDuration` — season length (≥ 365 days)
-- `state` — enum: Funding, Active, Buyback, Ended
-- `acceptedTokens[]` — list of accepted ERC20 tokens for payment
-- `tokenConfig[address]` — per-token config: pricing mode (fixed or oracle), fixed rate, oracle feed address
-- `purchases[user][token]` — tracks each user's payment amounts per token (for buyback refunds; recorded NET of the funding fee)
-- `fundingFeeBps` — protocol fee skimmed off every `buy()` gross inflow (e.g. 300 = 3%); non-refundable on buyback. Snapshotted from the factory at creation. See `03 - Tokenomics.md` for distribution.
+A thin contract that owns the campaign state machine, the module registry, and the physical USDC escrow. It contains **no buy, sellback, collateral or harvest logic** — those are modules.
 
-**State (productive-asset metadata, set at creation, immutable):**
-- `expectedYearlyReturnBps` — producer's commitment to a yearly yield rate, in basis points (e.g. 1000 = 10%). Used by holders to derive `harvestsToRepay = 10_000 / expectedYearlyReturnBps` (i.e. how many harvests until the original investment has been returned in yield) and to size the producer's `requiredCollateral` for the chosen `coverageHarvests`.
-- `expectedFirstYearHarvest` — physical product the producer expects to deliver in year one, in product units (1e18 internal scale). Sets the proportional baseline for `reportHarvest` (subsequent seasons can deviate; this is the up-front commitment used by the calculator).
-- `coverageHarvests` — number of upcoming harvests the producer pre-funds with `collateralLocked`. Strong trust signal: holders see "guaranteed for X harvests" and can compare to `harvestsToRepay`. Tail = `harvestsToRepay − coverageHarvests` is the period where holders carry residual delivery risk.
+**State (core, owned by the host):**
+- `producer`, `factory` — identities
+- `campaignToken`, `yieldToken`, `stakingVault`, `harvestManager`, `usdc` — per-campaign bindings
+- `state` — enum: `Funding`, `Active`, `Buyback`, `Ended`
+- `currentSeasonId` — incremented by `startSeason()`
+- `paused` — emergency stop, owner-gated
+- `factoryBootstrap` — one-shot flag for default-module injection at deploy
+- Module registry: `selectorToType[bytes4] → bytes32`, `moduleSlot[bytes32] → ModuleSlot`, `moduleTypeList[]`
 
-**State (collateral, mutable):**
-- `collateralLocked` — total USDC the producer has locked as pre-paid yield reserve. Cumulative; producer can `lockCollateral(amount)` repeatedly during Active state but never withdraw early.
-- `collateralDrawn` — total USDC already drawn from the reserve to settle holder shortfalls.
-- `seasonShortfallSettled[seasonId]` — guard so each covered season's shortfall draw runs at most once.
+All Campaign storage is read/written through the `CampaignStorage.layout()` library at a deterministic slot (`keccak256("growfi.campaign.core.v1")`) so modules can access it in `delegatecall` context without storage collisions. See [[07 - Module Framework (Diamond)]] §CampaignStorage.
 
-**Multi-Token Payment:**
-```
-For each accepted ERC20, the producer configures:
-  - FIXED mode: set a manual conversion rate (e.g., 1 TOKEN = X $CAMPAIGN)
-  - ORACLE mode: provide a Chainlink price feed address (e.g., WETH/USD)
-    → contract reads oracle, converts to $CAMPAIGN amount at current price
-```
+**Host functions:**
+- `initialize(params)` — proxy initializer; sets bindings, opens `factoryBootstrap`. Called by the factory at deploy.
+- `closeBootstrap()` `onlyFactory` — clears `factoryBootstrap` after the factory's default-module injection loop completes.
+- `attachModule(type, kind, impl, uri)` `onlyProducer` — attach a module after deploy.
+- `attachModuleAsFactory(type, kind, impl, uri)` `onlyFactory` (and only while `factoryBootstrap` is true) — used by the factory to inject defaults.
+- `detachModule(type)` `onlyProducer` — clear a slot and all its selectors.
+- `setModuleEnabled(type, bool)` `onlyProducer` — fast disable without detach.
+- `activate()` — transition Funding → Active when `currentSupply ≥ minCap`. Releases USDC escrow held by Campaign to the producer.
+- `triggerBuyback()` — public, callable after `fundingDeadline` if `currentSupply < minCap`. Transitions Funding → Buyback.
+- `endCampaign()` `onlyProducer` — closes the campaign permanently.
+- `startSeason()`, `endSeason()` — staking lifecycle delegation to StakingVault.
+- `setPaused(bool)` `onlyProducer` — emergency stop. Some module entrypoints choose to honor it via the `nonReentrant`-equivalent guard.
+- `fallback() / delegatecall router` — resolves an unknown selector to a module via `selectorToType[msg.sig] → moduleSlot[type]`, then `delegatecall(impl)`.
 
-**Example:**
-```
-Base price: $0.144 per $CAMPAIGN
-
-USDC:  FIXED mode, 1:1 with base price → 0.144 USDC = 1 $CAMPAIGN
-WETH:  ORACLE mode, Chainlink WETH/USD feed
-       → WETH at $2,880 → 0.144/2880 = 0.00005 WETH = 1 $CAMPAIGN
-DAI:   FIXED mode, 1:1 with base price → 0.144 DAI = 1 $CAMPAIGN
-Custom: FIXED mode, producer sets rate manually
-```
-
-**Campaign Lifecycle:**
+**Lifecycle:**
 ```
 1. FUNDING state
-   → Users buy tokens → funds held in escrow (contract)
-   → No staking, no yield — just fundraising
-   → Producer cannot access funds
+   → Users call sale-module functions (buy, sellBack, ...) via the host fallback
+   → USDC sits in the Campaign address (escrow)
+   → No staking, no yield
 
-2. Min cap reached → transitions to ACTIVE
-   → Funds released to producer
+2. Min cap reached → activate() transitions to ACTIVE
+   → Escrow released to producer
    → Staking activates, yield accrual begins
-   → Purchases continue until max cap
+   → Sellback queue active
 
-3. Max cap reached → no more purchases
+3. Max cap reached → sale module rejects further mints (queue still consumable)
 
-4. Funding deadline passed, min cap NOT reached → transitions to BUYBACK
-   → Staking never activated
-   → Users call buyback() to refund at original purchase price
-   → Each user gets back exactly what they paid, in the same token they paid with
-   → $CAMPAIGN tokens burned on refund
+4. Funding deadline passed, min cap NOT reached → triggerBuyback() → BUYBACK
+   → Sale module exposes the refund path against the original payment record
 ```
 
-**Sell-Back Queue:**
-After activation, the producer has withdrawn the funds. Users who want to exit for cash can sell their $CAMPAIGN back via a FIFO queue funded by new buyers.
+Nothing else lives in the host. Every other behavior (pricing, fee skim, sellback queue, collateral, accepted-token management) is in a module.
 
-```
-1. User unstakes from StakingVault → gets $CAMPAIGN back (minus penalty)
-2. User calls Campaign.sellBack(amount) → $CAMPAIGN deposited into sell-back queue
-3. New buyer calls buy() → payment goes to queued seller FIRST
-4. Seller's $CAMPAIGN is burned, new $CAMPAIGN minted to buyer (net zero supply change)
-5. If no new buyers → seller waits in queue
-6. Seller can cancel sell-back and get $CAMPAIGN back if not yet filled
-```
+### Default Modules
 
-**Queue rules:**
-- FIFO — first to request, first to be paid
-- Partial fills allowed
-- New purchases fill the queue before minting fresh tokens
-- Seller receives payment in whatever token the new buyer paid with
-- Cancel = get $CAMPAIGN back (if not yet filled)
+The factory's `defaultModules[]` list is auto-injected into every new Campaign at deploy. Producers can swap them later for variants approved on the factory whitelist.
 
-**Functions:**
-- `addAcceptedToken(tokenAddress, pricingMode, fixedRate, oracleFeed)` — producer adds a payment token
-- `removeAcceptedToken(tokenAddress)` — producer removes a payment token
-- `buy(tokenAddress, amount)` — pay with any accepted ERC20. During Funding: held in escrow (NET of `fundingFeeBps`). During Active: fills sell-back queue first (NET), then mints new tokens (up to maxCap). The `fundingFeeBps` skim is forwarded to `protocolFeeRecipient` immediately and emitted as `FundingFeeCollected`.
-- `sellBack(amount)` — deposit $CAMPAIGN into sell-back queue. Receives payment tokens when a new buyer fills the order
-- `cancelSellBack()` — cancel pending sell-back, get $CAMPAIGN back (unfilled portion)
-- `buyback()` — refund at original purchase price if campaign is in Buyback state (failed funding). Burns $CAMPAIGN, returns payment tokens NET of `fundingFeeBps` (the funding fee is non-refundable by design — see `03 - Tokenomics.md`)
-- `activateCampaign()` — called when min cap reached (can be automatic or manual). Releases escrow to producer, enables staking
-- `triggerBuyback()` — callable by anyone after funding deadline if min cap not reached. Transitions to Buyback state
-- `lockCollateral(uint256 amount)` — producer-only, Active state. Pulls `amount` USDC from the producer into `collateralLocked`. Cumulative; emits `CollateralLocked`. **No early withdrawal path** — the lock is one-way until `coverageHarvests` settle (or campaign Ended).
-- `settleSeasonShortfall(uint256 seasonId)` — permissionless, callable once per `seasonId ∈ [1..coverageHarvests]` after that season's `usdcDeadline` has passed. Computes the holder pool's missing USDC (`remainingDepositGross`), draws up to that amount from `collateralLocked`, forwards to `HarvestManager.depositUSDC` so the existing claim path delivers to holders pro-rata, increments `collateralDrawn`, sets `seasonShortfallSettled[seasonId] = true`, emits `CollateralShortfallSettled`. Does nothing if no shortfall.
-- `getPrice(tokenAddress, campaignAmount)` — view: returns cost in the specified token for X $CAMPAIGN
-- `getSellBackQueue()` — view: returns queue depth and positions
-- `emergencyPause()` — pause all operations
+#### `growfi.sale.classic.v1`
 
-**Price Calculation:**
-```
-If FIXED mode:
-  tokensOut = paymentAmount / fixedRate
+Owns the classic bonding-curve primary sale: buy, sellback, funding-fee skim, accepted-tokens registry, buyback refund on Funding-failure.
 
-If ORACLE mode:
-  usdPrice = oracle.latestAnswer()  (e.g., WETH/USD)
-  paymentValueUSD = paymentAmount × usdPrice
-  tokensOut = paymentValueUSD / pricePerToken
-```
+**Module storage** (`keccak256("growfi.module.sale.classic.v1")`):
+- `pricePerToken` — base price denominated in USD-18 (e.g. `0.144e18`)
+- `minCap`, `maxCap`, `currentSupply` — cap tracking
+- `fundingDeadline`, `seasonDuration` — lifecycle parameters
+- `acceptedTokens[]` — list of accepted ERC20s for payment
+- `tokenConfig[address]` — per-token pricing: `mode` (Fixed/Oracle/StableUsd), `fixedRate`, `oracleFeed`, `heartbeat`, `paymentDecimals`
+- `purchases[user][token]` — per-token net amount paid by each user; used by `buyback()` to refund failed campaigns in the original token, at the original NET price (the funding fee is non-refundable by design)
+- `fundingFeeBps` — bps skimmed off every `buy()` gross inflow, forwarded to `protocolFeeRecipient` (default 300 = 3%). Snapshotted from the factory at attach time.
+- `sellBackQueue[]`, `sellBackOpenCount[user]`, `MAX_OPEN_SELLBACK_ORDERS_PER_USER` — FIFO sellback queue with a per-user cap (default 50) to prevent griefing.
 
-**Buyback Refund:**
-```
-User paid 0.05 WETH for 1,000 $CAMPAIGN
-Campaign fails to reach min cap
-User calls buyback() → burns 1,000 $CAMPAIGN, receives 0.05 WETH back
+**Module entrypoints** (all callable as `Campaign.<fn>` thanks to fallback delegation):
+- `buy(address paymentToken, uint256 paymentAmount, uint256 minTokensOut)` — pays with any accepted ERC20. During Funding: USDC held in Campaign escrow (NET of `fundingFeeBps`). During Active: fills sellback queue first, then mints fresh tokens up to `maxCap`. `fundingFeeBps` is forwarded to `protocolFeeRecipient` immediately and emitted as `FundingFeeCollected`.
+- `previewBuy(address paymentToken, uint256 paymentAmount)` → `(tokensOut, effectivePayment, oraclePrice, fundingFee)` — pure quote.
+- `getPrice(address paymentToken, uint256 campaignAmount)` — inverse view.
+- `requestSellBack(uint256 amount)` — deposit $CAMPAIGN into the FIFO queue. Receives payment when a future buyer fills the order.
+- `cancelSellBack(uint256 queuePosition)` — withdraw the unfilled portion of an order.
+- `buyback(address paymentToken)` — Buyback-state refund. Burns the caller's $CAMPAIGN and returns the recorded `purchases[user][paymentToken]` amount in the same token.
+- `addAcceptedToken(address token, PricingMode mode, uint256 fixedRate, address oracleFeed, uint64 heartbeat)` `onlyProducer` — register a payment token.
+- `removeAcceptedToken(address token)` `onlyProducer` — deregister.
 
-Refund is in the SAME token the user originally paid with,
-at the SAME amount (not recalculated via oracle).
+**Pricing modes:**
+- `FIXED` — `tokensOut = paymentAmount × 1e18 / fixedRate`
+- `ORACLE` — `tokensOut = paymentAmount × livePriceUsd / pricePerToken`, with sequencer-uptime check on L2 and staleness/heartbeat guard
+- `StableUsd` — `tokensOut = paymentAmount × scale / pricePerToken` for whitelisted stablecoins (USDC, USDT, DAI) with deemed-$1 pricing
+
+**Events** emitted by the module body but indexed off the Campaign address:
+```solidity
+event TokensPurchased(
+    address indexed buyer,
+    address indexed paymentToken,
+    uint256 paymentAmount,        // GROSS (pre-fundingFee)
+    uint256 campaignTokensOut,
+    uint256 oraclePriceUsed,      // 0 if fixed/stable mode
+    uint256 newCurrentSupply
+);
+event FundingFeeCollected(address indexed buyer, address indexed paymentToken, uint256 fee);
+event SellBackRequested(address indexed user, uint256 queuePosition, uint256 amount);
+event SellBackFilled(address indexed buyer, address indexed seller, uint256 amount, address paymentToken);
+event SellBackCancelled(address indexed user, uint256 queuePosition, uint256 amountReturned);
+event AcceptedTokenAdded(address indexed token, uint8 mode, uint256 fixedRate, address oracleFeed);
+event AcceptedTokenRemoved(address indexed token);
 ```
 
-**Note:** $CAMPAIGN is only minted during initial sales. No new minting after that. Supply is strictly deflationary.
+#### `growfi.collateral.v1`
 
-**Producer Collateral (Pre-Paid Yield Reserve):**
+Owns the productive-asset commitments and the pre-paid yield reserve.
 
-The producer can pre-fund the first `coverageHarvests` seasons of holder yield by locking USDC into the campaign at activation. This converts an explicit promise (`expectedYearlyReturnBps`) into an on-chain guarantee for the duration of the lock.
+**Module storage** (`keccak256("growfi.module.collateral.v1")`):
+- `expectedAnnualHarvestUsd` — producer's USD-18 yearly yield commitment (e.g. `$5,000/yr`)
+- `expectedAnnualHarvest` — producer's physical product commitment per year (1e18 internal scale; the UI derives implied $/unit from the two)
+- `firstHarvestYear` — calendar year of the first harvest
+- `coverageHarvests` — number of upcoming harvests pre-funded with `collateralLocked`
+- `collateralLocked` — total USDC the producer has locked as the pre-paid reserve; one-way (no early withdrawal)
+- `collateralDrawn` — total USDC drawn to settle holder shortfalls
+- `seasonShortfallSettled[seasonId]` — idempotency guard
 
-```
-Sizing (recommended, enforced off-chain in the UI):
-  expectedYearlyUsdc  = totalRaised × expectedYearlyReturnBps / 10_000
-  requiredCollateral  = coverageHarvests × expectedYearlyUsdc
-  harvestsToRepay     = 10_000 / expectedYearlyReturnBps
-  uncoveredTail       = harvestsToRepay − coverageHarvests
-```
+**Module entrypoints:**
+- `lockCollateral(uint256 amount)` `onlyProducer` — pulls USDC from the producer into `collateralLocked`. Cumulative; capped at `maxCollateral() = expectedAnnualHarvestUsd × coverageHarvests` (USD-18 → USDC-6 rescale).
+- `depositUSDC(uint256 seasonId, uint256 walletCap)` `onlyProducer` — single producer-facing yield-deposit entrypoint. Drains `min(obligation, collateralLocked − collateralDrawn)` from collateral first, then pulls the remaining gap from the producer's wallet up to `walletCap`. Forwards via `HarvestManager.depositFromCollateral(seasonId, amount)`.
+- `settleSeasonShortfall(uint256 seasonId)` — permissionless, callable once per `seasonId ∈ [1..coverageHarvests]` after that season's `usdcDeadline` has passed. Draws up to the unfunded gap from `collateralLocked` and forwards to HarvestManager.
+- View helpers: `maxCollateral()`, `availableCollateral()`, `remainingDepositGross(seasonId)`, `harvestsToRepay()` (derived from `expectedAnnualHarvestUsd` and `pricePerToken × maxCap`).
 
-Lifecycle:
-```
-1. Campaign reaches Active state → `totalRaised` is final.
-2. Producer calls `lockCollateral(USDC)` (any amount, additive, no withdraw).
-   The UI displays the implied "covers X harvests at this expectedYearlyReturn".
-
-3. For each season s ∈ [1..coverageHarvests]:
-   - Producer calls `reportHarvest(s, ...)` → sets `usdcOwed[s]` and starts the
-     `usdcDeadline[s]` window for producer's own depositUSDC.
-   - Holders call `redeemUSDC(s, yieldAmount)` → registers their claim.
-   - Producer (ideally) calls `depositUSDC(s, amount)` from harvest income.
-   - When `block.timestamp > usdcDeadline[s]`:
-     - If `remainingDepositGross[s] == 0` → fully funded by producer; nothing to do.
-     - Else → anyone calls `settleSeasonShortfall(s)`:
-       * draws min(remainingDepositGross, collateralLocked − collateralDrawn) USDC
-         from the locked reserve
-       * forwards to HarvestManager via the existing depositUSDC path
-       * holders' claimUSDC now succeeds for that season
-       * `collateralDrawn` advances, `seasonShortfallSettled[s] = true`
-
-4. After season `coverageHarvests` settles → coverage period ends.
-   Future seasons rely entirely on the producer's own deposits (no automatic
-   draw). Any residual `collateralLocked − collateralDrawn` STAYS LOCKED in
-   the contract; per the protocol's commitment model the collateral does not
-   return to the producer. Distribution of residuals back to holders is a
-   future enhancement (see TODO in `Math & Formulas.md §15`).
+**Events:**
+```solidity
+event CollateralLocked(address indexed producer, uint256 amount, uint256 totalLocked);
+event CollateralShortfallSettled(uint256 indexed seasonId, uint256 amountDrawn, uint256 totalDrawn);
 ```
 
-Trust signal & risk indicator (UI-side, derived):
-- "Coperto X raccolti" — direct from `coverageHarvests`.
-- "Tail di Y raccolti" — `harvestsToRepay − coverageHarvests`. Higher tail = more years where the holder carries delivery risk.
-- Risk score: roughly `tail / harvestsToRepay`. Smaller is better.
+Sizing math and risk indicators live in [[05 - Math & Formulas]] §15.
+
+### Optional Modules
+
+Producer-attached only when needed. Whitelisted in the factory before they become installable.
+
+#### `growfi.repayment.v1` (planned)
+
+Lets the producer pre-fund an early exit for backers. Owner deposits USDC into the module's pool; holders burn their $CAMPAIGN in exchange for `principal + accrued yield`. Useful when the producer wants to close a campaign cleanly before its natural end (e.g. liquidity event, sale of the underlying asset).
+
+#### `growfi.dmrv.silvi.v1` (planned)
+
+Publishes Silvi-verified dMRV signals (tree health, biomass, carbon sequestration) on-chain, tied to the campaign address. Read-only with respect to the Campaign core — the module stores its own state, the rest of the protocol can quote it for UI badges, insurance triggers, or governance signals.
+
+#### Future kinds
+
+Insurance/hedging, alternative sale variants (Dutch auction, whitelist-gated, KYC-gated), governance, royalty/referral, secondary market integrations. Each one adds a new `kind` to the factory whitelist; the Campaign host does not change.
 
 #### 3. `CampaignToken` (ERC20)
 Per-campaign staking token — "the seat."
@@ -241,7 +219,7 @@ Recalculated on every stake/unstake event. Accumulator is updated before rate ch
 - `getPositions(user)` — view: returns all position IDs and details for a user
 - `endSeason()` — finalize season, stop $YIELD accrual
 - `startSeason(newSeasonId)` — begin new season, reset $YIELD accrual
-- `processQueue(incomingFunds)` — called by Campaign.buy() to drain unstake queue FIFO
+- `processQueue(incomingFunds)` — called from the sale module (delegatecall context: caller is the Campaign address) to drain the unstake queue FIFO when a new buy arrives
 - `currentYieldRate()` — view: returns current dynamic yield rate
 
 **Multiple Positions:**
@@ -310,16 +288,21 @@ USDC path:
 
 ```
 CampaignFactory
+  ├── module whitelist: approvedModuleImpls[kind][impl], moduleKindSelectors[kind]
+  ├── defaultModules[]: auto-injected into every new Campaign at deploy
   └── deploys per campaign:
+        ├── Campaign (host: state machine + module registry + USDC escrow + fallback)
+        │     ├── default module: growfi.sale.classic.v1
+        │     ├── default module: growfi.collateral.v1
+        │     └── optional modules: growfi.repayment.v1, growfi.dmrv.silvi.v1, ...
         ├── CampaignToken (ERC20 + Votes) — strictly deflationary
         ├── YieldToken (ERC20) — seasonal, burned on redemption
-        ├── Campaign (sales only, routes funds to queue)
         ├── StakingVault
         │     ├── mints → YieldToken (staking rewards)
-        │     └── burns → CampaignToken (penalties)
+        │     └── burns → CampaignToken (penalties, forceUnstake on module call)
         └── HarvestManager
               ├── burns → YieldToken (on redemption)
-              └── receives → USDC from producer
+              └── receives → USDC from producer (or from collateral via module)
 ```
 
 ### Standalone Registries
@@ -373,12 +356,14 @@ Season N:
 
 ## Contract Events
 
-All events emitted for subgraph indexing.
+All events emitted for subgraph indexing. Module events are emitted from the Campaign address (the modules run in `delegatecall` context), so from the indexer's perspective there's a single event source per Campaign even though logical ownership is split across host + modules.
 
 ### CampaignFactory Events
 
 ```solidity
-// Emitted when a new campaign is deployed
+// Emitted when a new campaign is deployed. Sale/collateral specifics are
+// emitted separately by the corresponding default modules during their own
+// initialize step (see SaleClassicInitialized / CollateralInitialized below).
 event CampaignCreated(
     address indexed campaign,
     address indexed producer,
@@ -386,26 +371,55 @@ event CampaignCreated(
     address yieldToken,
     address stakingVault,
     address harvestManager,
+    uint256 createdAt
+);
+
+// Factory module-whitelist events
+event ModuleImplApproved(bytes32 indexed kind, address indexed impl, bool approved);
+event ModuleKindSelectorsSet(bytes32 indexed kind, bytes4[] selectors);
+event DefaultModulesUpdated(uint256 count);
+```
+
+### Campaign host events
+
+```solidity
+// Module registry lifecycle
+event ModuleAttached(bytes32 indexed moduleType, address indexed impl, bytes32 indexed kind, string metadataURI);
+event ModuleDetached(bytes32 indexed moduleType, address indexed previousImpl);
+event ModuleEnabledSet(bytes32 indexed moduleType, bool enabled);
+event ModuleSelectorRegistered(bytes4 indexed selector, bytes32 indexed moduleType);
+
+// State machine transitions (host-owned)
+event CampaignStateChanged(uint8 oldState, uint8 newState);
+event CampaignActivated(uint256 totalRaised, uint256 tokensSold);
+event BuybackTriggered(uint256 totalRaised, uint256 tokensSold, uint256 minCap);
+event CampaignPaused(bool paused);
+```
+
+### Module events (emitted from the Campaign address)
+
+Modules run in `delegatecall` context and emit events as if they were the Campaign itself. The subgraph indexes them off the Campaign address with no special handling.
+
+#### `growfi.sale.classic.v1` events
+
+```solidity
+// Module initialization (emitted once during factory bootstrap)
+event SaleClassicInitialized(
     uint256 pricePerToken,
     uint256 minCap,
     uint256 maxCap,
     uint256 fundingDeadline,
     uint256 seasonDuration,
-    uint256 minProductClaim,
-    uint256 createdAt
+    uint256 fundingFeeBps
 );
-```
 
-### Campaign Events
-
-```solidity
 // Emitted when a user purchases $CAMPAIGN tokens
 event TokensPurchased(
     address indexed buyer,
     address indexed paymentToken,
     uint256 paymentAmount,        // GROSS (pre-fundingFee)
     uint256 campaignTokensOut,
-    uint256 oraclePriceUsed,     // 0 if fixed mode
+    uint256 oraclePriceUsed,      // 0 if fixed/stable mode
     uint256 newCurrentSupply
 );
 
@@ -417,55 +431,17 @@ event FundingFeeCollected(
     uint256 fee
 );
 
-// Producer locked additional USDC into the pre-paid yield reserve
-event CollateralLocked(
-    address indexed producer,
-    uint256 amount,
-    uint256 newCollateralLocked  // running total
-);
-
-// Anyone called settleSeasonShortfall(seasonId) and the reserve covered
-// the gap between producer's depositUSDC and the season's usdcOwed.
-event CollateralShortfallSettled(
-    uint256 indexed seasonId,
-    uint256 amountDrawn,
-    uint256 newCollateralDrawn   // running total
-);
-
-// Emitted when a payment token is added
+// Accepted-tokens registry mutations
 event AcceptedTokenAdded(
     address indexed tokenAddress,
     string symbol,
-    uint8 pricingMode,           // 0 = fixed, 1 = oracle
-    uint256 fixedRate,           // 0 if oracle mode
-    address oracleFeed           // address(0) if fixed mode
+    uint8 pricingMode,            // 0 = fixed, 1 = oracle, 2 = stableUsd
+    uint256 fixedRate,            // 0 if oracle mode
+    address oracleFeed            // address(0) if fixed mode
 );
+event AcceptedTokenRemoved(address indexed tokenAddress);
 
-// Emitted when a payment token is removed
-event AcceptedTokenRemoved(
-    address indexed tokenAddress
-);
-
-// Emitted when campaign state changes
-event CampaignStateChanged(
-    uint8 oldState,
-    uint8 newState
-);
-
-// Emitted when campaign transitions to Active (min cap reached)
-event CampaignActivated(
-    uint256 totalRaised,
-    uint256 tokensSold
-);
-
-// Emitted when campaign transitions to Buyback (min cap not reached by deadline)
-event BuybackTriggered(
-    uint256 totalRaised,
-    uint256 tokensSold,
-    uint256 minCap
-);
-
-// Emitted when a user claims a buyback refund
+// Buyback (Funding-failure refund)
 event BuybackClaimed(
     address indexed user,
     address indexed paymentToken,
@@ -473,15 +449,8 @@ event BuybackClaimed(
     uint256 refundAmount
 );
 
-// Emitted on emergency pause/unpause
-// Emitted when a user enters the sell-back queue
-event SellBackRequested(
-    address indexed user,
-    uint256 amount,
-    uint256 queuePosition
-);
-
-// Emitted when a sell-back order is (partially) filled by a new buyer
+// Sellback queue
+event SellBackRequested(address indexed user, uint256 amount, uint256 queuePosition);
 event SellBackFilled(
     address indexed seller,
     address indexed buyer,
@@ -490,14 +459,33 @@ event SellBackFilled(
     uint256 paymentAmount,
     uint256 remainingInQueue
 );
+event SellBackCancelled(address indexed user, uint256 amountReturned);
+```
 
-// Emitted when a user cancels their sell-back request
-event SellBackCancelled(
-    address indexed user,
-    uint256 amountReturned
+#### `growfi.collateral.v1` events
+
+```solidity
+event CollateralInitialized(
+    uint256 expectedAnnualHarvestUsd,
+    uint256 expectedAnnualHarvest,
+    uint256 firstHarvestYear,
+    uint256 coverageHarvests
 );
 
-event CampaignPaused(bool paused);
+// Producer locked additional USDC into the pre-paid yield reserve
+event CollateralLocked(
+    address indexed producer,
+    uint256 amount,
+    uint256 newCollateralLocked   // running total
+);
+
+// Anyone called settleSeasonShortfall(seasonId) and the reserve covered the
+// gap between producer's depositUSDC and the season's usdcOwed.
+event CollateralShortfallSettled(
+    uint256 indexed seasonId,
+    uint256 amountDrawn,
+    uint256 newCollateralDrawn    // running total
+);
 ```
 
 ### StakingVault Events
