@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
@@ -14,19 +14,53 @@ export function Header() {
   const { state } = useInviteGate();
   const approved = state === "approved";
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopOpen, setDesktopOpen] = useState(false);
+  const desktopMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close the mobile sheet whenever the viewport widens to desktop, so a user
-  // who opens it on mobile then resizes doesn't get a phantom panel stuck open.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mql = window.matchMedia("(min-width: 768px)");
-    const onChange = () => mql.matches && setMobileOpen(false);
+    const onChange = () => {
+      if (mql.matches) {
+        setMobileOpen(false);
+      } else {
+        setDesktopOpen(false);
+      }
+    };
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
+  useEffect(() => {
+    if (!desktopOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (
+        desktopMenuRef.current &&
+        !desktopMenuRef.current.contains(event.target as Node)
+      ) {
+        setDesktopOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDesktopOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [desktopOpen]);
+
   const linkClass =
     "text-sm font-medium tracking-wide text-on-surface-variant hover:text-on-surface transition-colors";
+  const menuLinkClass =
+    "flex items-center rounded-md px-3 py-2.5 text-sm font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors";
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-outline-variant/15">
@@ -35,15 +69,9 @@ export function Header() {
           <Logo />
         </Link>
 
-        <div className="hidden md:flex gap-8 items-center">
+        <div className="hidden md:flex gap-5 items-center">
           <Link href="/" className={linkClass}>
             {t("explore")}
-          </Link>
-          <Link href="/feed" className={linkClass}>
-            {t("feed")}
-          </Link>
-          <Link href="/portfolio" className={linkClass}>
-            {t("portfolio")}
           </Link>
           <Link href="/investors" className={linkClass}>
             {t("investors")}
@@ -51,30 +79,82 @@ export function Header() {
           <Link href="/grow" className={linkClass}>
             $GROW
           </Link>
-          {approved ? (
-            <Link href="/create" className={linkClass}>
-              {t("create")}
-            </Link>
-          ) : (
-            <Link
-              href="/?openInvite=1"
-              className={linkClass}
-            >
-              {tInvite("requestSubmit")}
-            </Link>
-          )}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* LanguageSwitcher hidden on mobile — moved inside the hamburger
-              sheet to free room for the Connect button. */}
           <div className="hidden md:block">
             <LanguageSwitcher />
+          </div>
+          <div ref={desktopMenuRef} className="relative hidden md:block">
+            <button
+              type="button"
+              onClick={() => setDesktopOpen((v) => !v)}
+              aria-label={desktopOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={desktopOpen}
+              aria-haspopup="menu"
+              title="Menu"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 bg-white text-on-surface hover:bg-surface-container-low transition-colors"
+            >
+              {desktopOpen ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              )}
+            </button>
+            {desktopOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full mt-2 w-60 rounded-lg border border-outline-variant/20 bg-white/95 p-1.5 shadow-[0_18px_48px_-28px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+              >
+                <Link
+                  href="/feed"
+                  role="menuitem"
+                  onClick={() => setDesktopOpen(false)}
+                  className={menuLinkClass}
+                >
+                  {t("feed")}
+                </Link>
+                <Link
+                  href="/portfolio"
+                  role="menuitem"
+                  onClick={() => setDesktopOpen(false)}
+                  className={menuLinkClass}
+                >
+                  {t("portfolio")}
+                </Link>
+                {approved ? (
+                  <Link
+                    href="/create"
+                    role="menuitem"
+                    onClick={() => setDesktopOpen(false)}
+                    className={menuLinkClass}
+                  >
+                    {t("create")}
+                  </Link>
+                ) : (
+                  <Link
+                    href="/?openInvite=1"
+                    role="menuitem"
+                    onClick={() => setDesktopOpen(false)}
+                    className={menuLinkClass}
+                  >
+                    {tInvite("requestSubmit")}
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
           <button
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-label={mobileOpen ? "Close mobile menu" : "Open mobile menu"}
             aria-expanded={mobileOpen}
             className="md:hidden flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 bg-white text-on-surface hover:bg-surface-container-low transition-colors"
           >
@@ -144,8 +224,6 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile dropdown sheet — same links as the desktop row, plus a hairline
-          separator so it visually attaches to the fixed header. */}
       {mobileOpen && (
         <div className="md:hidden border-t border-outline-variant/15 bg-white/95 backdrop-blur-xl">
           <div className="flex flex-col gap-1 px-4 py-3 max-w-7xl mx-auto">
