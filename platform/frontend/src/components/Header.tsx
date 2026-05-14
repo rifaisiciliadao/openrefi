@@ -45,6 +45,9 @@ export function Header() {
           <Link href="/portfolio" className={linkClass}>
             {t("portfolio")}
           </Link>
+          <Link href="/investors" className={linkClass}>
+            {t("investors")}
+          </Link>
           <Link href="/grow" className={linkClass}>
             $GROW
           </Link>
@@ -166,6 +169,13 @@ export function Header() {
               className="rounded-lg px-3 py-3 text-base font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors"
             >
               {t("portfolio")}
+            </Link>
+            <Link
+              href="/investors"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-3 text-base font-medium text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors"
+            >
+              {t("investors")}
             </Link>
             <Link
               href="/grow"

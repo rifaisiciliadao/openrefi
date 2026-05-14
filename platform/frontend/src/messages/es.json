@@ -6,7 +6,8 @@
     "portfolio": "Mi Portfolio",
     "profile": "Perfil",
     "connectWallet": "Conectar Wallet",
-    "connect": "Conectar"
+    "connect": "Conectar",
+    "investors": "Inversores"
   },
   "feed": {
     "title": "Feed Comunidad",
@@ -963,7 +964,8 @@
     "github": "GitHub",
     "discord": "Discord",
     "terms": "Términos",
-    "privacy": "Privacidad"
+    "privacy": "Privacidad",
+    "investors": "Inversores"
   },
   "tx": {
     "approvalConfirmed": "Aprobación confirmada",
@@ -1036,7 +1038,7 @@
       "fundCta": "Financia la Cosecha"
     },
     "hero": {
-      "badge": "Primera campaña live · Agroforestería sintrópica, Sicilia",
+      "badge": "Seed round abierto · GrowFi está levantando capital",
       "titleA": "Invierte en la",
       "titleLand": "tierra.",
       "titleB": "Cosecha el",
@@ -1210,7 +1212,8 @@
       "linkGithub": "GitHub",
       "linkTwitter": "X (Twitter)",
       "linkInstagram": "Instagram",
-      "copy": "© {year} Rifai Sicilia DAO. Todo el código open-source bajo licencia MIT."
+      "copy": "© {year} Rifai Sicilia DAO. Todo el código open-source bajo licencia MIT.",
+      "linkInvestors": "Inversores"
     }
   },
   "notFound": {
@@ -1219,5 +1222,72 @@
     "aside": "Incluso los mejores cultivadores dejan algún surco en barbecho.",
     "ctaHome": "Volver al inicio",
     "ctaExplore": "Explorar campañas"
+  },
+  "investors": {
+    "hero": {
+      "kicker": "Seed round abierto",
+      "title": "GrowFi está levantando capital para construir la capa financiera de la agricultura regenerativa.",
+      "body": "Convertimos la financiación de cosechas reales en infraestructura programable: campañas tokenizadas, tesorería automatizada, staking, liquidación de cosecha y onboarding verificado de productores.",
+      "requestCta": "Solicitar demo",
+      "deckCta": "Descargar pitch deck"
+    },
+    "stats": {
+      "protocol": {
+        "label": "Protocolo",
+        "value": "Sepolia live",
+        "hint": "Contratos, subgraph, frontend y backend están conectados de extremo a extremo."
+      },
+      "campaigns": {
+        "label": "Supply",
+        "value": "2 campañas seed",
+        "hint": "Olivo y viñedo están activos para walkthroughs con inversores."
+      },
+      "treasury": {
+        "label": "Tesorería",
+        "value": "$GROW listo",
+        "hint": "Venta directa, staking pool y auto-asignación a campañas están conectados."
+      }
+    },
+    "thesis": {
+      "kicker": "Tesis de inversión",
+      "title": "El capital de trabajo agrícola sigue offline. GrowFi lo vuelve legible, líquido y programable.",
+      "items": {
+        "market": "Los productores pequeños y medianos necesitan capital estacional antes de la cosecha, mientras los inversores buscan exposición transparente a activos productivos reales.",
+        "protocol": "GrowFi convierte cada cosecha en una campaña on-chain verificable con escrow, reembolsos, staking yield y lógica de liquidación integrada.",
+        "distribution": "La primera cuña es Sicilia: cultivos de alto valor, marcas territoriales fuertes y una red de productores que puede activarse campaña por campaña."
+      }
+    },
+    "milestones": {
+      "product": {
+        "phase": "Producto",
+        "title": "Protocolo v4 desplegado",
+        "body": "Campaign factory, módulos, tesorería $GROW, staking y contabilidad harvest están desplegados en Ethereum Sepolia."
+      },
+      "supply": {
+        "phase": "Supply",
+        "title": "Campañas demo live",
+        "body": "Olive IGP Sicily y Vineyard of Etna están seedadas con metadata, estado KYC del productor y actividad indexada."
+      },
+      "seed": {
+        "phase": "Seed",
+        "title": "La ronda financia readiness mainnet",
+        "body": "El capital se destina a auditorías, compliance, onboarding de productores, liquidez y primeras campañas en producción."
+      }
+    },
+    "form": {
+      "kicker": "Acceso inversores",
+      "title": "Solicita el deck y un walkthrough.",
+      "body": "Cuéntanos quién eres y qué quieres revisar. Responderemos con los materiales actuales y coordinaremos una llamada si hay encaje.",
+      "deck": "Descargar pitch deck",
+      "name": "Nombre",
+      "email": "Email",
+      "company": "Compañía / fondo",
+      "role": "Rol",
+      "message": "¿Qué quieres revisar?",
+      "submit": "Enviar solicitud",
+      "submitting": "Enviando…",
+      "success": "Solicitud recibida. Te responderemos pronto.",
+      "error": "No se pudo enviar la solicitud ahora."
+    }
   }
 }

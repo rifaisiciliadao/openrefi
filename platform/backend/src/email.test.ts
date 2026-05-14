@@ -95,6 +95,29 @@ describe("renderEmail · admin_notify", () => {
   });
 });
 
+describe("renderEmail · investor_request", () => {
+  it("renders investor details and escapes message html", () => {
+    const r = renderEmail({
+      to: "hey@growfi.dev",
+      kind: "investor_request",
+      data: {
+        investorName: "Ada Lovelace",
+        requesterEmail: "ada@example.com",
+        company: "Analytical Capital",
+        role: "Partner",
+        message: "Let's schedule <script>alert(1)</script>",
+        source: `${APP}/investors`,
+      },
+    });
+    assert.match(r.subject, /Analytical Capital/);
+    assert.match(r.html, /ada@example\.com/);
+    assert.match(r.html, /Analytical Capital/);
+    assert.doesNotMatch(r.html, /<script>alert/);
+    assert.match(r.html, /&lt;script&gt;alert/);
+    assert.match(r.text, /Partner/);
+  });
+});
+
 describe("renderEmail · rejected", () => {
   it("includes the optional admin note when present", () => {
     const r = renderEmail({

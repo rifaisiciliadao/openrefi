@@ -13,6 +13,7 @@ import {
   type EmailSender,
 } from "./email.js";
 import { registerInviteRoutes } from "./invite.js";
+import { registerInvestorRoutes } from "./investors.js";
 import {
   buildSpacesNotificationStore,
   type NotificationStore,
@@ -35,6 +36,7 @@ export interface AppDeps {
   email?: EmailSender;
   adminKey?: string | null;
   adminNotifyEmail?: string | null;
+  investorNotifyEmail?: string | null;
   appUrl?: string;
   rateLimit?: { windowMs: number; max: number };
   notificationsUnsubSecret?: string;
@@ -106,6 +108,10 @@ export function buildDefaultDeps(): AppDeps {
     email,
     adminKey: process.env.ADMIN_API_KEY || null,
     adminNotifyEmail: process.env.ADMIN_NOTIFY_EMAIL || "hey@growfi.dev",
+    investorNotifyEmail:
+      process.env.INVESTOR_NOTIFY_EMAIL ||
+      process.env.ADMIN_NOTIFY_EMAIL ||
+      "hey@growfi.dev",
     appUrl,
     rateLimit: {
       windowMs: Number(process.env.INVITE_RATE_WINDOW_MS || 60 * 60 * 1000),
@@ -144,6 +150,18 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       email: deps.email,
       adminKey: deps.adminKey ?? null,
       adminNotifyEmail: deps.adminNotifyEmail ?? null,
+      appUrl: deps.appUrl ?? "https://growfi.app",
+      rateLimit: deps.rateLimit ?? { windowMs: 60 * 60 * 1000, max: 5 },
+    });
+  }
+
+  if (deps.email) {
+    registerInvestorRoutes(app, {
+      email: deps.email,
+      notifyEmail:
+        deps.investorNotifyEmail === undefined
+          ? (deps.adminNotifyEmail ?? null)
+          : deps.investorNotifyEmail,
       appUrl: deps.appUrl ?? "https://growfi.app",
       rateLimit: deps.rateLimit ?? { windowMs: 60 * 60 * 1000, max: 5 },
     });

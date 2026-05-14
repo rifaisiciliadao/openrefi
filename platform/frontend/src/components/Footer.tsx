@@ -18,6 +18,12 @@ export function Footer() {
         </div>
         <div className="flex flex-wrap justify-center md:justify-end gap-x-2 gap-y-1">
           <Link
+            href="/investors"
+            className="inline-flex items-center min-h-[44px] px-3 text-sm font-semibold text-white hover:text-emerald-300 transition-colors"
+          >
+            {t("investors")}
+          </Link>
+          <Link
             href="/grow"
             className="inline-flex items-center min-h-[44px] px-3 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
           >

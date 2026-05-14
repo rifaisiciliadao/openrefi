@@ -5,6 +5,7 @@ export type EmailKind =
   | "approved"
   | "rejected"
   | "admin_notify"
+  | "investor_request"
   | "notifications_digest";
 
 export interface DigestItem {
@@ -26,6 +27,12 @@ export interface EmailPayload {
     /** Set on `admin_notify` to surface the requester's email + telegram. */
     requesterEmail?: string;
     telegram?: string;
+    /** Set on `investor_request`. */
+    investorName?: string;
+    company?: string;
+    role?: string;
+    message?: string;
+    source?: string;
     /** Set on `notifications_digest`. */
     digest?: {
       items: DigestItem[];
@@ -222,6 +229,56 @@ export function renderEmail(payload: EmailPayload): RenderedEmail {
           "",
           `Unsubscribe: ${digest.unsubscribeUrl}`,
         ].join("\n\n"),
+      };
+    }
+    case "investor_request": {
+      const name = payload.data.investorName ?? "";
+      const reqEmail = payload.data.requesterEmail ?? "";
+      const company = payload.data.company ?? "";
+      const role = payload.data.role ?? "";
+      const message = payload.data.message ?? "";
+      const source = payload.data.source ?? "/investors";
+      const subject = `Investor request — ${company || name || reqEmail}`;
+      const body = `
+        <h1 style="font-size:20px;margin:0 0 14px 0;font-weight:700;">Investor request</h1>
+        <p style="margin:0 0 14px 0;color:#5a6a5d;font-size:13px;">A potential investor requested a demo or conversation from GrowFi.</p>
+        <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;">
+          <tr>
+            <td style="padding:8px 0;color:#6b7d6f;width:120px;">Name</td>
+            <td style="padding:8px 0;font-weight:600;">${escapeHtml(name)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7d6f;border-top:1px solid #eef0ec;">Email</td>
+            <td style="padding:8px 0;border-top:1px solid #eef0ec;font-weight:600;"><a href="mailto:${escapeHtml(reqEmail)}" style="color:#2e6b3a;">${escapeHtml(reqEmail)}</a></td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7d6f;border-top:1px solid #eef0ec;">Company</td>
+            <td style="padding:8px 0;border-top:1px solid #eef0ec;">${escapeHtml(company || "—")}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7d6f;border-top:1px solid #eef0ec;">Role</td>
+            <td style="padding:8px 0;border-top:1px solid #eef0ec;">${escapeHtml(role || "—")}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7d6f;border-top:1px solid #eef0ec;">Source</td>
+            <td style="padding:8px 0;border-top:1px solid #eef0ec;">${escapeHtml(source)}</td>
+          </tr>
+        </table>
+        <div style="margin-top:18px;padding:14px 18px;background:#f7faf5;border-radius:10px;border:1px solid #dbe8d7;color:#1a2e1f;white-space:pre-wrap;">${escapeHtml(message)}</div>
+      `;
+      return {
+        subject,
+        html: shellHtml(subject, body),
+        text: [
+          "Investor request",
+          `Name:    ${name}`,
+          `Email:   ${reqEmail}`,
+          `Company: ${company || "—"}`,
+          `Role:    ${role || "—"}`,
+          `Source:  ${source}`,
+          "",
+          message,
+        ].join("\n"),
       };
     }
     case "rejected": {

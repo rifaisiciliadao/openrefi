@@ -19,6 +19,7 @@ export function LandingFooter() {
         { label: t("linkHow"), href: "#how" },
         { label: t("linkCampaigns"), href: "#campaigns" },
         { label: "$GROW", href: "/grow", internal: true },
+        { label: t("linkInvestors"), href: "/investors", internal: true },
         { label: t("linkProducers"), href: "/create", internal: true },
         { label: t("linkPortfolio"), href: "/portfolio", internal: true },
       ],

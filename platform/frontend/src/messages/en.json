@@ -6,7 +6,8 @@
     "portfolio": "My Portfolio",
     "profile": "Profile",
     "connectWallet": "Connect Wallet",
-    "connect": "Connect"
+    "connect": "Connect",
+    "investors": "Investors"
   },
   "feed": {
     "title": "Community Feed",
@@ -963,7 +964,8 @@
     "github": "GitHub",
     "discord": "Discord",
     "terms": "Terms",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "investors": "Investors"
   },
   "tx": {
     "approvalConfirmed": "Token approval confirmed",
@@ -1036,7 +1038,7 @@
       "fundCta": "Fund the Harvest"
     },
     "hero": {
-      "badge": "First campaign live · Syntropic agroforestry, Sicily",
+      "badge": "Seed round open · GrowFi is raising now",
       "titleA": "Invest in the",
       "titleLand": "land.",
       "titleB": "Harvest the",
@@ -1210,7 +1212,8 @@
       "linkGithub": "GitHub",
       "linkTwitter": "X (Twitter)",
       "linkInstagram": "Instagram",
-      "copy": "© {year} Rifai Sicilia DAO. All code open-source under MIT license."
+      "copy": "© {year} Rifai Sicilia DAO. All code open-source under MIT license.",
+      "linkInvestors": "Investors"
     }
   },
   "notFound": {
@@ -1219,5 +1222,72 @@
     "aside": "Even the best growers leave a few rows fallow.",
     "ctaHome": "Back to landing",
     "ctaExplore": "Browse campaigns"
+  },
+  "investors": {
+    "hero": {
+      "kicker": "Seed round open",
+      "title": "GrowFi is raising to build the capital layer for regenerative agriculture.",
+      "body": "We are turning real harvest finance into programmable infrastructure: tokenized campaigns, automated treasury allocation, staking, harvest settlement, and verified grower onboarding.",
+      "requestCta": "Request a demo",
+      "deckCta": "Download pitch deck"
+    },
+    "stats": {
+      "protocol": {
+        "label": "Protocol",
+        "value": "Sepolia live",
+        "hint": "Contracts, subgraph, frontend and backend are connected end to end."
+      },
+      "campaigns": {
+        "label": "Supply",
+        "value": "2 seeded campaigns",
+        "hint": "Olive and vineyard test campaigns are active for investor walkthroughs."
+      },
+      "treasury": {
+        "label": "Treasury",
+        "value": "$GROW ready",
+        "hint": "Direct sale, staking pool and campaign auto-allocation are wired."
+      }
+    },
+    "thesis": {
+      "kicker": "Investment thesis",
+      "title": "Agricultural working capital is still offline. GrowFi makes it legible, liquid and programmable.",
+      "items": {
+        "market": "Small and medium growers need seasonal capital before harvest, while investors need transparent exposure to real productive assets.",
+        "protocol": "GrowFi converts each harvest into an auditable onchain campaign with escrow, refunds, staking yield, and settlement logic built into the product flow.",
+        "distribution": "The first wedge is Sicily: high-value crops, strong territorial brands, and a producer network that can be onboarded campaign by campaign."
+      }
+    },
+    "milestones": {
+      "product": {
+        "phase": "Product",
+        "title": "Protocol v4 is deployed",
+        "body": "Campaign factory, modules, $GROW treasury, staking and harvest accounting have been deployed on Ethereum Sepolia."
+      },
+      "supply": {
+        "phase": "Supply",
+        "title": "Demo campaigns are live",
+        "body": "Olive IGP Sicily and Vineyard of Etna are seeded with metadata, KYC producer state and indexed activity."
+      },
+      "seed": {
+        "phase": "Seed",
+        "title": "The round funds mainnet readiness",
+        "body": "Capital goes into audits, compliance, producer onboarding, liquidity operations and the first production campaigns."
+      }
+    },
+    "form": {
+      "kicker": "Investor access",
+      "title": "Request the deck and a walkthrough.",
+      "body": "Tell us who you are and what you want to review. We will reply with the current materials and schedule a call if there is fit.",
+      "deck": "Download pitch deck",
+      "name": "Name",
+      "email": "Email",
+      "company": "Company / fund",
+      "role": "Role",
+      "message": "What should we cover?",
+      "submit": "Send request",
+      "submitting": "Sending…",
+      "success": "Request received. We will get back to you shortly.",
+      "error": "Unable to send the request right now."
+    }
   }
 }

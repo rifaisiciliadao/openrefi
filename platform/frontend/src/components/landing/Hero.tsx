@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { formatUnits } from "viem";
 import { Nav } from "./Nav";
@@ -136,7 +137,7 @@ export function Hero() {
           className="flex flex-col items-center justify-center px-6 pb-40 text-center"
           style={{ paddingTop: "calc(8rem - 75px)" }}
         >
-          <span className="animate-fade-rise mb-8 inline-block">
+          <Link href="/investors" className="animate-fade-rise mb-8 inline-block">
             <span className="animate-float-soft inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/85 px-4 py-1.5 text-xs font-bold tracking-[0.1em] text-[#1f2d1f] uppercase backdrop-blur-md shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
               <span className="relative inline-block h-1.5 w-1.5">
                 <span
@@ -150,7 +151,7 @@ export function Hero() {
               </span>
               {t("badge")}
             </span>
-          </span>
+          </Link>
 
           <h1
             className="animate-fade-rise font-display max-w-7xl text-5xl sm:text-7xl md:text-8xl"

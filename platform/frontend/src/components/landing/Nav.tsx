@@ -59,6 +59,13 @@ export function Nav() {
             {tNav("portfolio")}
           </Link>
           <Link
+            href="/investors"
+            className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
+            style={{ fontFamily: "var(--font-header)" }}
+          >
+            {tNav("investors")}
+          </Link>
+          <Link
             href="/grow"
             className="relative text-sm font-bold tracking-wide transition-colors text-[#4a4a4a] hover:text-black"
             style={{ fontFamily: "var(--font-header)" }}
@@ -168,6 +175,14 @@ export function Nav() {
               style={{ fontFamily: "var(--font-header)" }}
             >
               {tNav("portfolio")}
+            </Link>
+            <Link
+              href="/investors"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-3 text-base font-bold tracking-wide text-[#4a4a4a] hover:bg-black/5 hover:text-black transition-colors"
+              style={{ fontFamily: "var(--font-header)" }}
+            >
+              {tNav("investors")}
             </Link>
             <Link
               href="/grow"

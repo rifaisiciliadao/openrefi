@@ -199,6 +199,37 @@ export async function checkInvite(address: string): Promise<InviteCheckResult> {
   return (await res.json()) as InviteCheckResult;
 }
 
+export interface InvestorRequestInput {
+  name: string;
+  email: string;
+  company: string;
+  role: string;
+  message: string;
+  website?: string;
+}
+
+export interface InvestorRequestResult {
+  ok: boolean;
+  emailDelivered: boolean;
+}
+
+export async function requestInvestorDemo(
+  input: InvestorRequestInput,
+): Promise<InvestorRequestResult> {
+  const res = await fetch(`${BACKEND_URL}/api/investors/request`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err = await res
+      .json()
+      .catch(() => ({ error: "Investor request failed" }));
+    throw new Error(err.error || "Investor request failed");
+  }
+  return res.json();
+}
+
 export interface NotificationStatus {
   optedIn: boolean;
   hasEmail: boolean;
