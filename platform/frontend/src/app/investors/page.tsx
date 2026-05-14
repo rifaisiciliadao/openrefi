@@ -46,6 +46,12 @@ export default function InvestorsPage() {
     t("thesis.items.distribution"),
   ];
 
+  const mainnetReasons = [
+    t("mainnet.items.security"),
+    t("mainnet.items.settlement"),
+    t("mainnet.items.credibility"),
+  ];
+
   const milestones = [
     {
       phase: t("milestones.product.phase"),
@@ -61,6 +67,21 @@ export default function InvestorsPage() {
       phase: t("milestones.seed.phase"),
       title: t("milestones.seed.title"),
       body: t("milestones.seed.body"),
+    },
+  ];
+
+  const growPoints = [
+    {
+      label: t("grow.items.treasury.label"),
+      body: t("grow.items.treasury.body"),
+    },
+    {
+      label: t("grow.items.staking.label"),
+      body: t("grow.items.staking.body"),
+    },
+    {
+      label: t("grow.items.allocation.label"),
+      body: t("grow.items.allocation.body"),
     },
   ];
 
@@ -140,6 +161,35 @@ export default function InvestorsPage() {
         </div>
       </section>
 
+      <section className="bg-[#061b31] text-white">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 md:grid-cols-[0.82fr_1fr] md:px-8 md:py-20">
+          <div>
+            <p className="text-xs font-semibold uppercase text-emerald-200">
+              {t("mainnet.kicker")}
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold leading-tight md:text-5xl">
+              {t("mainnet.title")}
+            </h2>
+            <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">
+              {t("mainnet.body")}
+            </p>
+          </div>
+          <div className="border-y border-white/12">
+            {mainnetReasons.map((item, index) => (
+              <div
+                key={item}
+                className="grid grid-cols-[44px_1fr] gap-4 border-b border-white/12 py-5 last:border-b-0"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-white text-sm font-semibold text-[#061b31]">
+                  {index + 1}
+                </div>
+                <p className="text-base leading-7 text-slate-200">{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto grid max-w-7xl gap-10 px-4 py-16 md:grid-cols-[0.9fr_1.1fr] md:px-8 md:py-20">
         <div>
           <p className="text-xs font-semibold uppercase text-emerald-700">
@@ -180,6 +230,40 @@ export default function InvestorsPage() {
               <p className="mt-3 text-sm leading-6 text-slate-300">{item.body}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="bg-white">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 md:grid-cols-[0.78fr_1.22fr] md:px-8 md:py-20">
+          <div>
+            <p className="text-xs font-semibold uppercase text-emerald-700">
+              {t("grow.kicker")}
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold leading-tight text-[#061b31] md:text-5xl">
+              {t("grow.title")}
+            </h2>
+            <p className="mt-5 max-w-xl text-base leading-7 text-[#64748d]">
+              {t("grow.body")}
+            </p>
+            <a
+              href="/grow"
+              className="mt-8 inline-flex min-h-[44px] items-center justify-center rounded-[6px] border border-emerald-900/20 bg-[#061b31] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d253d]"
+            >
+              {t("grow.cta")}
+            </a>
+          </div>
+          <div className="grid gap-px bg-emerald-950/10 sm:grid-cols-3">
+            {growPoints.map((item) => (
+              <div key={item.label} className="bg-white p-5 md:p-6">
+                <p className="text-xs font-semibold uppercase text-emerald-700">
+                  {item.label}
+                </p>
+                <p className="mt-3 text-sm leading-6 text-[#42556e]">
+                  {item.body}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

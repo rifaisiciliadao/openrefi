@@ -1070,31 +1070,84 @@
       "kicker": "Cómo funciona",
       "title1": "Cinco pasos.",
       "title2": "Un ciclo vivo.",
-      "intro": "Cada campaña es una state machine onchain. ¿Soft cap no alcanzado? Reembolso automático en un bloque. ¿Cosecha falla? El protocolo abre la ventana buyback USDC. Sin votos DAO, sin comités — el código es ley.",
+      "intro": "GrowFi separa el flujo de capital de la entrega de la cosecha. Los contratos mueven fondos por estados explícitos: escrow, activación, staking, redención y buyback. El usuario ve una cosecha simple; el protocolo mantiene la contabilidad legible.",
       "steps": [
         {
-          "title": "El cultivador lanza la campaña",
-          "body": "Un cultivador tokeniza la próxima cosecha como $CAMPAIGN. Fija soft cap, hard cap, deadline. Todos los parámetros inmutables onchain desde el minuto cero."
+          "signal": "Origen",
+          "asset": "$CAMPAIGN",
+          "title": "El cultivador abre un mercado de cosecha",
+          "body": "El cultivador lanza una campaña con caps, fechas, tokens aceptados y términos de cosecha fijos. Todo es visible antes de que una wallet firme."
         },
         {
-          "title": "Tú financias en USDC",
-          "body": "Depositas USDC, recibes $CAMPAIGN 1:1 al precio listado. ¿Soft cap no alcanzado antes del deadline? Quemas $CAMPAIGN y recuperas el 100% en una tx. Cero riesgo de contraparte."
+          "signal": "Escrow",
+          "asset": "USDC",
+          "title": "Los inversores financian con capital estable",
+          "body": "USDC entra en escrow contractual. Si no se alcanza el soft cap, los holders queman sus tokens de campaña y recuperan fondos directamente del contrato."
         },
         {
-          "title": "Stake, ganas $YIELD",
-          "body": "Haces stake de $CAMPAIGN en la temporada. Acumulas $YIELD (el token de cosecha — $OIL, $CITRUS, según el cultivo) a 1–5× al día. El rate decae al llenarse el vault: quienes stakean antes ganan más."
+          "signal": "Temporada",
+          "asset": "$YIELD",
+          "title": "Las posiciones en staking acumulan claims",
+          "body": "Cuando está activa, $CAMPAIGN se puede stakear durante la temporada. El vault acumula el token $YIELD específico del cultivo; entrar antes gana más de la temporada."
         },
         {
-          "title": "Redime: producto o USDC",
-          "body": "En la cosecha, quemas $YIELD por aceite físico — verificado via Merkle proof en tu wallet — o por tu cuota pro-rata del pool USDC. 98% a holders, 2% fee protocolo."
+          "signal": "Settlement",
+          "asset": "Producto / USDC",
+          "title": "La entrega se vuelve un claim auditable",
+          "body": "En la cosecha, los holders queman $YIELD por producto físico o settlement pro-rata en USDC. Las Merkle proofs del backend coinciden exactamente con la leaf onchain."
         },
         {
-          "title": "Próxima temporada o salida",
-          "body": "Restake para la próxima cosecha, o unstake sin penalidad al final de la temporada. ¿Necesitas liquidez antes? Encola un sell-back — nuevos buyers te rellenan primero al precio actual, FIFO."
+          "signal": "Rollover",
+          "asset": "FIFO",
+          "title": "El capital recicla o sale",
+          "body": "Los holders pueden restakear en la siguiente temporada o encolar un sell-back. Los nuevos buyers llenan salidas FIFO antes de crear nueva exposición."
         }
       ],
-      "tail": "Protocolo agnóstico sobre el producto — aceite, cacao, café, vino, miel. Cualquier cultivador lanza su campaña, sin permiso. Para campañas de alta confianza, el cultivador puede conectar dMRV (monitoreo digital) vía partners como Silvi.",
-      "ctaSee": "Ver campañas live"
+      "tail": "El protocolo es agnóstico al producto: aceite, cacao, café, vino, miel. Las campañas de alta confianza pueden añadir dMRV y verificación de productor sin cambiar el settlement.",
+      "ctaSee": "Ver campañas live",
+      "ledger": {
+        "kicker": "Mapa del protocolo",
+        "title": "Capital, cosechas y $GROW se mueven por rails separados.",
+        "body": "Cada rail tiene una función. USDC financia y liquida. $CAMPAIGN sigue una posición en una cosecha. $YIELD es el ticket de claim. $GROW captura el loop treasury del protocolo."
+      },
+      "rails": {
+        "usdc": {
+          "label": "USDC",
+          "body": "Financia campañas, reembolsa soft caps fallidos y liquida ventanas buyback."
+        },
+        "campaign": {
+          "label": "$CAMP",
+          "body": "Representa una posición financiada en una campaña de cosecha específica."
+        },
+        "yield": {
+          "label": "$YIELD",
+          "body": "Se acumula al stakear y se convierte en claim por producto o USDC."
+        },
+        "grow": {
+          "label": "$GROW",
+          "body": "Conecta revenue de campañas, respaldo treasury y recompensas a stakers."
+        }
+      },
+      "grow": {
+        "kicker": "$GROW token",
+        "title": "El token del protocolo está por encima de cada cosecha.",
+        "body": "Fees de campaña, compras directas de $GROW y settlement de cosechas alimentan un mismo loop treasury. $GROW permite dirigir capital a campañas activas y revenue a stakers de largo plazo.",
+        "cta": "Abrir $GROW",
+        "items": {
+          "treasury": {
+            "label": "Treasury",
+            "body": "Las compras directas mintean a floor más markup, con proceeds retenidos por la treasury."
+          },
+          "staking": {
+            "label": "Staking",
+            "body": "La revenue de cosechas puede ir a stakers $GROW con multiplier ponderado por tiempo."
+          },
+          "floor": {
+            "label": "Floor",
+            "body": "El respaldo se calcula contra $GROW circulante, excluyendo la reserva en treasury."
+          }
+        }
+      }
     },
     "campaigns": {
       "kicker": "Campañas",
@@ -1124,13 +1177,13 @@
       "kicker": "Confianza",
       "title1": "No confíes.",
       "title2": "Verifica.",
-      "intro": "Código open-source en GitHub. Contratos deployados y verificados en Base. Subgraph público. Si algo se ve raro, lo ves tú primero. Si el cultivador no entrega, el protocolo abre ventana buyback USDC de 90 días — el cultivador debe depositar o los holders reclaman pro-rata.",
+      "intro": "Código open-source, contratos públicos y una ruta de settlement mainnet-first. Si una campaña no entrega, el protocolo abre una ventana buyback USDC de 90 días: el cultivador deposita, o los holders reclaman pro-rata.",
       "ghBtn": "GitHub",
       "items": [
         {
           "label": "Contratos verificados",
-          "value": "Base · otros L2 pronto",
-          "detail": "Seis proxies upgradeables por campaña. ProxyAdmin transferible a 0x0 al lanzamiento para inmutabilidad total."
+          "value": "Ethereum L1",
+          "detail": "Ethereum mainnet es el objetivo de settlement a largo plazo porque es la capa neutral más probada para activos que deben seguir verificables por años."
         },
         {
           "label": "Oracle",
@@ -1227,15 +1280,15 @@
     "hero": {
       "kicker": "Seed round abierto",
       "title": "GrowFi está levantando capital para construir la capa financiera de la agricultura regenerativa.",
-      "body": "Convertimos la financiación de cosechas reales en infraestructura programable: campañas tokenizadas, tesorería automatizada, staking, liquidación de cosecha y onboarding verificado de productores.",
+      "body": "Estamos convirtiendo la financiación de cosechas reales en infraestructura programable sobre Ethereum mainnet: campañas tokenizadas, treasury automatizada, staking, settlement de cosecha y onboarding verificado de productores.",
       "requestCta": "Solicitar demo",
       "deckCta": "Descargar pitch deck"
     },
     "stats": {
       "protocol": {
         "label": "Protocolo",
-        "value": "Sepolia live",
-        "hint": "Contratos, subgraph, frontend y backend están conectados de extremo a extremo."
+        "value": "Ethereum mainnet",
+        "hint": "El settlement de producción está diseñado para Ethereum L1, no para una L2 aplicativa."
       },
       "campaigns": {
         "label": "Supply",
@@ -1245,7 +1298,7 @@
       "treasury": {
         "label": "Tesorería",
         "value": "$GROW listo",
-        "hint": "Venta directa, staking pool y auto-asignación a campañas están conectados."
+        "hint": "Venta directa, staking pool y asignación a campañas están conectados al loop treasury de $GROW."
       }
     },
     "thesis": {
@@ -1261,7 +1314,7 @@
       "product": {
         "phase": "Producto",
         "title": "Protocolo v4 desplegado",
-        "body": "Campaign factory, módulos, tesorería $GROW, staking y contabilidad harvest están desplegados en Ethereum Sepolia."
+        "body": "Campaign factory, módulos, treasury $GROW, staking y contabilidad de harvest están alineados con la ruta de producción en Ethereum mainnet."
       },
       "supply": {
         "phase": "Supply",
@@ -1270,8 +1323,8 @@
       },
       "seed": {
         "phase": "Seed",
-        "title": "La ronda financia readiness mainnet",
-        "body": "El capital se destina a auditorías, compliance, onboarding de productores, liquidez y primeras campañas en producción."
+        "title": "El round financia producción en Ethereum",
+        "body": "El capital va a auditorías, compliance, onboarding de productores, operaciones de liquidez y las primeras campañas en producción sobre Ethereum."
       }
     },
     "form": {
@@ -1288,6 +1341,36 @@
       "submitting": "Enviando…",
       "success": "Solicitud recibida. Te responderemos pronto.",
       "error": "No se pudo enviar la solicitud ahora."
+    },
+    "mainnet": {
+      "kicker": "Por qué Ethereum mainnet",
+      "title": "Construimos donde el settlement de largo plazo es más difícil de comprometer.",
+      "body": "La financiación agrícola tiene ciclos lentos. Una cosecha, una ventana buyback y una relación con el productor necesitan infraestructura que sobreviva a narrativas de mercado.",
+      "items": {
+        "security": "Ethereum L1 es la capa de settlement más probada para activos que deben ser verificables por años, no semanas.",
+        "settlement": "Claims de cosecha, refunds y reservas treasury necesitan fuerte finalidad y liquidez nativa más que solo ejecución barata.",
+        "credibility": "Para cultivadores, inversores y partners institucionales, Ethereum mainnet simplifica custodia, auditorías y due diligence."
+      }
+    },
+    "grow": {
+      "kicker": "$GROW token",
+      "title": "$GROW convierte actividad de campañas en un flywheel de protocolo.",
+      "body": "GrowFi no es solo un marketplace de cosechas individuales. $GROW es el layer treasury y staking que conecta revenue del protocolo, asignación a campañas y participación de largo plazo.",
+      "cta": "Ver mecánica $GROW",
+      "items": {
+        "treasury": {
+          "label": "Treasury backed",
+          "body": "Las compras directas agregan reservas stablecoin mientras la exposición a campañas crece vía allocations treasury."
+        },
+        "staking": {
+          "label": "Rewards stakers",
+          "body": "El settlement de cosechas puede enrutar USDC a stakers $GROW mediante el reward pool."
+        },
+        "allocation": {
+          "label": "Demanda campañas",
+          "body": "La automatización treasury $GROW puede distribuir nuevo capital entre campañas activas tracked."
+        }
+      }
     }
   }
 }
