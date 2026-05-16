@@ -452,6 +452,29 @@
       "redeemConfirmed": "Repayment confirmed.",
       "redeemFailed": "Repayment failed"
     },
+    "productiveAsset": {
+      "title": "Grower commitment",
+      "annualHarvest": "Annual harvest",
+      "impliedYield": "Implied yield",
+      "firstHarvest": "First harvest",
+      "pricePerUnit": "Price per {unit}",
+      "payback": "Payback",
+      "paybackValue": "{count, plural, one {# yr} other {# yrs}} (→ {year})",
+      "coverage": "Coverage",
+      "coverageValue": "{covered} / {total} harvests",
+      "prefunded": "The grower pre-funded harvests {start}–{end} with USDC collateral.",
+      "tailRisk": "The tail of {count, plural, one {# year} other {# years}} ({start}–{end}) carries normal delivery risk.",
+      "noPrefund": "The grower published targets but did not pre-fund any harvest. Holders carry the full delivery risk.",
+      "locked": "Locked",
+      "drawn": "Drawn",
+      "free": "Free",
+      "perYearShort": "yr",
+      "units": {
+        "bottles": "bottles",
+        "jars": "jars",
+        "units": "units"
+      }
+    },
     "refund": {
       "title": "Campaign failed — claim refund",
       "subtitle": "Min cap wasn't reached before the deadline. You can burn your $CAMPAIGN for the original payment back, per-token.",

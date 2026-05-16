@@ -16,7 +16,6 @@ import { formatUnits } from "viem";
 import { useCampaignData } from "@/contracts/hooks";
 import { abis, getAddresses } from "@/contracts";
 import { erc20Abi } from "@/contracts/erc20";
-import { repaymentModuleAbi } from "@/contracts/repayment";
 import { useSubgraphCampaign, useSubgraphProducer } from "@/lib/subgraph";
 import { useTxNotify } from "@/lib/useTxNotify";
 import { useCampaignMetadata, useProducerProfile } from "@/lib/metadata";
@@ -103,35 +102,6 @@ export default function CampaignDetail({
       refetchInterval: 15_000,
     },
   });
-  const { data: repaymentSummary } = useReadContracts({
-    contracts: isValidAddress
-      ? [
-          {
-            address: campaignAddress,
-            abi: repaymentModuleAbi,
-            functionName: "poolBalance",
-          },
-          {
-            address: campaignAddress,
-            abi: repaymentModuleAbi,
-            functionName: "payoutPerCt",
-          },
-        ]
-      : [],
-    query: { enabled: isValidAddress, refetchInterval: 15_000 },
-  });
-  const hasRepayment =
-    repaymentSummary?.[0]?.status === "success" ||
-    Boolean(sgCampaign?.repaymentPool?.initialized);
-  const repaymentPool6 =
-    (repaymentSummary?.[0]?.result as bigint | undefined) ??
-    BigInt(sgCampaign?.repaymentPool?.poolBalance ?? "0");
-  const repaymentPayoutPerCt6 =
-    (repaymentSummary?.[1]?.result as bigint | undefined) ??
-    (sgCampaign?.repaymentPool
-      ? BigInt(sgCampaign.repaymentPool.bonusPerCt ?? "0") +
-        pricePerToken / 10n ** 12n
-      : 0n);
   const { data: metadata } = useCampaignMetadata(
     sgCampaign?.metadataURI,
     sgCampaign?.metadataVersion,
@@ -433,9 +403,6 @@ export default function CampaignDetail({
               pricePerToken18={pricePerToken}
               collateralLocked6={BigInt(sgCampaign.collateralLocked ?? "0")}
               collateralDrawn6={BigInt(sgCampaign.collateralDrawn ?? "0")}
-              hasRepayment={hasRepayment}
-              repaymentPool6={repaymentPool6}
-              repaymentPayoutPerCt6={repaymentPayoutPerCt6}
             />
           )}
           <TokensAcceptedCard

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 /**
  * ProductiveAssetCard — surfaces the v3 producer commitments + collateral state.
  *
@@ -32,9 +34,6 @@ export function ProductiveAssetCard({
   pricePerToken18,
   collateralLocked6,
   collateralDrawn6,
-  hasRepayment = false,
-  repaymentPool6 = 0n,
-  repaymentPayoutPerCt6 = 0n,
 }: {
   annualHarvestUsd18: bigint;
   annualHarvest18: bigint;
@@ -45,10 +44,8 @@ export function ProductiveAssetCard({
   pricePerToken18: bigint;
   collateralLocked6: bigint;
   collateralDrawn6: bigint;
-  hasRepayment?: boolean;
-  repaymentPool6?: bigint;
-  repaymentPayoutPerCt6?: bigint;
 }) {
+  const t = useTranslations("detail.productiveAsset");
   const annual = Number(annualHarvestUsd18) / 1e18;
   const annualQty = Number(annualHarvest18) / 1e18;
   const firstYear = Number(firstHarvestYear);
@@ -77,89 +74,68 @@ export function ProductiveAssetCard({
 
   const fmt$ = (n: number) =>
     `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  const unitLabel = localizeProductUnit(productUnit, t);
+  const perYear = t("perYearShort");
 
   return (
     <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/15 space-y-5">
       <h3 className="text-sm font-semibold text-on-surface">
-        Grower commitment
+        {t("title")}
       </h3>
 
       <div className="grid grid-cols-2 gap-3">
         <Tile
-          label="Annual harvest"
+          label={t("annualHarvest")}
           value={
             annual > 0
               ? annualQty > 0
-                ? `${fmt$(annual)}/yr · ${annualQty.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${productUnit}/yr`
-                : `${fmt$(annual)}/yr`
+                ? `${fmt$(annual)}/${perYear} · ${annualQty.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${unitLabel}/${perYear}`
+                : `${fmt$(annual)}/${perYear}`
               : "—"
           }
         />
         <Tile
-          label="Implied yield"
+          label={t("impliedYield")}
           value={
             impliedYieldPct > 0
-              ? `${impliedYieldPct.toFixed(impliedYieldPct < 1 ? 2 : 1)}%/yr`
+              ? `${impliedYieldPct.toFixed(impliedYieldPct < 1 ? 2 : 1)}%/${perYear}`
               : "—"
           }
         />
         <Tile
-          label="First harvest"
+          label={t("firstHarvest")}
           value={firstYear > 0 ? String(firstYear) : "—"}
         />
         <Tile
-          label={pricePerUnit !== null ? `Price per ${productUnit}` : "Payback"}
+          label={
+            pricePerUnit !== null
+              ? t("pricePerUnit", { unit: unitLabel })
+              : t("payback")
+          }
           value={
             pricePerUnit !== null
               ? `$${pricePerUnit.toLocaleString(undefined, { maximumFractionDigits: pricePerUnit < 10 ? 2 : 0 })}`
               : harvestsToRepay !== null && paybackEnd !== null
-                ? `${harvestsToRepay} yrs (→ ${paybackEnd})`
+                ? t("paybackValue", {
+                    count: harvestsToRepay,
+                    year: paybackEnd,
+                  })
                 : "—"
           }
         />
       </div>
 
-      {hasRepayment && (
-        <div className="rounded-xl border border-emerald-700/20 bg-emerald-50 p-4 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800">
-                Repayment module
-              </div>
-              <div className="mt-1 text-base font-bold text-on-surface">
-                Producer-funded exit path
-              </div>
-            </div>
-            <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-              Active
-            </span>
-          </div>
-          <p className="text-[11px] leading-5 text-on-surface-variant">
-            Holders can burn free campaign tokens for USDC while the grower-funded pool has liquidity. This is separate from failed-campaign refunds.
-          </p>
-          <div className="grid grid-cols-2 gap-3 border-t border-emerald-700/10 pt-3">
-            <Tile
-              label="Pool"
-              value={`$${(Number(repaymentPool6) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-              compact
-            />
-            <Tile
-              label="Payout / CT"
-              value={`$${(Number(repaymentPayoutPerCt6) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 3 })}`}
-              compact
-            />
-          </div>
-        </div>
-      )}
-
       {/* Collateral + risk band */}
       <div className="rounded-xl border border-outline-variant/15 p-4 space-y-3">
         <div className="flex items-baseline justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-            Coverage
+            {t("coverage")}
           </span>
           <span className="text-sm font-bold text-on-surface">
-            {coverage} / {harvestsToRepay ?? "—"} harvests
+            {t("coverageValue", {
+              covered: coverage,
+              total: harvestsToRepay ?? "—",
+            })}
           </span>
         </div>
 
@@ -172,20 +148,20 @@ export function ProductiveAssetCard({
         <p className="text-[11px] text-on-surface-variant">
           {coverage > 0 && coverageEnd !== null ? (
             <>
-              Grower pre-funded harvests <b>{firstYear}–{coverageEnd}</b> with
-              USDC collateral.{" "}
+              {t("prefunded", { start: firstYear, end: coverageEnd })}{" "}
               {tail !== null && tail > 0 && paybackEnd !== null && (
                 <>
-                  Tail of <b>{tail}</b>{" "}
-                  {tail === 1 ? "year" : "years"} ({coverageEnd + 1}–{paybackEnd}) carries
-                  normal delivery risk.
+                  {t("tailRisk", {
+                    count: tail,
+                    start: coverageEnd + 1,
+                    end: paybackEnd,
+                  })}
                 </>
               )}
             </>
           ) : (
             <>
-              Grower published targets but did not pre-fund any harvest.
-              Holders carry the full delivery risk.
+              {t("noPrefund")}
             </>
           )}
         </p>
@@ -193,17 +169,17 @@ export function ProductiveAssetCard({
         {lockedNum > 0 && (
           <div className="grid grid-cols-3 gap-3 pt-3 border-t border-outline-variant/10">
             <Tile
-              label="Locked"
+              label={t("locked")}
               value={`$${lockedNum.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
               compact
             />
             <Tile
-              label="Drawn"
+              label={t("drawn")}
               value={`$${drawnNum.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
               compact
             />
             <Tile
-              label="Free"
+              label={t("free")}
               value={`$${freeNum.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
               compact
             />
@@ -212,6 +188,16 @@ export function ProductiveAssetCard({
       </div>
     </div>
   );
+}
+
+function localizeProductUnit(
+  unit: string,
+  t: (key: "units.bottles" | "units.jars" | "units.units") => string,
+) {
+  if (unit === "bottles") return t("units.bottles");
+  if (unit === "jars") return t("units.jars");
+  if (unit === "units") return t("units.units");
+  return unit;
 }
 
 function Tile({

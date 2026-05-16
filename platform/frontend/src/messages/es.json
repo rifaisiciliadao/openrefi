@@ -452,6 +452,29 @@
       "redeemConfirmed": "Repayment confirmado.",
       "redeemFailed": "Repayment fallido"
     },
+    "productiveAsset": {
+      "title": "Compromiso del cultivador",
+      "annualHarvest": "Cosecha anual",
+      "impliedYield": "Rendimiento implícito",
+      "firstHarvest": "Primera cosecha",
+      "pricePerUnit": "Precio por {unit}",
+      "payback": "Recuperación",
+      "paybackValue": "{count, plural, one {# año} other {# años}} (→ {year})",
+      "coverage": "Cobertura",
+      "coverageValue": "{covered} / {total} cosechas",
+      "prefunded": "El cultivador prefinanció las cosechas {start}–{end} con collateral USDC.",
+      "tailRisk": "La cola de {count, plural, one {# año} other {# años}} ({start}–{end}) mantiene el riesgo normal de entrega.",
+      "noPrefund": "El cultivador publicó objetivos, pero no prefinanció ninguna cosecha. Los holders mantienen todo el riesgo de entrega.",
+      "locked": "Bloqueado",
+      "drawn": "Usado",
+      "free": "Libre",
+      "perYearShort": "año",
+      "units": {
+        "bottles": "botellas",
+        "jars": "tarros",
+        "units": "unidades"
+      }
+    },
     "refund": {
       "title": "Campaña fallida — solicita el reembolso",
       "subtitle": "El cap mínimo no se alcanzó antes de la fecha límite. Puedes quemar tus $CAMPAIGN y recuperar el pago original, por token.",
