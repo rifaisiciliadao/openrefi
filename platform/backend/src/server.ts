@@ -24,7 +24,7 @@ if (
 ) {
   const subgraphUrl =
     process.env.SUBGRAPH_URL ||
-    "https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn";
+    "https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/4.0.2/gn";
   const intervalMs = Number(process.env.NOTIFIER_INTERVAL_MS || 10 * 60 * 1000);
 
   const handle = startNotifierLoop(

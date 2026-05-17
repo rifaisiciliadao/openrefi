@@ -3,7 +3,7 @@ import { baseSepolia, mainnet, sepolia } from "viem/chains";
 
 const SUBGRAPH_URL =
   process.env.SUBGRAPH_URL ||
-  "https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/prod/gn";
+  "https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/4.0.2/gn";
 
 const CHAIN_ID = Number(process.env.CHAIN_ID || process.env.NEXT_PUBLIC_CHAIN_ID || baseSepolia.id);
 
