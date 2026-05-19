@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   useAccount,
   useReadContract,
@@ -31,6 +31,11 @@ import { useTxNotify } from "@/lib/useTxNotify";
 import { Spinner } from "./Spinner";
 
 const USDC_DECIMALS = 6;
+const DEMO_CATALOG_TITLE = "Campaign shop";
+const DEMO_CATALOG_DESCRIPTION = "On-chain checkout for products reserved from this campaign.";
+const DEMO_PRODUCT_NAME = "Extra virgin olive oil 500ml";
+const DEMO_PRODUCT_DESCRIPTION = "Cold-pressed Sicilian olive oil reserved from the campaign shop.";
+const DEMO_PRODUCT_DESCRIPTION_ALT = "Cold-pressed Sicilian olive oil, reserved from the campaign shop.";
 const mockUsdcMintAbi = [
   {
     type: "function",
@@ -94,6 +99,22 @@ function shortHash(value: string): string {
   return `${value.slice(0, 8)}…${value.slice(-6)}`;
 }
 
+function localizedText(
+  value: string | null | undefined,
+  translations: unknown,
+  locale: string,
+  fallback: string,
+  legacy: Record<string, string> = {},
+): string {
+  if (translations && typeof translations === "object" && !Array.isArray(translations)) {
+    const localized = (translations as Record<string, unknown>)[locale];
+    if (typeof localized === "string" && localized.trim()) return localized.trim();
+  }
+
+  const raw = typeof value === "string" ? value.trim() : "";
+  return legacy[raw] ?? (raw || fallback);
+}
+
 export function EcommerceShopPanel({
   campaignAddress,
   currentState,
@@ -105,6 +126,7 @@ export function EcommerceShopPanel({
 }) {
   const t = useTranslations("detail.ecommerce");
   const tx = useTranslations("tx");
+  const locale = useLocale();
   const notify = useTxNotify();
   const { address: user, isConnected } = useAccount();
   const { usdc } = getAddresses();
@@ -194,6 +216,15 @@ export function EcommerceShopPanel({
   const [fullName, setFullName] = useState("");
   const [shipping, setShipping] = useState("");
   const [status, setStatus] = useState<TxStatus>({ kind: "idle" });
+  const selectedProductName = selectedItem
+    ? localizedText(
+        selectedItem.name,
+        (selectedItem as Record<string, unknown>).nameI18n,
+        locale,
+        shortHash(selectedItem.skuId),
+        { [DEMO_PRODUCT_NAME]: t("defaultProductName") },
+      )
+    : "";
 
   const busy = status.kind !== "idle" && status.kind !== "success" && status.kind !== "error";
   const needsApproval = quote.gross > 0n && allowance < quote.gross;
@@ -285,7 +316,7 @@ export function EcommerceShopPanel({
           repaymentAllocated: quote.repayment.toString(),
           producerNet: quote.producerNet.toString(),
         },
-        metadata: { productName: selectedItem.name ?? selectedItem.skuId },
+        metadata: { productName: selectedProductName || selectedItem.skuId },
       });
 
       setStatus({ kind: "buy-sig" });
@@ -303,7 +334,7 @@ export function EcommerceShopPanel({
       const receipt = await sendEcommercePurchaseReceipt({
         email: email.trim().toLowerCase(),
         campaignName,
-        productName: selectedItem.name ?? selectedItem.skuId,
+        productName: selectedProductName || selectedItem.skuId,
         quantity: quantityBig.toString(),
         paymentAmount: formatUsdc(quote.gross),
         paymentToken: "USDC",
@@ -344,16 +375,36 @@ export function EcommerceShopPanel({
     );
   }
 
+  const catalogTitle = localizedText(
+    activeCatalog.title,
+    (activeCatalog as unknown as Record<string, unknown>).titleI18n,
+    locale,
+    t("title"),
+    {
+      [DEMO_CATALOG_TITLE]: t("title"),
+      "Shop this harvest": t("title"),
+    },
+  );
+  const catalogDescription = localizedText(
+    activeCatalog.description,
+    (activeCatalog as unknown as Record<string, unknown>).descriptionI18n,
+    locale,
+    t("subtitle"),
+    {
+      [DEMO_CATALOG_DESCRIPTION]: t("subtitle"),
+    },
+  );
+
   return (
     <div className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-5 md:p-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{t("eyebrow")}</p>
           <h2 className="mt-1 text-2xl font-bold tracking-tight text-on-surface">
-            {activeCatalog.title || t("title")}
+            {catalogTitle}
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-on-surface-variant">
-            {activeCatalog.description || t("subtitle")}
+            {catalogDescription}
           </p>
         </div>
         <div className="rounded-full bg-primary-fixed px-3 py-1 text-xs font-bold text-on-primary-fixed-variant">
@@ -367,6 +418,23 @@ export function EcommerceShopPanel({
         <div className="grid content-start gap-3">
           {items.map((item) => {
             const active = item.skuId === selectedItem.skuId;
+            const itemName = localizedText(
+              item.name,
+              (item as Record<string, unknown>).nameI18n,
+              locale,
+              shortHash(item.skuId),
+              { [DEMO_PRODUCT_NAME]: t("defaultProductName") },
+            );
+            const itemDescription = localizedText(
+              item.description,
+              (item as Record<string, unknown>).descriptionI18n,
+              locale,
+              item.skuId,
+              {
+                [DEMO_PRODUCT_DESCRIPTION]: t("defaultProductDescription"),
+                [DEMO_PRODUCT_DESCRIPTION_ALT]: t("defaultProductDescription"),
+              },
+            );
             return (
               <button
                 key={item.skuId}
@@ -388,7 +456,7 @@ export function EcommerceShopPanel({
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="font-bold text-on-surface">{item.name ?? shortHash(item.skuId)}</h3>
+                    <h3 className="font-bold text-on-surface">{itemName}</h3>
                     {active && sku?.exists && (
                       <span className="text-sm font-bold text-primary">
                         ${formatUsdc(sku.priceUsdc)}
@@ -396,7 +464,7 @@ export function EcommerceShopPanel({
                     )}
                   </div>
                   <p className="mt-1 line-clamp-2 text-sm text-on-surface-variant">
-                    {item.description ?? item.skuId}
+                    {itemDescription}
                   </p>
                   {active && sku?.exists && (
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-on-surface-variant">
@@ -531,8 +599,8 @@ export function EcommerceModuleManager({ campaignAddress }: { campaignAddress: A
   const { writeContractAsync } = useWriteContract();
 
   const [skuKey, setSkuKey] = useState("olive-oil-500ml");
-  const [productName, setProductName] = useState("Extra virgin olive oil 500ml");
-  const [description, setDescription] = useState("Cold-pressed Sicilian olive oil, reserved from the campaign shop.");
+  const [productName, setProductName] = useState(() => t("defaultProductName"));
+  const [description, setDescription] = useState(() => t("defaultProductDescription"));
   const [image, setImage] = useState("");
   const [price, setPrice] = useState("18");
   const [inventory, setInventory] = useState("100");
@@ -592,8 +660,8 @@ export function EcommerceModuleManager({ campaignAddress }: { campaignAddress: A
       setPending(t("uploading"));
       const catalog = await uploadEcommerceCatalog({
         campaign: campaignAddress,
-        title: productName,
-        description,
+        title: DEMO_CATALOG_TITLE,
+        description: DEMO_CATALOG_DESCRIPTION,
         repaymentAllocationBps: repayment,
         items: [
           {

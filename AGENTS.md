@@ -2,6 +2,10 @@
 
 Permissionless RegenFi protocol: farmers/cooperatives tokenise a future harvest as $CAMPAIGN, stakers earn $YIELD, at harvest holders redeem $YIELD for physical product (Merkle proof) or pro-rata USDC.
 
+## Frontend i18n rule
+
+Every frontend-visible string must be localized in all supported locales: English, Italian, Spanish, and French (`platform/frontend/src/messages/{en,it,es,fr}.json`). Do not add hardcoded UI copy in React components, hooks, toasts, banners, tabs, forms, or seeded demo catalog text without adding/using matching i18n keys for every locale. Off-chain user-authored content can remain as authored, but protocol/demo defaults and static catalog seeds must either carry localized fields or be mapped to localized UI fallbacks.
+
 ## Current target chain — Ethereum Sepolia (chain 11155111), pre-L1 mainnet
 
 The active testnet is **Ethereum Sepolia**, not Base Sepolia. The Base Sepolia v3.3 deploy is kept as archived legacy in `CONTRACTS.md` for reference but the production trajectory is L1: mainnet target is `chain 1` (Ethereum). Sequencer-uptime feed = `address(0)` on L1.

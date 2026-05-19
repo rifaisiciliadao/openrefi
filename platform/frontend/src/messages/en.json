@@ -500,7 +500,9 @@
       "success": "Order confirmed",
       "viewTx": "View transaction",
       "emailDelivered": "Receipt email sent.",
-      "emailPending": "Order confirmed. Receipt email is pending."
+      "emailPending": "Order confirmed. Receipt email is pending.",
+      "defaultProductName": "Extra virgin olive oil 500ml",
+      "defaultProductDescription": "Cold-pressed Sicilian olive oil reserved from the campaign shop."
     },
     "productiveAsset": {
       "title": "Grower commitment",
@@ -793,7 +795,9 @@
         "published": "Ecommerce catalog published.",
         "publishFailed": "Ecommerce update failed",
         "updateCta": "Update shop",
-        "enableCta": "Enable shop"
+        "enableCta": "Enable shop",
+        "defaultProductName": "Extra virgin olive oil 500ml",
+        "defaultProductDescription": "Cold-pressed Sicilian olive oil reserved from the campaign shop."
       },
       "usdcObligationsTitle": "Reported seasons",
       "noObligations": "No reported seasons yet. Run a season, end it, and report the harvest to see it here.",
@@ -839,8 +843,11 @@
       "yieldStakedShare": "{pct}% staked of max supply",
       "yieldCurveStart": "0% staked · 5x",
       "yieldCurveEnd": "100% staked · 1x",
+      "yieldCurveAria": "Yield rate curve: {rate}x at {pct}% staked",
       "acceptedTokens": "Accepted Tokens",
       "noTokens": "No payment tokens whitelisted yet.",
+      "fixedRate": "Fixed",
+      "oracleRate": "Oracle",
       "grower": "The Grower",
       "verified": "Verified grower",
       "viewReport": "See dMRV report →",

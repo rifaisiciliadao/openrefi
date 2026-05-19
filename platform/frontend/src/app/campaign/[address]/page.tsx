@@ -19,7 +19,8 @@ import { erc20Abi } from "@/contracts/erc20";
 import { useSubgraphCampaign, useSubgraphProducer } from "@/lib/subgraph";
 import { useTxNotify } from "@/lib/useTxNotify";
 import { useCampaignMetadata, useProducerProfile } from "@/lib/metadata";
-import { assetProductDisplayLabel, productUnitLabel } from "@/lib/productUnit";
+import { productUnitLabel } from "@/lib/productUnit";
+import { useLocalizedProductDisplay } from "@/lib/useLocalizedProductDisplay";
 import { uploadImage, uploadMetadata } from "@/lib/api";
 import { BuyPanel } from "@/components/BuyPanel";
 import { StakingPanel } from "@/components/StakingPanel";
@@ -52,6 +53,7 @@ export default function CampaignDetail({
   const { address } = use(params);
   const t = useTranslations("detail");
   const tHome = useTranslations("home");
+  const { assetProductLabel } = useLocalizedProductDisplay();
   const searchParams = useSearchParams();
   const initialTab = ((): Tab => {
     const q = searchParams.get("tab");
@@ -149,7 +151,7 @@ export default function CampaignDetail({
       ? `Campaign ${campaignAddress.slice(0, 6)}…${campaignAddress.slice(-4)}`
       : "Campaign");
   const displayLocation = metadata?.location ?? "";
-  const displayAssetProduct = assetProductDisplayLabel(metadata?.productType);
+  const displayAssetProduct = assetProductLabel(metadata?.productType);
   const heroImage = metadata?.image || null;
   const heroStyle = heroImage
     ? { backgroundImage: `url('${heroImage}')` }
@@ -1080,7 +1082,14 @@ function YieldRateCurve({
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
         role="img"
-        aria-label={`Yield rate curve, currently ${currentRate}x at ${stakedPct.toFixed(1)}% staked`}
+        aria-label={t("yieldCurveAria", {
+          rate: currentRate.toLocaleString(undefined, {
+            maximumFractionDigits: 1,
+          }),
+          pct: stakedPct.toLocaleString(undefined, {
+            maximumFractionDigits: 1,
+          }),
+        })}
       >
         <defs>
           <linearGradient id="growfi-yield-fill" x1="0" y1="0" x2="0" y2="1">
@@ -1297,7 +1306,7 @@ function TokenRow({
         <div>
           <div className="text-sm font-semibold text-on-surface">{symbol}</div>
           <div className="text-xs text-on-surface-variant">
-            {isOracle ? "Oracle" : "Fixed"}
+            {isOracle ? t("oracleRate") : t("fixedRate")}
           </div>
         </div>
       </div>

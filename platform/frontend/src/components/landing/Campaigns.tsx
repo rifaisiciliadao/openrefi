@@ -8,7 +8,7 @@ import { formatUnits, type Address } from "viem";
 import { useInView } from "@/lib/landing/useInView";
 import { useSubgraphCampaigns, type SubgraphCampaign } from "@/lib/subgraph";
 import { useCampaignMetadata } from "@/lib/metadata";
-import { assetProductDisplayLabel } from "@/lib/productUnit";
+import { useLocalizedProductDisplay } from "@/lib/useLocalizedProductDisplay";
 import { useInviteGate } from "@/lib/inviteGate";
 import { useInviteModal } from "@/lib/inviteModal";
 import { repaymentModuleAbi } from "@/contracts/repayment";
@@ -90,6 +90,7 @@ function LiveCampaignCard({
   inView: boolean;
 }) {
   const t = useTranslations("landing.campaigns");
+  const { assetProductLabel } = useLocalizedProductDisplay();
   const { data: meta } = useCampaignMetadata(
     campaign.metadataURI,
     campaign.metadataVersion,
@@ -127,7 +128,7 @@ function LiveCampaignCard({
   ).toLocaleString()}`;
 
   const displayName = meta?.name ?? `Campaign ${campaign.id.slice(0, 8)}…`;
-  const product = assetProductDisplayLabel(meta?.productType);
+  const product = assetProductLabel(meta?.productType);
   const location = meta?.location ?? "";
   const imageUrl = meta?.image ?? undefined;
   const fallbackHueA = "#2d5a36";
