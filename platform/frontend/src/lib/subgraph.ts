@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const SUBGRAPH_URL =
   process.env.NEXT_PUBLIC_SUBGRAPH_URL ||
-  "https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/4.0.2/gn";
+  "https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/4.0.3/gn";
 
 async function gql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
   const res = await fetch(SUBGRAPH_URL, {

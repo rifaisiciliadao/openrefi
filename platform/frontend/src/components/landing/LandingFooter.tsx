@@ -38,7 +38,7 @@ export function LandingFooter() {
         },
         {
           label: t("linkSubgraph"),
-          href: "https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/4.0.2/gn",
+          href: "https://api.goldsky.com/api/public/project_cmo1ydnmbj6tv01uwahhbeenr/subgraphs/growfi/4.0.3/gn",
           external: true,
         },
       ],

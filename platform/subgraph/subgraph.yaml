@@ -9,9 +9,9 @@ dataSources:
     name: CampaignFactory
     network: sepolia
     source:
-      address: "0xB804de4d151E5A8a9EBa61a9904EC3588c8EFb56"
+      address: "0xa4DEd8Ab35e89bCAF1f7DFeb7aB2c1ED533b3f05"
       abi: CampaignFactory
-      startBlock: 10845295
+      startBlock: 10838711
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -40,9 +40,9 @@ dataSources:
     name: CampaignRegistry
     network: sepolia
     source:
-      address: "0x6cfC4b78131947721A2370B594Ed81BD758a1e17"
+      address: "0xAef1Cb97C9a8CC2d06d6C662F6655009DED1E1BE"
       abi: CampaignRegistry
-      startBlock: 10845295
+      startBlock: 10838711
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -61,9 +61,9 @@ dataSources:
     name: ProducerRegistry
     network: sepolia
     source:
-      address: "0x2bbc8FE2626C7f83fDe22E4799E76B93Cc8b379e"
+      address: "0x8DDc90F40Bf8847672EA5B256d93607F42Fd540E"
       abi: ProducerRegistry
-      startBlock: 10845295
+      startBlock: 10838711
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -86,9 +86,9 @@ dataSources:
     name: GrowfiToken
     network: sepolia
     source:
-      address: "0x3740C0fcB8D71961b893743548e07b8D265B0a33"
+      address: "0x9bB4f9C41ed922282C181f2f3e01d8384c960b44"
       abi: GrowfiToken
-      startBlock: 10845468
+      startBlock: 10838846
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -123,9 +123,9 @@ dataSources:
     name: GrowfiTreasury
     network: sepolia
     source:
-      address: "0x9b7898cd64741d7A5503E8092F04FeF2106c2291"
+      address: "0xB71D13F80ceAed17A179B4e0D9eb1e8410DeaDDd"
       abi: GrowfiTreasury
-      startBlock: 10845468
+      startBlock: 10838846
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -160,9 +160,9 @@ dataSources:
     name: GrowfiMinter
     network: sepolia
     source:
-      address: "0x369Fe004842a3b3FB5285a30C63C9bA60aA4f99f"
+      address: "0xD99c1985B257a4A55bA8D0836Fab536389cdd24C"
       abi: GrowfiMinter
-      startBlock: 10845468
+      startBlock: 10838846
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -198,9 +198,9 @@ dataSources:
     name: GrowfiFeeSplitter
     network: sepolia
     source:
-      address: "0x892Bd2ab53C26b09cD874c5afeb331CaC8851848"
+      address: "0xF1a8527E00916588f4Bb137cE450E8459b6BD436"
       abi: GrowfiFeeSplitter
-      startBlock: 10845468
+      startBlock: 10838846
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -232,6 +232,12 @@ templates:
         - Purchase
         - FundingFeeByTx
         - SellBackOrder
+        - Module
+        - RepaymentPool
+        - Repayment
+        - EcommerceStore
+        - EcommerceSku
+        - EcommerceOrder
         - User
       abis:
         - name: Campaign
@@ -271,6 +277,38 @@ templates:
           handler: handleMinCapUpdated
         - event: MaxCapUpdated(uint256,uint256)
           handler: handleMaxCapUpdated
+        - event: ModuleAttached(indexed bytes32,indexed address,indexed bytes32,string)
+          handler: handleModuleAttached
+        - event: ModuleDetached(indexed bytes32,indexed address)
+          handler: handleModuleDetached
+        - event: ModuleEnabledSet(indexed bytes32,bool)
+          handler: handleModuleEnabledSet
+        - event: RepaymentInitialized(uint256)
+          handler: handleRepaymentInitialized
+        - event: RepaymentPoolFunded(indexed address,uint256,uint256)
+          handler: handleRepaymentPoolFunded
+        - event: RepaymentPoolCredited(indexed address,uint256,uint256)
+          handler: handleRepaymentPoolCredited
+        - event: RepaymentPoolWithdrawn(indexed address,uint256,uint256)
+          handler: handleRepaymentPoolWithdrawn
+        - event: RepaymentBonusSet(uint256,uint256)
+          handler: handleRepaymentBonusSet
+        - event: Repaid(indexed address,uint256,uint256,uint256,uint256,uint256)
+          handler: handleRepaid
+        - event: EcommerceInitialized(uint16,uint16,string)
+          handler: handleEcommerceInitialized
+        - event: EcommerceCatalogURISet(string,string)
+          handler: handleEcommerceCatalogURISet
+        - event: EcommerceProtocolFeeSet(uint16,uint16)
+          handler: handleEcommerceProtocolFeeSet
+        - event: EcommerceRepaymentAllocationSet(uint16,uint16)
+          handler: handleEcommerceRepaymentAllocationSet
+        - event: EcommerceSkuSet(indexed bytes32,uint256,uint256,bool)
+          handler: handleEcommerceSkuSet
+        - event: EcommerceSkuActiveSet(indexed bytes32,bool)
+          handler: handleEcommerceSkuActiveSet
+        - event: EcommerceOrderPlaced(indexed uint256,indexed address,indexed bytes32,uint256,uint256,uint256,uint256,uint256,bytes32)
+          handler: handleEcommerceOrderPlaced
 
   - kind: ethereum/contract
     name: StakingVault

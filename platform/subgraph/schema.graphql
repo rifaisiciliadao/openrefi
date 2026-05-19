@@ -56,6 +56,9 @@ type Campaign @entity(immutable: false) {
   modules: [Module!]! @derivedFrom(field: "campaign")
   repaymentPool: RepaymentPool @derivedFrom(field: "campaign")
   repayments: [Repayment!]! @derivedFrom(field: "campaign")
+  ecommerceStore: EcommerceStore @derivedFrom(field: "campaign")
+  ecommerceSkus: [EcommerceSku!]! @derivedFrom(field: "campaign")
+  ecommerceOrders: [EcommerceOrder!]! @derivedFrom(field: "campaign")
 }
 
 # v4 — module attached to a Campaign via the host's fallback router.
@@ -82,8 +85,10 @@ type RepaymentPool @entity(immutable: false) {
   bonusPerCt: BigInt!                     # USDC-6 per 1e18 CT, additive markup on top of principal
   poolBalance: BigInt!                    # current USDC-6 in the pool
   totalFunded: BigInt!                    # cumulative producer deposits
+  totalCredited: BigInt!                  # cumulative Campaign-internal credits, e.g. ecommerce allocation
   totalWithdrawn: BigInt!                 # cumulative producer withdrawals
   totalRedeemed: BigInt!                  # cumulative USDC paid out to holders
+  totalProtocolFees: BigInt!              # cumulative USDC-6 retained by the protocol on repayment redemptions
   redeemCount: Int!
   initializedAt: BigInt
   lastUpdatedAt: BigInt!
@@ -97,8 +102,56 @@ type Repayment @entity(immutable: true) {
   campaignTokensBurned: BigInt!
   principalPaid: BigInt!                  # USDC-6
   bonusPaid: BigInt!                      # USDC-6
-  totalPaid: BigInt!                      # principal + bonus
+  protocolFee: BigInt!                    # USDC-6
+  totalPaid: BigInt!                      # gross pool draw: principal + bonus
+  netPaid: BigInt!                        # amount sent to the holder after protocol fee
   newPoolBalance: BigInt!
+  timestamp: BigInt!
+  block: BigInt!
+  transactionHash: Bytes!
+}
+
+# v4 — Ecommerce module per-campaign state.
+type EcommerceStore @entity(immutable: false) {
+  id: Bytes!                              # campaign address
+  campaign: Campaign!
+  initialized: Boolean!
+  catalogURI: String
+  protocolFeeBps: Int!
+  repaymentAllocationBps: Int!
+  grossSales: BigInt!                     # cumulative USDC-6
+  protocolFees: BigInt!                   # cumulative USDC-6
+  repaymentAllocated: BigInt!             # cumulative USDC-6
+  orderCount: Int!
+  initializedAt: BigInt
+  lastUpdatedAt: BigInt!
+}
+
+# v4 — On-chain SKU settlement surface. Descriptive catalog fields stay off-chain.
+type EcommerceSku @entity(immutable: false) {
+  id: Bytes!                              # campaign + skuId
+  campaign: Campaign!
+  skuId: Bytes!
+  priceUsdc: BigInt!                      # USDC-6 per unit
+  inventory: BigInt!                      # remaining sellable units
+  sold: BigInt!
+  active: Boolean!
+  updatedAt: BigInt!
+}
+
+# v4 — On-chain ecommerce order settlement.
+type EcommerceOrder @entity(immutable: true) {
+  id: Bytes!                              # txHash-logIndex
+  campaign: Campaign!
+  orderId: BigInt!
+  buyer: Bytes!
+  skuId: Bytes!
+  quantity: BigInt!
+  grossPaid: BigInt!
+  protocolFee: BigInt!
+  repaymentAllocated: BigInt!
+  producerNet: BigInt!
+  orderHash: Bytes!
   timestamp: BigInt!
   block: BigInt!
   transactionHash: Bytes!

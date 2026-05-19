@@ -363,8 +363,8 @@ export function EcommerceShopPanel({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="grid gap-3">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid content-start gap-3">
           {items.map((item) => {
             const active = item.skuId === selectedItem.skuId;
             return (

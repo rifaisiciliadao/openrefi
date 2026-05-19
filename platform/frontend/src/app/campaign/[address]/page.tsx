@@ -135,6 +135,13 @@ export default function CampaignDetail({
   const hasEcommerce =
     Boolean(ecommerceSlot?.[4]) &&
     ecommerceSlot?.[0] !== "0x0000000000000000000000000000000000000000";
+  const visibleTabs: Tab[] = [
+    ...TAB_KEYS.slice(0, 1),
+    ...(hasEcommerce ? (["shop"] as Tab[]) : []),
+    ...TAB_KEYS.slice(1),
+    ...(isProducerViewing ? (["manage"] as Tab[]) : []),
+  ];
+  const effectiveTab = visibleTabs.includes(activeTab) ? activeTab : "invest";
 
   const displayName =
     metadata?.name ||
@@ -192,17 +199,12 @@ export default function CampaignDetail({
 
       <div className="sticky top-16 z-40 bg-surface/90 backdrop-blur-md border-b border-outline-variant/15">
         <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16 flex gap-4 md:gap-8 overflow-x-auto no-scrollbar">
-          {[
-            ...TAB_KEYS.slice(0, 1),
-            ...(hasEcommerce ? (["shop"] as Tab[]) : []),
-            ...TAB_KEYS.slice(1),
-            ...(isProducerViewing ? (["manage"] as Tab[]) : []),
-          ].map((key) => (
+          {visibleTabs.map((key) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
               className={`py-4 text-sm md:text-base font-semibold transition-colors border-b-2 whitespace-nowrap ${
-                activeTab === key
+                effectiveTab === key
                   ? "text-primary border-primary"
                   : "text-on-surface-variant border-transparent hover:text-on-surface"
               } ${key === "manage" ? "text-primary" : ""}`}
@@ -250,7 +252,7 @@ export default function CampaignDetail({
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16 py-8 md:py-12 flex flex-col lg:flex-row gap-8 md:gap-12 items-start">
         <div className="w-full lg:w-[65%] flex flex-col gap-6">
-          {activeTab === "invest" && (
+          {effectiveTab === "invest" && (
             <>
               <FundingProgressCard
                 currentSupply={(cd?.[4]?.result as bigint | undefined) ?? 0n}
@@ -361,7 +363,7 @@ export default function CampaignDetail({
             </>
           )}
 
-          {activeTab === "shop" && hasOnChainData && hasEcommerce && (
+          {effectiveTab === "shop" && hasOnChainData && hasEcommerce && (
             <EcommerceShopPanel
               campaignAddress={campaignAddress}
               currentState={stateIdx}
@@ -369,7 +371,7 @@ export default function CampaignDetail({
             />
           )}
 
-          {activeTab === "stake" && hasOnChainData && sgCampaign && (
+          {effectiveTab === "stake" && hasOnChainData && sgCampaign && (
             <StakingPanel
               campaignToken={sgCampaign.campaignToken as Address}
               stakingVault={sgCampaign.stakingVault as Address}
@@ -377,14 +379,14 @@ export default function CampaignDetail({
               seasonDuration={BigInt(sgCampaign.seasonDuration)}
             />
           )}
-          {activeTab === "harvest" && hasOnChainData && sgCampaign && (
+          {effectiveTab === "harvest" && hasOnChainData && sgCampaign && (
             <HarvestPanel
               campaignAddress={campaignAddress}
               harvestManager={sgCampaign.harvestManager as Address}
               yieldToken={sgCampaign.yieldToken as Address}
             />
           )}
-          {activeTab === "info" && (
+          {effectiveTab === "info" && (
             <InfoPanel
               address={address}
               description={metadata?.description}
@@ -392,7 +394,7 @@ export default function CampaignDetail({
               createdAtBlock={sgCampaign?.createdAtBlock}
             />
           )}
-          {activeTab === "manage" &&
+          {effectiveTab === "manage" &&
             isProducerViewing &&
             hasOnChainData &&
             sgCampaign && (
