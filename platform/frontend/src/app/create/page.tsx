@@ -1947,8 +1947,9 @@ function CollateralStep({
                 the producer can fund the lockCollateral tx without leaving
                 /create. On mainnet getAddresses().usdc is the real USDC and
                 the call would revert (no public mint), so the button
-                surfaces only when the chain is the Sepolia mock. */}
-            {user && CHAIN_ID === 84532 && (
+                surfaces only on mock test deployments. */}
+            {user &&
+              (CHAIN_ID === 31337 || CHAIN_ID === 84532 || CHAIN_ID === 11155111) && (
               <button
                 type="button"
                 onClick={handleMint}
