@@ -194,6 +194,7 @@ export function EcommerceShopPanel({
 
   const items = useMemo(() => catalog?.items ?? [], [catalog?.items]);
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const { data: skuReads, refetch: refetchSkus } = useReadContracts({
@@ -496,6 +497,7 @@ export function EcommerceShopPanel({
       await Promise.all([refetchSkus(), refetchQuotes(), refetchBalance()]);
       notify.success(t("purchaseConfirmed"), lastPurchase.hash);
       setCart({});
+      setCartOpen(false);
       setCheckoutOpen(false);
       setStatus({ kind: "success", hash: lastPurchase.hash, emailDelivered: receipt.emailDelivered });
     } catch (err) {
@@ -550,15 +552,27 @@ export function EcommerceShopPanel({
           <h2 className="mt-2 text-2xl font-bold text-on-surface md:text-3xl">{catalogTitle}</h2>
           <p className="mt-2 text-sm leading-6 text-on-surface-variant">{catalogDescription}</p>
         </div>
-        <div className="rounded-full border border-primary/20 bg-primary-fixed px-4 py-2 text-xs font-bold text-on-primary-fixed-variant">
-          {activeCatalog.repaymentAllocationBps > 0
-            ? t("repaymentSplit", { pct: activeCatalog.repaymentAllocationBps / 100 })
-            : t("directSplit")}
+        <div className="flex items-center gap-3">
+          <div className="rounded-full border border-primary/20 bg-primary-fixed px-4 py-2 text-xs font-bold text-on-primary-fixed-variant">
+            {activeCatalog.repaymentAllocationBps > 0
+              ? t("repaymentSplit", { pct: activeCatalog.repaymentAllocationBps / 100 })
+              : t("directSplit")}
+          </div>
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            className="flex h-11 items-center gap-3 rounded-full border border-outline-variant/15 bg-white px-4 text-sm font-bold text-on-surface shadow-[0_8px_20px_rgba(20,35,24,0.08)] transition hover:border-primary/30"
+            aria-label={t("openCart")}
+          >
+            <span>{t("cart")}</span>
+            <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-on-surface px-2 text-xs font-bold text-surface">
+              {cartQuantity}
+            </span>
+          </button>
         </div>
       </div>
 
-      <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="grid content-start gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))]">
+      <div className="grid content-start gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))]">
           {items.map((item) => {
             const sku = skuById.get(cartKey(item.skuId)) ?? null;
             const max = inventoryLimit(sku);
@@ -641,7 +655,10 @@ export function EcommerceShopPanel({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => setCartQuantity(item.skuId, 1, max)}
+                        onClick={() => {
+                          setCartQuantity(item.skuId, 1, max);
+                          setCartOpen(true);
+                        }}
                         disabled={busy || max === 0}
                         className="flex h-12 w-full items-center justify-center rounded-full bg-on-surface px-5 text-sm font-bold text-surface transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
                       >
@@ -653,130 +670,150 @@ export function EcommerceShopPanel({
               </article>
             );
           })}
-        </div>
-
-        <aside className="rounded-2xl border border-outline-variant/15 bg-white p-4 shadow-[0_18px_50px_rgba(20,35,24,0.08)] 2xl:sticky 2xl:top-24">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-bold text-on-surface">{t("cart")}</h3>
-              <p className="text-sm text-on-surface-variant">
-                {cartQuantity > 0 ? t("cartCount", { count: cartQuantity }) : t("cartEmptyHint")}
-              </p>
-            </div>
-            <div className="rounded-full bg-surface-container px-3 py-1 text-sm font-bold text-on-surface">
-              {cartQuantity}
-            </div>
-          </div>
-
-          <div className="mt-5 max-h-[360px] space-y-3 overflow-auto pr-1">
-            {cartRows.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-outline-variant/25 bg-surface-container-lowest p-5 text-sm text-on-surface-variant">
-                {t("cartEmptyHint")}
-              </div>
-            ) : (
-              cartRows.map((row) => (
-                <div key={row.item.skuId} className="rounded-2xl border border-outline-variant/12 bg-surface-container-lowest p-3">
-                  <div className="flex items-start gap-3">
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-surface-container-high">
-                      {row.item.image ? (
-                        <img src={row.item.image} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-[10px] text-on-surface-variant">
-                          {t("noImage")}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-bold leading-snug text-on-surface">{row.name}</div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-on-surface-variant">
-                        <span>{t("quantity")}: {row.quantity}</span>
-                        <span>{t("lineTotal")}: {formatUsdc(row.quote.gross)} USDC</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setCartQuantity(row.item.skuId, 0, 0)}
-                      className="rounded-full px-2 py-1 text-xs font-bold text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
-                      disabled={busy}
-                    >
-                      {t("remove")}
-                    </button>
-                  </div>
-                  <div className="mt-3 grid h-10 grid-cols-[40px_1fr_40px] overflow-hidden rounded-full border border-outline-variant/15 bg-white">
-                    <button
-                      type="button"
-                      onClick={() => setCartQuantity(row.item.skuId, row.quantity - 1, inventoryLimit(row.sku))}
-                      className="flex items-center justify-center text-base font-bold text-on-surface transition hover:bg-surface-container disabled:opacity-40"
-                      aria-label={t("decreaseQty")}
-                      disabled={busy}
-                    >
-                      −
-                    </button>
-                    <div className="flex items-center justify-center text-sm font-bold text-on-surface">
-                      {row.quantity}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setCartQuantity(row.item.skuId, row.quantity + 1, inventoryLimit(row.sku))}
-                      className="flex items-center justify-center text-base font-bold text-on-surface transition hover:bg-surface-container disabled:opacity-40"
-                      aria-label={t("increaseQty")}
-                      disabled={busy || row.quantity >= inventoryLimit(row.sku)}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="mt-5 space-y-2 border-t border-outline-variant/15 pt-4 text-sm">
-            <Line label={t("gross")} value={`${formatUsdc(totals.gross)} USDC`} />
-            <Line label={t("protocolFee")} value={`${formatUsdc(totals.protocolFee)} USDC`} />
-            <Line label={t("repayment")} value={`${formatUsdc(totals.repayment)} USDC`} />
-            <Line label={t("growerNet")} value={`${formatUsdc(totals.producerNet)} USDC`} strong />
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-on-surface-variant">
-            <button
-              onClick={handleMintUsdc}
-              disabled={!user || busy}
-              className="font-semibold text-primary disabled:opacity-50"
-            >
-              {t("mintUsdc")}
-            </button>
-            <span>{t("balance", { amount: formatUsdc(balance) })}</span>
-          </div>
-
-          <button
-            onClick={() => setCheckoutOpen(true)}
-            disabled={!canOpenCheckout}
-            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-on-surface text-surface text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t("reviewCheckout")}
-          </button>
-
-          {status.kind === "error" && (
-            <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-error">
-              {status.message}
-            </div>
-          )}
-          {status.kind === "success" && (
-            <div className="mt-3 rounded-lg border border-primary/25 bg-primary-fixed/25 p-3 text-xs text-primary">
-              <div className="font-bold">{t("success")}</div>
-              <a href={txUrl(status.hash)} target="_blank" rel="noreferrer" className="underline">
-                {t("viewTx")}
-              </a>
-              <div className="mt-1 text-on-surface-variant">
-                {status.emailDelivered ? t("emailDelivered") : t("emailPending")}
-              </div>
-            </div>
-          )}
-        </aside>
       </div>
 
+      {cartOpen && (
+        <div className="fixed inset-0 z-50">
+          <button
+            type="button"
+            aria-label={t("closeCart")}
+            onClick={() => setCartOpen(false)}
+            className="absolute inset-0 bg-black/35 backdrop-blur-[2px]"
+          />
+          <aside className="absolute right-0 top-0 flex h-dvh w-full max-w-[450px] flex-col bg-white shadow-[0_30px_110px_rgba(0,0,0,0.28)]">
+            <div className="border-b border-outline-variant/15 px-5 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-on-surface">{t("cart")}</h3>
+                  <p className="mt-1 text-sm text-on-surface-variant">
+                    {cartQuantity > 0 ? t("cartCount", { count: cartQuantity }) : t("cartDrawerSubtitle")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCartOpen(false)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-outline-variant/15 text-lg font-bold text-on-surface transition hover:bg-surface-container"
+                  aria-label={t("closeCart")}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto px-5 py-5">
+              {cartRows.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-outline-variant/25 bg-surface-container-lowest p-5 text-sm text-on-surface-variant">
+                  {t("cartEmptyHint")}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cartRows.map((row) => (
+                    <div key={row.item.skuId} className="rounded-2xl border border-outline-variant/12 bg-surface-container-lowest p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-surface-container-high">
+                          {row.item.image ? (
+                            <img src={row.item.image} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-[10px] text-on-surface-variant">
+                              {t("noImage")}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold leading-snug text-on-surface">{row.name}</div>
+                          <div className="mt-1 text-xs leading-5 text-on-surface-variant">
+                            <div>{t("quantity")}: {row.quantity}</div>
+                            <div>{t("lineTotal")}: {formatUsdc(row.quote.gross)} USDC</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setCartQuantity(row.item.skuId, 0, 0)}
+                          className="rounded-full px-2 py-1 text-xs font-bold text-on-surface-variant transition hover:bg-surface-container hover:text-on-surface"
+                          disabled={busy}
+                        >
+                          {t("remove")}
+                        </button>
+                      </div>
+                      <div className="mt-3 grid h-10 grid-cols-[40px_1fr_40px] overflow-hidden rounded-full border border-outline-variant/15 bg-white">
+                        <button
+                          type="button"
+                          onClick={() => setCartQuantity(row.item.skuId, row.quantity - 1, inventoryLimit(row.sku))}
+                          className="flex items-center justify-center text-base font-bold text-on-surface transition hover:bg-surface-container disabled:opacity-40"
+                          aria-label={t("decreaseQty")}
+                          disabled={busy}
+                        >
+                          −
+                        </button>
+                        <div className="flex items-center justify-center text-sm font-bold text-on-surface">
+                          {row.quantity}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setCartQuantity(row.item.skuId, row.quantity + 1, inventoryLimit(row.sku))}
+                          className="flex items-center justify-center text-base font-bold text-on-surface transition hover:bg-surface-container disabled:opacity-40"
+                          aria-label={t("increaseQty")}
+                          disabled={busy || row.quantity >= inventoryLimit(row.sku)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-outline-variant/15 bg-white px-5 py-5 shadow-[0_-18px_40px_rgba(20,35,24,0.08)]">
+              <div className="space-y-2 text-sm">
+                <Line label={t("gross")} value={`${formatUsdc(totals.gross)} USDC`} />
+                <Line label={t("protocolFee")} value={`${formatUsdc(totals.protocolFee)} USDC`} />
+                <Line label={t("repayment")} value={`${formatUsdc(totals.repayment)} USDC`} />
+                <Line label={t("growerNet")} value={`${formatUsdc(totals.producerNet)} USDC`} strong />
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-on-surface-variant">
+                <button
+                  onClick={handleMintUsdc}
+                  disabled={!user || busy}
+                  className="font-semibold text-primary disabled:opacity-50"
+                >
+                  {t("mintUsdc")}
+                </button>
+                <span>{t("balance", { amount: formatUsdc(balance) })}</span>
+              </div>
+
+              <button
+                onClick={() => setCheckoutOpen(true)}
+                disabled={!canOpenCheckout}
+                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-on-surface text-surface text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t("reviewCheckout")}
+              </button>
+
+              {status.kind === "error" && (
+                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-error">
+                  {status.message}
+                </div>
+              )}
+              {status.kind === "success" && (
+                <div className="mt-3 rounded-lg border border-primary/25 bg-primary-fixed/25 p-3 text-xs text-primary">
+                  <div className="font-bold">{t("success")}</div>
+                  <a href={txUrl(status.hash)} target="_blank" rel="noreferrer" className="underline">
+                    {t("viewTx")}
+                  </a>
+                  <div className="mt-1 text-on-surface-variant">
+                    {status.emailDelivered ? t("emailDelivered") : t("emailPending")}
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
       {checkoutOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-3 backdrop-blur-sm md:items-center md:p-6">
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/45 p-3 backdrop-blur-sm md:items-center md:p-6">
           <div className="grid max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-[28px] bg-white shadow-[0_32px_120px_rgba(0,0,0,0.24)] md:grid-cols-[minmax(0,1fr)_360px]">
             <div className="overflow-auto p-5 md:p-7">
               <div className="flex items-start justify-between gap-4">
@@ -865,6 +902,11 @@ export function EcommerceShopPanel({
                 {busy && <Spinner size={16} />}
                 {checkoutLabel}
               </button>
+              {status.kind === "error" && (
+                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-error">
+                  {status.message}
+                </div>
+              )}
             </div>
           </div>
         </div>
